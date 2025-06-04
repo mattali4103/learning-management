@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --blue: #1e90ff;
+  --white: #ffffff;
+}
+
+
+.background-image {
+  color: var(--blue);
+  background-image: url('/background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+:root {
+  font-family: "Roboto", sans-serif;
+  font-optical-sizing: auto;
+  font-variation-settings:
+    "wdth" 100;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
