@@ -4,12 +4,18 @@ import Login from "./components/Login";
 import Hello from "./components/Hello";
 import Home from "./components/Home";
 import { useAuth } from "./hooks/UseAuth";
-import Sidebar from "./components/Sidebar";
+
+import Layout from "./pages/Layout";
+
+
+import Dashboard from "./pages/Dashboard";
+
+
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
   if (loading) return <div>Loading...</div>; 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
+  return !isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
 }
 
 function App() {
@@ -17,17 +23,15 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={
+        <Route element={
           <ProtectedRoute>
-            <Home />
+            <Layout />
           </ProtectedRoute>
-        } />
-        <Route path="/hello" element={
-          <ProtectedRoute>
-            <Hello/>
-          </ProtectedRoute>
-        } />
-        <Route path="/test" element={<Sidebar/>} />
+        }>
+          <Route path="/" element={<Home />} />
+          <Route path="/hello" element={<Hello />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

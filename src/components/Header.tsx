@@ -1,7 +1,6 @@
 const Header = () => {
   return (
-    <>
-      <div className="flex gap-2  text-white">
+      <div className="flex gap-2 text-gray-50 bg-[#042F6B] w-full mb-1">
         <div className="w-16 h-16 flex items-center justify-center">
           <span>
             <img src="/logo-ctu.png" alt="CTU logo" />
@@ -12,7 +11,6 @@ const Header = () => {
           <span className="text-lg">Can Tho University</span>
         </div>
       </div>
-    </>
   );
 };
 export default Header;
