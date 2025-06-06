@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import Header from "./Header";
-import axios from "axios";
+import axios, { AxiosError } from "axios"; 
 import API_ENDPOINTS from "../api/apiEndPoints";
 import { useAuth } from "../hooks/UseAuth";
 import { useNavigate } from "react-router-dom";
@@ -8,7 +8,7 @@ import ErrorMesssageModal from "./modals/ErrorMessageModal";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const [username, setUsername] = useState<string>("");
+  const [maSo, setMaSo] = useState<string>("");
   const [password, setPassword] = useState<string>("");
 
   const [error, setError] = useState<string | null>(null);
@@ -17,19 +17,25 @@ const Login: React.FC = () => {
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     axios
-      .post(API_ENDPOINTS.LOGIN, { username, password })
+      .post(API_ENDPOINTS.LOGIN, { maSo, password })
       .then((response) => {
-        const token = response.data;
-        login(token);
-        navigate("/hello");
+        console.log("Response:", response);
+        if (response.status !== 200) {
+          setError("Đăng nhập thất bại. Vui lòng thử lại.");
+        } else {
+          console.log(response.data.token);
+          const token = response.data.token;
+          login(token);
+          navigate("/dashboard");
+        }
       })
-      .catch(() => {
-        setError(
-          "Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin."
-        );
+      .catch((error: AxiosError) => {
+        const errorMessage =
+          (error.response?.data as { message?: string })?.message ||
+          "Đăng nhập thất bại. Vui lòng thử lại.";
+        setError(errorMessage);
       });
   };
-
   return (
     <>
       <div className="min-h-screen background-image text-white flex flex-col">
@@ -45,8 +51,8 @@ const Login: React.FC = () => {
                   </label>
                   <input
                     type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
+                    value={maSo}
+                    onChange={(e) => setMaSo(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Mã số sinh viên"
                   />
@@ -85,5 +91,4 @@ const Login: React.FC = () => {
     </>
   );
 };
-
 export default Login;

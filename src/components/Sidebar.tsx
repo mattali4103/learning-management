@@ -1,6 +1,8 @@
 
+import MenuBookIcon from '@mui/icons-material/MenuBook';
 import MenuIcon from "@mui/icons-material/Menu";
 import DashboardIcon from "@mui/icons-material/Dashboard";
+import ClassIcon from '@mui/icons-material/Class';
 import { Link } from "react-router-dom";
 import { createElement, useState } from "react";
 interface SidebarItem {
@@ -12,15 +14,12 @@ interface SidebarItem {
 
 export default function Sidebar() {
   const sidebarItems: SidebarItem[] = [
-    { name: "My Dashboard", icon: DashboardIcon, to: "/" },
-    { name: "My Home", icon: DashboardIcon , to: "/" },
-    { name: "My Dashboard", icon: DashboardIcon, to: "/" },
+    { name: "Tổng Quan", icon: DashboardIcon, to: "/" },
+    { name: "Kế Hoạch Học Tập", icon: MenuBookIcon , to: "/khht" },
+    { name: "Kết Quả Học Tập", icon: ClassIcon, to: "/kqht" },
   ];
 
   const [open, setOpen] = useState(true);
-
-
-
   return(
     <div className={`bg-[#0D47A1] min-h-screen mb-1 text-gray-100 duration-500 px-4 ${open ? "w-72" : "w-16"}`}>
       <div className="py-3 flex justify-end">

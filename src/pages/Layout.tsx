@@ -6,7 +6,7 @@ const Layout = () => {
   return (
     <>
       <Header />
-      <div className="flex gap-6">
+      <div className="flex gap-3">
         <Sidebar />
         <main className="w-full">
           <Outlet />
