@@ -1,57 +1,84 @@
-import type { KetQuaHocTapTableProps } from "../pages/KetQuaHocTap";
+import type { KetQuaHocTapTableProps } from "../pages/KetQuaHocTap/KetQuaHocTap";
 import type { DiemTBTichLuy } from "./DiemTBTichLuy";
+import type { HocKy } from "./hocKy";
+import type { NamHoc } from "./namHoc";
 
+export const namHocData : NamHoc[] = [
+  { id: 1, namBatDau: "2021", namKetThuc: "2022" },
+  { id: 2, namBatDau: "2022", namKetThuc: "2023" },
+]
 
+export const hocKy: HocKy[] = [
+  {
+    id: 1,
+    tenHocky: "HK1",
+    namHocId: 1,
+    ngayBatdau: "2021-09-01",
+    ngayKetthuc: "2022-01-31",
+  },
+  {
+    id: 2,
+    tenHocky: "HK2",
+    namHocId: 1,
+    ngayBatdau: "2021-02-01",
+    ngayKetthuc: "2022-06-30",
+  },
+  {
+    id: 3,
+    tenHocky: "HK3",
+    namHocId: 1,
+    ngayBatdau: "2021-07-01",
+    ngayKetthuc: "2022-08-31",
+  },
+  {
+    id: 4,
+    tenHocky: "HK1",
+    namHocId: 2,
+    ngayBatdau: "2022-09-01",
+    ngayKetthuc: "2023-01-31",
+  },
+  {
+    id: 5,
+    tenHocky: "HK2",
+    namHocId: 2,
+    ngayBatdau: "2022-02-01",
+    ngayKetthuc: "2023-06-30",
+  },
+  {
+    id: 6,
+    tenHocky: "HK3",
+    namHocId: 2,
+    ngayBatdau: "2023-02-01",
+    ngayKetthuc: "2024-06-30",
+  },
+];
 
 export const diemTBTichLuyData: DiemTBTichLuy[] = [
-  { hocKy: "HK1", namHoc: "2021-2022", diemTB: 3.1 },
-  { hocKy: "HK2", namHoc: "2021-2022", diemTB: 3.3 },
-  { hocKy: "HK3", namHoc: "2021-2022", diemTB: 2.9 },
-  { hocKy: "HK1", namHoc: "2022-2023", diemTB: 2.8 },
-  { hocKy: "HK2", namHoc: "2022-2023", diemTB: 3.9 },
-  { hocKy: "HK3", namHoc: "2022-2023", diemTB: 2.8 },
-  { hocKy: "HK1", namHoc: "2023-2024", diemTB: 3.1 },
-  { hocKy: "HK2", namHoc: "2023-2024", diemTB: 3.0 },
-  { hocKy: "HK3", namHoc: "2023-2024", diemTB: 2.9 },
+  {
+    hocKy: { id: 1, tenHocky: "HK1", namHocId: 1, ngayBatdau: "2021-09-01", ngayKetthuc: "2022-01-31" },
+    diemTB: 3.1,
+  },
+  {
+    hocKy: { id: 2, tenHocky: "HK2", namHocId: 1, ngayBatdau: "2021-02-01", ngayKetthuc: "2022-06-30" },
+    diemTB: 3.3,
+  },
+  {
+    hocKy: { id: 3, tenHocky: "HK3", namHocId: 1, ngayBatdau: "2021-07-01", ngayKetthuc: "2022-08-31" },
+    diemTB: 2.9,
+  },
+  {
+    hocKy: { id: 4, tenHocky: "HK1", namHocId: 2, ngayBatdau: "2022-09-01", ngayKetthuc: "2023-01-31" },
+    diemTB: 3.1,
+  },
+  {
+    hocKy: { id: 5, tenHocky: "HK2", namHocId: 2, ngayBatdau: "2022-02-01", ngayKetthuc: "2023-06-30" },
+    diemTB: 3.0,
+  },
+  {
+    hocKy: { id: 6, tenHocky: "HK3", namHocId: 2, ngayBatdau: "2023-02-01", ngayKetthuc: "2024-06-30" },
+    diemTB: 2.9,
+  }
 ];
-
-export const diemTBTichLuyTheoNamHoc: DiemTBTichLuy[] = [
-  { hocKy: "HK1", namHoc: "2021-2022", diemTB: 3.1 },
-  { hocKy: "HK2", namHoc: "2021-2022", diemTB: 3.3 },
-  { hocKy: "HK3", namHoc: "2021-2022", diemTB: 2.9 },
-];
-
-export const diemTBTichLuyTheoNamHoc2: DiemTBTichLuy[] = [
-  { hocKy: "HK1", namHoc: "2022-2023", diemTB: 2.9 },
-  { hocKy: "HK2", namHoc: "2022-2023", diemTB: 3.0 },
-  { hocKy: "HK3", namHoc: "2022-2023", diemTB: 2.9 },
-];
-
-export const diemTBTichLuyTheoNamHoc3: DiemTBTichLuy[] = [
-  { hocKy: "HK1", namHoc: "2024-2025", diemTB: 3.1 },
-  { hocKy: "HK2", namHoc: "2023-2024", diemTB: 3.1 },
-  { hocKy: "HK3", namHoc: "2023-2024", diemTB: 2.9 },
-];
-
-export const diemTBTichLuyTheoHocKy1: DiemTBTichLuy[] = [
-  { hocKy: "HK1", namHoc: "2021-2022", diemTB: 3.1 },
-  { hocKy: "HK1", namHoc: "2022-2023", diemTB: 2.9 },
-  { hocKy: "HK1", namHoc: "2024-2025", diemTB: 3.1 },
-];
-
-export const diemTBTichLuyTheoHocKy2: DiemTBTichLuy[] = [
-  { hocKy: "HK2", namHoc: "2021-2022", diemTB: 3.3 },
-  { hocKy: "HK2", namHoc: "2023-2024", diemTB: 3.1 },
-  { hocKy: "HK2", namHoc: "2023-2024", diemTB: 2.9 },
-];
-
-export const diemTBTichLuyTheoHocKy3: DiemTBTichLuy[] = [
-  { hocKy: "HK3", namHoc: "2021-2022", diemTB: 3.3 },
-  { hocKy: "HK3", namHoc: "2023-2024", diemTB: 3.1 },
-  { hocKy: "HK3", namHoc: "2023-2024", diemTB: 2.9 },
-];
-
-
 export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
   {
     id: 1,
@@ -85,7 +112,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "A",
     diemSo: 9.2,
     hocKy: {
-      id: 2,
+      id: 1,
       tenHocky: "HK1",
       ngayBatdau: "2021-09-01",
       ngayKetthuc: "2022-01-15",
@@ -107,9 +134,8 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B+",
     diemSo: 8.1,
     hocKy: {
-      id: 2,
+      id: 1,
       tenHocky: "HK1",
-
       ngayBatdau: "2021-09-01",
       ngayKetthuc: "2022-01-15",
       namHocId: 1,
@@ -130,7 +156,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B+",
     diemSo: 8.9,
     hocKy: {
-      id: 3,
+      id: 1,
       tenHocky: "HK1",
       ngayBatdau: "2021-09-01",
       ngayKetthuc: "2022-01-15",
@@ -152,7 +178,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B+",
     diemSo: 8.4,
     hocKy: {
-      id: 4,
+      id: 1,
       tenHocky: "HK1",
       ngayBatdau: "2021-09-01",
       ngayKetthuc: "2022-01-15",
@@ -174,7 +200,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "A",
     diemSo: 10.0,
     hocKy: {
-      id: 6,
+      id: 1,
       tenHocky: "HK1",
       ngayBatdau: "2021-09-01",
       ngayKetthuc: "2022-01-15",
@@ -196,7 +222,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "M",
     diemSo: 0,
     hocKy: {
-      id: 7,
+      id: 2,
       tenHocky: "HK2",
       ngayBatdau: "2022-01-16",
       ngayKetthuc: "2022-06-01",
@@ -218,7 +244,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B+",
     diemSo: 8.7,
     hocKy: {
-      id: 8,
+      id: 2,
       tenHocky: "HK2",
       ngayBatdau: "2022-01-16",
       ngayKetthuc: "2022-06-01",
@@ -240,7 +266,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B+",
     diemSo: 8.3,
     hocKy: {
-      id: 9,
+      id: 2,
       tenHocky: "HK2",
       ngayBatdau: "2022-01-16",
       ngayKetthuc: "2022-06-01",
@@ -262,7 +288,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B+",
     diemSo: 8.6,
     hocKy: {
-      id: 10,
+      id: 2,
       tenHocky: "HK2",
       ngayBatdau: "2022-01-16",
       ngayKetthuc: "2022-06-01",
@@ -284,7 +310,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B",
     diemSo: 7.0,
     hocKy: {
-      id: 11,
+      id: 2,
       tenHocky: "HK2",
       ngayBatdau: "2022-01-16",
       ngayKetthuc: "2022-06-01",
@@ -306,7 +332,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "",
     diemSo: 0,
     hocKy: {
-      id: 12,
+      id: 2,
       tenHocky: "HK2",
       ngayBatdau: "2022-01-16",
       ngayKetthuc: "2022-06-01",
@@ -328,7 +354,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B",
     diemSo: 7.2,
     hocKy: {
-      id: 13,
+      id: 2,
       tenHocky: "HK2",
       ngayBatdau: "2022-01-16",
       ngayKetthuc: "2022-06-01",
@@ -350,7 +376,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B",
     diemSo: 7.4,
     hocKy: {
-      id: 14,
+      id: 3,
       tenHocky: "HK3",
       ngayBatdau: "2022-06-02",
       ngayKetthuc: "2022-08-31",
@@ -372,7 +398,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "C",
     diemSo: 5.7,
     hocKy: {
-      id: 15,
+      id: 3,
       tenHocky: "HK3",
       ngayBatdau: "2022-06-02",
       ngayKetthuc: "2022-08-31",
@@ -394,7 +420,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B",
     diemSo: 7.0,
     hocKy: {
-      id: 16,
+      id: 4,
       tenHocky: "HK1",
       ngayBatdau: "2022-09-01",
       ngayKetthuc: "2023-01-15",
@@ -416,7 +442,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B+",
     diemSo: 8.1,
     hocKy: {
-      id: 17,
+      id: 4,
       tenHocky: "HK1",
       ngayBatdau: "2022-09-01",
       ngayKetthuc: "2023-01-15",
@@ -438,7 +464,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "C",
     diemSo: 5.5,
     hocKy: {
-      id: 18,
+      id: 4,
       tenHocky: "HK1",
       ngayBatdau: "2022-09-01",
       ngayKetthuc: "2023-01-15",
@@ -460,7 +486,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "",
     diemSo: 0,
     hocKy: {
-      id: 19,
+      id: 4,
       tenHocky: "HK1",
       ngayBatdau: "2022-09-01",
       ngayKetthuc: "2023-01-15",
@@ -482,7 +508,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "D+",
     diemSo: 5.0,
     hocKy: {
-      id: 20,
+      id: 4,
       tenHocky: "HK1",
       ngayBatdau: "2022-09-01",
       ngayKetthuc: "2023-01-15",
@@ -504,7 +530,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "C",
     diemSo: 5.8,
     hocKy: {
-      id: 21,
+      id: 4,
       tenHocky: "HK1",
       ngayBatdau: "2022-09-01",
       ngayKetthuc: "2023-01-15",
@@ -526,7 +552,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "C",
     diemSo: 6.1,
     hocKy: {
-      id: 22,
+      id: 5,
       tenHocky: "HK2",
       ngayBatdau: "2023-01-16",
       ngayKetthuc: "2023-06-01",
@@ -548,7 +574,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "C+",
     diemSo: 6.8,
     hocKy: {
-      id: 23,
+      id: 5,
       tenHocky: "HK2",
       ngayBatdau: "2023-01-16",
       ngayKetthuc: "2023-06-01",
@@ -570,7 +596,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "C",
     diemSo: 5.6,
     hocKy: {
-      id: 24,
+      id: 5,
       tenHocky: "HK2",
       ngayBatdau: "2023-01-16",
       ngayKetthuc: "2023-06-01",
@@ -592,7 +618,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "C",
     diemSo: 5.8,
     hocKy: {
-      id: 25,
+      id: 5,
       tenHocky: "HK2",
       ngayBatdau: "2023-01-16",
       ngayKetthuc: "2023-06-01",
@@ -614,7 +640,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "C",
     diemSo: 5.7,
     hocKy: {
-      id: 26,
+      id: 5,
       tenHocky: "HK2",
       ngayBatdau: "2023-01-16",
       ngayKetthuc: "2023-06-01",
@@ -636,7 +662,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "",
     diemSo: 0,
     hocKy: {
-      id: 27,
+      id: 5,
       tenHocky: "HK2",
       ngayBatdau: "2023-01-16",
       ngayKetthuc: "2023-06-01",
@@ -658,7 +684,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B+",
     diemSo: 8.0,
     hocKy: {
-      id: 28,
+      id: 5,
       tenHocky: "HK2",
       ngayBatdau: "2023-01-16",
       ngayKetthuc: "2023-06-01",
@@ -680,7 +706,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B",
     diemSo: 7.5,
     hocKy: {
-      id: 29,
+      id: 5,
       tenHocky: "HK2",
       ngayBatdau: "2023-01-16",
       ngayKetthuc: "2023-06-01",
@@ -702,7 +728,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B",
     diemSo: 7.5,
     hocKy: {
-      id: 30,
+      id: 6,
       tenHocky: "HK3",
       ngayBatdau: "2023-06-02",
       ngayKetthuc: "2023-08-31",
@@ -724,7 +750,7 @@ export const ketQuaHocTapData: KetQuaHocTapTableProps[] = [
     diemChu: "B",
     diemSo: 7.0,
     hocKy: {
-      id: 31,
+      id: 6,
       tenHocky: "HK3",
       ngayBatdau: "2023-06-02",
       ngayKetthuc: "2023-08-31",

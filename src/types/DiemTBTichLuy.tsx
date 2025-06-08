@@ -1,5 +1,6 @@
+import type { HocKy } from "./hocKy";
+
 export interface DiemTBTichLuy {
-  hocKy: string | null;
-  namHoc: string | null;
+  hocKy: HocKy;
   diemTB: number;
 }

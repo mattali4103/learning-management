@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 
 const Layout = () => {
   return (
-    <>
+    <div className="bg-blue-200">
       <Header />
       <div className="flex gap-3">
         <Sidebar />
@@ -12,7 +12,7 @@ const Layout = () => {
           <Outlet />
         </main>
       </div>
-    </>
+    </div>
   );
 };
 export default Layout;

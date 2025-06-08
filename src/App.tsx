@@ -5,7 +5,8 @@ import Hello from "./components/Hello";
 import { useAuth } from "./hooks/UseAuth";
 import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
-import KetQuaHocTap from "./pages/KetQuaHocTap";
+import KetQuaHocTap from "./pages/KetQuaHocTap/KetQuaHocTap";
+import KetQuaHocTapDetail from "./pages/KetQuaHocTap/KetQuaHocTapDetail";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -28,8 +29,11 @@ function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/khht" element={<Hello />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/kqht" element={<KetQuaHocTap />} />
-
+          <Route path="/kqht">
+            <Route index element={<KetQuaHocTap />} />
+            <Route path="chung" index element={<KetQuaHocTap />} />
+            <Route path="chitiet" element={<KetQuaHocTapDetail />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

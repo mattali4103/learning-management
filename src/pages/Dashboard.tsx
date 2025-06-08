@@ -4,14 +4,11 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import Loading from "../components/Loading";
 import type { DiemTBTichLuy } from "../types/DiemTBTichLuy";
+import GridColumn from "../components/GridCollum";
 
 const Dashboard = () => {
 
-  interface GridColumnProps {
-    value: React.ReactNode;
-    name: React.ReactNode;
-    className?: string;
-  }
+
   const [loading, setLoading] = useState<boolean>(true);
   // Simulate loading state
   setTimeout(() => {
@@ -29,12 +26,7 @@ const Dashboard = () => {
     { hocKy: "HK1", namHoc: "2024-2025", diemTB: 3.1 },
   ];
 
-  const GridColumn: React.FC<GridColumnProps> = ({ value, name, className }) => (
-    <div className={`col-span-1 mt-2 h-24 bg-gray-50 rounded-lg shadow-md p-4 ${className}`}>
-      <div className="text-2xl mb-2">{value}</div>
-      <span>{name}</span>
-    </div>
-  );
+
 
   if(loading) {
     return <Loading />;
@@ -94,10 +86,10 @@ const Dashboard = () => {
         />
         <span className="text-lg">Điểm Trung Bình Tích Luỹ</span>
       </div>
-        <GridColumn className="bg-green-300" value="50" name="Số tính chỉ tích luỹ"/>
-        <GridColumn className="bg-yellow-400" value="105" name="Số tính chỉ còn lại" />
-        <GridColumn className="bg-red-400" value="5" name="Số tính chỉ cần cải thiện" />
-        <GridColumn className="bg-lime-600" value="1" name="Số tín chỉ đã cải thiện" />
+        <GridColumn className="bg-green-300 col-span-1 mt-2 h-24 rounded-lg shadow-md p-4 " value="50" name="Số tính chỉ tích luỹ"/>
+        <GridColumn className="bg-yellow-400 col-span-1 mt-2 h-24 rounded-lg shadow-md p-4 " value="105" name="Số tính chỉ còn lại" />
+        <GridColumn className="bg-red-400 col-span-1 mt-2 h-24 rounded-lg shadow-md p-4 " value="5" name="Số tính chỉ cần cải thiện" />
+        <GridColumn className="bg-lime-600 col-span-1 mt-2 h-24 rounded-lg shadow-md p-4 " value="1" name="Số tín chỉ đã cải thiện" />
     </div>
   );
 };

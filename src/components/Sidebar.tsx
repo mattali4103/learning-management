@@ -30,7 +30,11 @@ export default function Sidebar() {
         { name: "Nhập kế hoạch học tập ", to: "/khht/add" },
       ],
     },
-    { name: "Kết Quả Học Tập", icon: ClassIcon, to: "/kqht" },
+    { name: "Kết Quả Học Tập", icon: ClassIcon, to: "/kqht", children: [
+      { name: "Tổng quan", to: "/kqht/chung" },
+      { name: "Xem chi tiết", to: "/kqht/chitiet" },
+    ]
+    },
   ];
 
   const toggleItem = (index: number) => {
@@ -58,7 +62,7 @@ export default function Sidebar() {
             key={index}
             to={item.to}
             onClick={(e) => {
-              if (item.children) {
+              if (open) {
                 e.preventDefault();
                 toggleItem(index);
               }

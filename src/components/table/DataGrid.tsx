@@ -1,11 +1,8 @@
 import Box from "@mui/material/Box";
-import { DataGrid, type GridColDef} from "@mui/x-data-grid";
+import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
 import { GRID_LOCALE } from "../../types/gridLocalText";
-import type { KetQuaHocTapTableProps } from "../../pages/KetQuaHocTap";
-
-
-
+import type { KetQuaHocTapTableProps } from "../../pages/KetQuaHocTap/KetQuaHocTap";
 
 const columns: GridColDef<KetQuaHocTapTableProps>[] = [
   {
@@ -15,61 +12,68 @@ const columns: GridColDef<KetQuaHocTapTableProps>[] = [
     width: 150,
     headerAlign: "center",
     align: "center",
+    headerClassName: "!bg-blue-400 text-black",
   },
   {
     field: "tenHp",
     headerName: "Tên học phần",
-    width: 400,
+    headerClassName: "!bg-blue-400 text-black",
+    width: 600,
     headerAlign: "center",
   },
   {
     field: "dieuKien",
     headerName: "Điều kiện",
     type: "boolean",
-    width: 110,
+    width: 120,
     headerAlign: "center",
     align: "center",
+    headerClassName: "!bg-blue-400 text-black",
   },
   {
     field: "nhomHp",
     headerName: "Nhóm học phần",
-    width: 160,
+    width: 140,
     headerAlign: "center",
     align: "center",
+    headerClassName: "!bg-blue-400 text-black",
   },
   {
     field: "soTinChi",
     headerName: "Tín chỉ",
-    width: 100,
+    width: 120,
     headerAlign: "center",
     align: "center",
+    headerClassName: "!bg-blue-400 text-black",
   },
   {
     field: "diemChu",
     headerName: "Điểm chữ",
-    width: 100,
+    width: 120,
     headerAlign: "center",
     align: "center",
+    headerClassName: "!bg-blue-400 text-black",
   },
   {
     field: "diemSo",
     headerName: "Điểm số",
     type: "number",
-    width: 100,
+    width: 120,
     headerAlign: "center",
     align: "center",
+    headerClassName: "!bg-blue-400 text-black",
   },
 ];
 
-
-
-interface DataGridComponentProps{
+interface DataGridComponentProps {
   dataRows: KetQuaHocTapTableProps[];
 }
 
-export default function DataGridComponent({dataRows} : DataGridComponentProps) {
+export default function DataGridComponent({
+  dataRows,
+}: DataGridComponentProps) {
   return (
-    <Box className="w-full h-full">
+    <Box className="">
       <DataGrid
         rows={dataRows}
         columns={columns}
@@ -77,7 +81,7 @@ export default function DataGridComponent({dataRows} : DataGridComponentProps) {
         initialState={{
           pagination: {
             paginationModel: {
-              pageSize: 10,
+              pageSize: 25,
             },
           },
         }}
