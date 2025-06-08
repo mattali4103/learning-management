@@ -10,6 +10,8 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
+import Error from "./Error";
+import Loading from "./Loading";
 
 interface HocPhan {
   maHp: string;
@@ -68,17 +70,13 @@ export default function BasicTable() {
 
   if (loading) {
     return (
-      <Typography variant="h6" align="center" sx={{ my: 4 }}>
-        Đang tải...
-      </Typography>
+      <Loading />
     );
   }
 
   if (error) {
     return (
-      <Typography variant="h6" align="center" color="error" sx={{ my: 4 }}>
-        {error}
-      </Typography>
+      <Error error={error} />
     );
   }
 

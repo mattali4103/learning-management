@@ -1,11 +1,23 @@
 import { Gauge, gaugeClasses } from "@mui/x-charts";
 import { LineChart } from "@mui/x-charts";
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import Loading from "../components/Loading";
+import type { DiemTBTichLuy } from "../types/DiemTBTichLuy";
+
 const Dashboard = () => {
-  interface DiemTBTichLuy {
-    hocKy: string;
-    namHoc: string;
-    diemTB: number;
+
+  interface GridColumnProps {
+    value: React.ReactNode;
+    name: React.ReactNode;
+    className?: string;
   }
+  const [loading, setLoading] = useState<boolean>(true);
+  // Simulate loading state
+  setTimeout(() => {
+    setLoading(false);
+  }, 1000); // Giả lập thời gian tải dữ liệu 2 giây
+
 //   Call API
   const diemTBTichLuy: DiemTBTichLuy[] = [
     { hocKy: "HK1", namHoc: "2021-2022", diemTB: 3.1 },
@@ -17,12 +29,6 @@ const Dashboard = () => {
     { hocKy: "HK1", namHoc: "2024-2025", diemTB: 3.1 },
   ];
 
-  interface GridColumnProps {
-    value: React.ReactNode;
-    name: React.ReactNode;
-    className?: string;
-  }
-
   const GridColumn: React.FC<GridColumnProps> = ({ value, name, className }) => (
     <div className={`col-span-1 mt-2 h-24 bg-gray-50 rounded-lg shadow-md p-4 ${className}`}>
       <div className="text-2xl mb-2">{value}</div>
@@ -30,9 +36,16 @@ const Dashboard = () => {
     </div>
   );
 
+  if(loading) {
+    return <Loading />;
+  }
+
   return (
     <div className="grid grid-cols-4 p-4 m-5 gap-4">
-      <div className="line-chart col-span-3 bg-gray-50 rounded-lg shadow-md">
+      <div className="relative line-chart col-span-3 bg-gray-50 rounded-lg shadow-md">
+        <Link to="/kqht" className="absolute top-2 right-2 text-blue-600 hover:underline">
+          Xem chi tiết
+        </Link>
         <LineChart
           xAxis={[
             {
