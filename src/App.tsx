@@ -7,6 +7,7 @@ import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
 import KetQuaHocTap from "./pages/KetQuaHocTap/KetQuaHocTap";
 import KetQuaHocTapDetail from "./pages/KetQuaHocTap/KetQuaHocTapDetail";
+import KeHoachHocTap from "./pages/KeHoachHocTap/KeHoachHocTap";
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, loading } = useAuth();
@@ -27,7 +28,10 @@ function App() {
           }
         >
           <Route path="/" element={<Dashboard />} />
-          <Route path="/khht" element={<Hello />} />
+          <Route path="/khht">
+            <Route index element={<KeHoachHocTap />} />
+            <Route path="chung" element={<KeHoachHocTap />} />
+          </Route>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/kqht">
             <Route index element={<KetQuaHocTap />} />

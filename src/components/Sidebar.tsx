@@ -16,9 +16,9 @@ interface SidebarItem {
 
 export default function Sidebar() {
   const [open, setOpen] = useState(true);
-  const [expandedItems, setExpandedItems] = useState<{ [key: number]: boolean }>(
-    {}
-  );
+  const [expandedItems, setExpandedItems] = useState<{
+    [key: number]: boolean;
+  }>({});
   const sidebarItems: SidebarItem[] = [
     { name: "Tổng Quan", icon: DashboardIcon, to: "/" },
     {
@@ -26,14 +26,18 @@ export default function Sidebar() {
       icon: MenuBookIcon,
       to: "/khht",
       children: [
-        { name: "Xem kế hoạch học tập", to: "/khht/sinhvien" },
+        { name: "Xem kế hoạch học tập", to: "/khht/chung" },
         { name: "Nhập kế hoạch học tập ", to: "/khht/add" },
       ],
     },
-    { name: "Kết Quả Học Tập", icon: ClassIcon, to: "/kqht", children: [
-      { name: "Tổng quan", to: "/kqht/chung" },
-      { name: "Xem chi tiết", to: "/kqht/chitiet" },
-    ]
+    {
+      name: "Kết Quả Học Tập",
+      icon: ClassIcon,
+      to: "/kqht",
+      children: [
+        { name: "Tổng quan", to: "/kqht/chung" },
+        { name: "Xem chi tiết", to: "/kqht/chitiet" },
+      ],
     },
   ];
 
@@ -62,7 +66,7 @@ export default function Sidebar() {
             key={index}
             to={item.to}
             onClick={(e) => {
-              if (open) {
+              if (open && item.children) {
                 e.preventDefault();
                 toggleItem(index);
               }
@@ -84,9 +88,7 @@ export default function Sidebar() {
                   {item.name}
                 </span>
                 {item.children && open && (
-                  <button
-                    className="p-1 rounded-md transition-colors duration-200"
-                  >
+                  <button className="p-1 rounded-md transition-colors duration-200">
                     {createElement(
                       expandedItems[index] ? ExpandLessIcon : ExpandMoreIcon,
                       { className: "text-white w-5 h-5" }
@@ -102,7 +104,7 @@ export default function Sidebar() {
                     key={childIndex}
                     to={child.to}
                     className={({ isActive }) =>
-                      `block pl-4 py-1 rounded-md text-sm text-gray-300 transition-colors duration-200 ${
+                      `block pl-4 py-1 rounded-md text-sm text-gray-300 transition-colors duration-200 animate-slide-down ${
                         isActive
                           ? "bg-blue-700 text-white font-semibold"
                           : "hover:bg-blue-800 hover:text-white"
@@ -111,7 +113,6 @@ export default function Sidebar() {
                   >
                     {child.name}
                   </NavLink>
-                 
                 ))}
               </div>
             )}

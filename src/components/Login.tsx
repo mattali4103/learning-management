@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from "react";
 import Header from "./Header";
 import axios, { AxiosError } from "axios"; 
-import API_ENDPOINTS from "../api/apiEndPoints";
+
 import { useAuth } from "../hooks/UseAuth";
 import { useNavigate } from "react-router-dom";
 import ErrorMesssageModal from "./modals/ErrorMessageModal";
+import { USER_SERIVCE } from "../api/apiEndPoints";
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -17,7 +18,7 @@ const Login: React.FC = () => {
   const handleLogin = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     axios
-      .post(API_ENDPOINTS.LOGIN, { maSo, password })
+      .post(USER_SERIVCE.LOGIN, { maSo, password })
       .then((response) => {
         console.log("Response:", response);
         if (response.status !== 200) {

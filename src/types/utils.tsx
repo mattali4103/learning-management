@@ -53,6 +53,9 @@ export const hocKy: HocKy[] = [
   },
 ];
 
+
+
+
 export const diemTBTichLuyData: DiemTBTichLuy[] = [
   {
     hocKy: { id: 1, tenHocky: "HK1", namHocId: 1, ngayBatdau: "2021-09-01", ngayKetthuc: "2022-01-31" },

@@ -25,6 +25,17 @@ export interface KetQuaHocTapTableProps {
   namHoc: NamHoc;
 }
 
+export interface KeHoachHocTapTableProps{
+  id: number;
+  maHp: string;
+  tenHp: string;
+  hocPhanCaiThien: boolean;
+  soTinChi: number;
+  hocKy: HocKy;
+  namHoc: NamHoc;
+}
+
+
 const yearTab = [
   { label: "Tất cả", index: 0 },
   ...namHocData.map((item: NamHoc) => ({
@@ -80,8 +91,8 @@ const KetQuaHocTapAll: React.FC = () => {
   return (
     <>
       <AreaChartComponent data={data} tableName="Điểm Trung Bình Tích Lũy" />
-      <div className="flex gap-2 flex-wrap p-2 m-5">
-        <div className="p-4 bg-gray-100 font-medium text-gray-700 rounded-lg shadow-md md:w-165 w-full">
+      <div className="flex gap-2 p-2 m-5">
+          <div className="p-4 bg-gray-100 font-medium text-gray-700 rounded-lg shadow-md min-w-160 max-w-190 w-full">
           <CustomPieChart rowData={ketQuaHocTapData} />
         </div>
         <div className="font-medium  text-gray-700 rounded-lg shadow-md md:w-1/4 w-full flex flex-col content-center justify-items-center gap-4">
@@ -147,8 +158,8 @@ const KetQuaHocTapByYear: React.FC<KetQuaHocTapByYearProps> = ({
             }))}
           tableName="Điểm Trung Bình Tích Lũy"
         />
-        <div className="flex gap-2 flex-wrap p-2 m-5">
-          <div className="p-4 bg-gray-100 font-medium text-gray-700 rounded-lg shadow-md md:w-165 w-full">
+        <div className="flex gap-2  p-2 m-5">
+          <div className="p-4 bg-gray-100 font-medium text-gray-700 rounded-lg shadow-md min-w-160 max-w-190 w-full">
             <CustomPieChart rowData={filteredKetQuaHocTapData} />
           </div>
           <div className="font-medium  text-gray-700 rounded-lg shadow-md md:w-1/4 w-full flex flex-col content-center justify-items-center gap-4">

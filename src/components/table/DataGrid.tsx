@@ -7,7 +7,7 @@ import type { KetQuaHocTapTableProps } from "../../pages/KetQuaHocTap/KetQuaHocT
 const columns: GridColDef<KetQuaHocTapTableProps>[] = [
   {
     field: "maHp",
-    type: "number",
+    type: "string",
     headerName: "Mã học phần",
     width: 150,
     headerAlign: "center",
