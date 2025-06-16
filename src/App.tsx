@@ -1,46 +1,51 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import type { ReactNode } from "react";
+import { Routes, Route } from "react-router-dom";
 import Login from "./components/Login";
-import Hello from "./components/Hello";
-import { useAuth } from "./hooks/UseAuth";
 import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
 import KetQuaHocTap from "./pages/KetQuaHocTap/KetQuaHocTap";
 import KetQuaHocTapDetail from "./pages/KetQuaHocTap/KetQuaHocTapDetail";
-import KeHoachHocTap from "./pages/KeHoachHocTap/KeHoachHocTap";
+import KeHoachHocTap, { KeHoachHocTapTable } from "./pages/KeHoachHocTap/KeHoachHocTap";
+import NhapKeHoachHocTap from "./pages/KeHoachHocTap/NhapKetQuaHocTap";
+import NotFound from "./pages/NotFound";
+import RequireAuth from "./components/RequireAuth";
+import Unauthorized from "./pages/Unauthorized";
+import { KetQuaHocTapLayout } from "./pages/KetQuaHocTap/KetQuaHocTapLayout";
 
-function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { isAuthenticated, loading } = useAuth();
-  if (loading) return <div>Loading...</div>;
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
-}
+const ROLES = {
+  SINHVIEN: "SINHVIEN",
+  GIANGVIEN: "GIANGVIEN",
+  ADMIN: "ADMIN",
+};
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route
-          element={
-            <ProtectedRoute>
-              <Layout />
-            </ProtectedRoute>
-          }
-        >
+    <Routes>
+      {/* Public routes */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/unauthorized" element={<Unauthorized />} />
+      <Route path="*" element={<NotFound />} />
+      <Route element={<Layout />}>
+        {/* Private routes */}
+        <Route element={<RequireAuth allowedRoles={[ROLES.SINHVIEN]} />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/khht">
-            <Route index element={<KeHoachHocTap />} />
-            <Route path="chung" element={<KeHoachHocTap />} />
+          <Route path="/khht" element={<KeHoachHocTap />}>
+            <Route index element={<KeHoachHocTapTable />} />
+            <Route path="chung" element={<KeHoachHocTapTable />} />
+            <Route path="add" element={<NhapKeHoachHocTap />} />
           </Route>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/kqht">
+          <Route path="/kqht" element={<KetQuaHocTapLayout />}>
             <Route index element={<KetQuaHocTap />} />
-            <Route path="chung" index element={<KetQuaHocTap />} />
+            <Route path="chung" element={<KetQuaHocTap />} />
             <Route path="chitiet" element={<KetQuaHocTapDetail />} />
           </Route>
         </Route>
-      </Routes>
-    </BrowserRouter>
+        <Route
+          element={
+            <RequireAuth allowedRoles={[ROLES.GIANGVIEN, ROLES.ADMIN]} />
+          }
+        ></Route>
+      </Route>
+    </Routes>
   );
 }
 

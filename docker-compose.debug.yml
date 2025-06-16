@@ -1,0 +1,6 @@
+services:
+  learningmanagement:
+    image: learningmanagement
+    build:
+      context: .
+      dockerfile: ./Dockerfile

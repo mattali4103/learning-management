@@ -1,0 +1,29 @@
+name: luanvan
+services:
+
+  profile:
+    container_name: profileservice
+    image: profileservice:microservice
+    ports:
+      - "8083:8083"
+    networks:
+      - app-network
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql1:3306/testing?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+  kehoachhoctap:
+    container_name: kehoachhoctap
+    image: kehoachhoctap:microservice
+    ports:
+      - "8083:8083"
+    networks:
+      - app-network
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql1:3306/testing?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=UTF-8
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: 123456
+
+networks:
+  app-network:
+    external: true 

@@ -1,41 +1,70 @@
-import { useState, type FormEvent } from "react";
+import {useState, type FormEvent } from "react";
 import Header from "./Header";
-import axios, { AxiosError } from "axios"; 
-
-import { useAuth } from "../hooks/UseAuth";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import ErrorMesssageModal from "./modals/ErrorMessageModal";
-import { USER_SERIVCE } from "../api/apiEndPoints";
-
+import { USER_SERVICE } from "../api/apiEndPoints";
+import axios from "axios";
+import { jwtDecode } from "jwt-decode";
+import useAuth from "../hooks/useAuth";
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || "/";
+  const { setAuth} = useAuth();
+
   const [maSo, setMaSo] = useState<string>("");
   const [password, setPassword] = useState<string>("");
-
   const [error, setError] = useState<string | null>(null);
-  const { login } = useAuth();
 
-  const handleLogin = (e: FormEvent<HTMLFormElement>) => {
+  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    axios
-      .post(USER_SERIVCE.LOGIN, { maSo, password })
-      .then((response) => {
-        console.log("Response:", response);
-        if (response.status !== 200) {
-          setError("Đăng nhập thất bại. Vui lòng thử lại.");
-        } else {
-          console.log(response.data.token);
-          const token = response.data.token;
-          login(token);
-          navigate("/dashboard");
+    try {
+      const response = await axios.post(
+        USER_SERVICE.LOGIN,
+        {
+          maSo: maSo,
+          password: password,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
         }
-      })
-      .catch((error: AxiosError) => {
-        const errorMessage =
-          (error.response?.data as { message?: string })?.message ||
-          "Đăng nhập thất bại. Vui lòng thử lại.";
-        setError(errorMessage);
-      });
+      );
+      if (response.data) {
+        const decodedToken: any = jwtDecode(response.data.token);
+        if (!decodedToken) {
+          setError("Token không hợp lệ. Vui lòng thử lại.");
+          return;
+        }
+        setAuth({
+          token: response.data.token,
+          user: { maSo: decodedToken?.sub, roles: decodedToken?.scope },
+        });
+
+        setMaSo("");
+        setPassword("");
+        navigate(from, { replace: true });
+      } else {
+        setError(
+          "Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin."
+        );
+      }
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        if (err.response) {
+          setError(err.response.data.message || "Đăng nhập không thành công.");
+        } else if (err.request) {
+          setError("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+        } else {
+          setError("Đã xảy ra lỗi. Vui lòng thử lại sau.");
+        }
+      } else {
+        setError("Đã xảy ra lỗi. Vui lòng thử lại sau.");
+      }
+    }
+    
   };
   return (
     <>

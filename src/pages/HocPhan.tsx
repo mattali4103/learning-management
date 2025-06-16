@@ -12,14 +12,9 @@ import {
 } from "@mui/material";
 import Loading from "../components/Loading";
 import Error from "../components/Error";
+import type { HocPhan } from "../types/HocPhan";
 
-interface HocPhan {
-  maHp: string;
-  tenHp: string;
-  tinChi: number;
-  hocPhanTienQuyet: string;
-  loaiHp: string;
-}
+
 
 function createData(
   maHp: string,
