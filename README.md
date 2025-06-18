@@ -1,6 +1,6 @@
 # Learning Management Frontend
 
-This project is the frontend for a Learning Management System (LMS), built with modern web technologies.
+This project is the frontend for a Learning Management System, built with modern web technologies.
 
 ## Features
 
