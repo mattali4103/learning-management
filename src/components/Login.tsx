@@ -2,7 +2,7 @@ import {useState, type FormEvent } from "react";
 import Header from "./Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import ErrorMesssageModal from "./modals/ErrorMessageModal";
-import { USER_SERVICE } from "../api/apiEndPoints";
+import { PROFILE_SERVICE, USER_SERVICE } from "../api/apiEndPoints";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import useAuth from "../hooks/useAuth";
@@ -15,6 +15,22 @@ const Login: React.FC = () => {
   const [maSo, setMaSo] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+
+  const handleFetchUserInfo = async (maSo: string, token: string) => {
+    try {
+      const response = await axios.get(PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo",maSo), {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
+      return response.data.data;
+    } catch (error) {
+      console.error("Error fetching user info:", error);
+      throw error;
+    }
+  }
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -38,9 +54,16 @@ const Login: React.FC = () => {
           setError("Token không hợp lệ. Vui lòng thử lại.");
           return;
         }
+
+        const userInfo = await handleFetchUserInfo(decodedToken.sub, response.data.token);
+        if (!userInfo) {
+          setError("Không thể lấy thông tin người dùng. Vui lòng thử lại.");
+          return;
+        }
+        // Set the authentication state
         setAuth({
           token: response.data.token,
-          user: { maSo: decodedToken?.sub, roles: decodedToken?.scope },
+          user: { maSo: decodedToken?.sub, roles: decodedToken?.scope , khoaHoc: userInfo.khoaHoc },
         });
 
         setMaSo("");

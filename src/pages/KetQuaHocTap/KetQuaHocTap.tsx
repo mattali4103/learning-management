@@ -136,7 +136,6 @@ interface KetQuaHocTapByYearProps {
 const KetQuaHocTapByYear: React.FC<KetQuaHocTapByYearProps> = ({
   yearTabIndex,
 }) => {
-
   const filteredKetQuaHocTapData = ketQuaHocTapData.filter(
     (item) => item.namHoc.id === yearTabIndex); 
 

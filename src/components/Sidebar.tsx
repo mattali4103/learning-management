@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { createElement, useState } from "react";
 import MenuBookIcon from "@mui/icons-material/MenuBook";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -17,9 +17,8 @@ interface SidebarItem {
 
 export default function Sidebar() {
   const { isOpen, setIsOpen } = useSidebar();
-  const [expandedItems, setExpandedItems] = useState<{ [key: number]: boolean }>(
-    {}
-  );
+  const [expandedItems, setExpandedItems] = useState<{ [key: number]: boolean }>({});
+  const location = useLocation(); // Get current route
   const sidebarItems: SidebarItem[] = [
     { name: "Tổng Quan", icon: DashboardIcon, to: "/" },
     {
@@ -61,15 +60,22 @@ export default function Sidebar() {
           onClick={() => setIsOpen(!isOpen)}
         />
       </div>
-      <div className={`flex w-full flex-col ${isOpen ? "" : "items-center"}`}>
+      <div className={`flex w-full flex-col gap-2 ${isOpen ? "" : "items-center"}`}>
         {sidebarItems.map((item, index) => {
           const isExpandable = item.children && isOpen;
+          // Check if the current route matches the item or any of its children
+          const isParentActive = item.children
+            ? item.to === location.pathname || item.children.some((child) => child.to === location.pathname)
+            : item.to === location.pathname;
+
           if (isExpandable) {
             return (
               <div
                 key={index}
                 onClick={() => toggleItem(index)}
-                className="cursor-pointer block p-2 rounded-md hover:bg-blue-700"
+                className={`cursor-pointer block p-2 rounded-md transition-colors duration-200 ${
+                  isParentActive ? "bg-blue-600 text-white" : "hover:bg-blue-700"
+                }`}
               >
                 <div className="flex items-center gap-3">
                   {createElement(item.icon, { className: "text-white w-6 h-6" })}
@@ -79,15 +85,15 @@ export default function Sidebar() {
                       className={({ isActive }) =>
                         `text-base font-medium truncate ${
                           !isOpen ? "hidden" : "block"
-                        } ${isActive ? "text-white" : "text-gray-300"}`
+                        } ${isActive || isParentActive ? "text-white font-semibold" : "text-gray-300"}`
                       }
-                      onClick={e => e.stopPropagation()}
+                      onClick={(e) => e.stopPropagation()}
                     >
                       {item.name}
                     </NavLink>
                     <button
                       className="p-1 rounded-md transition-colors duration-200"
-                      onClick={e => {
+                      onClick={(e) => {
                         e.stopPropagation();
                         toggleItem(index);
                       }}
@@ -107,11 +113,12 @@ export default function Sidebar() {
                       <NavLink
                         key={childIndex}
                         to={child.to}
+                        onClick={(e) => e.stopPropagation()}
                         className={({ isActive }) =>
-                          `block pl-4 py-1 rounded-md text-sm text-gray-300 transition-colors duration-200 animate-slide-down ${
+                          `block pl-4 py-1 rounded-md text-sm transition-colors duration-200 animate-slide-down ${
                             isActive
                               ? "bg-blue-700 text-white font-semibold"
-                              : "hover:bg-blue-800 hover:text-white"
+                              : "text-gray-300 hover:bg-blue-800 hover:text-white"
                           }`
                         }
                       >
@@ -127,9 +134,9 @@ export default function Sidebar() {
               <NavLink
                 key={index}
                 to={item.to}
-                className={({ isActive }: { isActive: boolean }) =>
-                  `flex items-center gap-2 p-2 rounded-md hover:bg-blue-700 ${
-                    isActive ? "bg-blue-600" : ""
+                className={({ isActive }) =>
+                  `flex items-center gap-2 p-2 rounded-md transition-colors duration-200 ${
+                    isActive ? "bg-blue-600 text-white font-semibold" : "hover:bg-blue-700"
                   }`
                 }
               >
@@ -138,7 +145,7 @@ export default function Sidebar() {
                   <span
                     className={`text-base font-medium truncate ${
                       !isOpen ? "hidden" : "block"
-                    }`}
+                    } ${isParentActive ? "text-white font-semibold" : "text-gray-300"}`}
                   >
                     {item.name}
                   </span>

@@ -16,6 +16,7 @@ export const USER_SERVICE = {
 
 export const PROFILE_SERVICE = {
   GET_SINHVIEN_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/:maSo",
+  GET_MY_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/me/:maSo",
   UPDATE_PROFILE: PROFILE_SERVICE_URL + "/api/profile/update",
   CHANGE_PASSWORD: PROFILE_SERVICE_URL + "/api/profile/change-password",
   UPLOAD_AVATAR: PROFILE_SERVICE_URL + "/api/profile/upload-avatar",

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import type { TooltipProps } from "recharts";
 import {
   AreaChart,
@@ -49,58 +50,64 @@ const CustomTooltip = ({
 };
 
 interface AreaChartComponentProps {
-    tableName: string;
-    data: AreaChartData[];
+  tableName: string;
+  data: AreaChartData[];
 }
 
-export default function AreaChartComponent({ tableName, data }: AreaChartComponentProps) {
-    return (
-        <div className="p-2 bg-gray-100 rounded-lg shadow-md m-5">
-            <ResponsiveContainer width="100%" height={300}>
-                <AreaChart
-                    data={data}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 30 }}
-                >
-                    <CartesianGrid
-                        stroke="#e5e7eb"
-                        strokeDasharray="3 3"
-                        vertical={false}
-                    />
-                    <XAxis
-                        dataKey="name"
-                        stroke="#1f2937"
-                        fontSize={12}
-                        tickMargin={15}
-                        tick={{ fill: "#374151" }}
+export default function AreaChartComponent({
+  tableName,
+  data,
+}: AreaChartComponentProps) {
+  const navigate = useNavigate();
+  const handleClick = (data : any) => {
+      if(data && data.activePayload && data.activePayload.length > 0) {
+        const clickedData = data.activePayload[0].payload;
+        console.log("Clicked data:", clickedData);
+        navigate(`/kqht/chitiet`);
+      }
+  };
 
-                    />
-                    <YAxis
-                        domain={[0, 4]}
-                        stroke="#1f2937"
-                        fontSize={12}
-                        tickMargin={15}
-                        tick={{ fill: "#374151" }}
-                        label={{
-                            value: `${tableName}`,
-                            position: "insideBottomLeft",
-                            offset: 5,
-                            angle: -90,
-                            fill: "#1f2937",
-                            fontSize: 16,
-                            fontWeight: 600,
-                        }}
-                    />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Area
-                        type="monotone"
-                        dataKey="diem"
-                        stroke="#8884d8"
-                        fill="#8884d8"
-                        fillOpacity={0.25}
-                        strokeWidth={2}
-                    />
-                </AreaChart>
-            </ResponsiveContainer>
-        </div>
-    );
+  return (
+    <ResponsiveContainer width="100%" height={120}>
+      <AreaChart onClick={handleClick} data={data} style={{ cursor: "pointer" }}>
+        <CartesianGrid
+          stroke="#e5e7eb"
+          strokeDasharray="3 3"
+          vertical={false}
+        />
+        <XAxis
+          dataKey="name"
+          stroke="#1f2937"
+          fontSize={12}
+          tickMargin={15}
+          tick={{ fill: "#374151" }}
+        />
+        <YAxis
+          domain={[0, 4]}
+          stroke="#1f2937"
+          fontSize={12}
+          tickMargin={15}
+          tick={{ fill: "#374151" }}
+          label={{
+            value: `${tableName}`,
+            position: "insideBottomLeft",
+            offset: 5,
+            angle: -90,
+            fill: "#1f2937",
+            fontSize: 16,
+            fontWeight: 600,
+          }}
+        />
+        <Tooltip content={<CustomTooltip />} />
+        <Area
+          type="monotone"
+          dataKey="diem"
+          stroke="#8884d8"
+          fill="#8884d8"
+          fillOpacity={0.25}
+          strokeWidth={2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
 }

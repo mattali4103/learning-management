@@ -339,7 +339,6 @@ const SelectedHocPhanTable = ({
       setFetchLoading(true);
       const response = await axiosPrivate.post(KHHT_SERVICE.CREATE, filterdData);
       setSelectedHocPhan(response.data.data || []);
-      window.location.reload();
     } catch (err) {
       setError((err as { message: string }).message);
       setSelectedHocPhan([]);
@@ -347,6 +346,7 @@ const SelectedHocPhanTable = ({
       onSaveSuccess?.();
     } finally {
       setFetchLoading(false);
+      window.location.reload();
     }
   };
 
