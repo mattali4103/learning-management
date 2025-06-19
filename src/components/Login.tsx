@@ -1,38 +1,65 @@
-import {useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import Header from "./Header";
 import { useLocation, useNavigate } from "react-router-dom";
 import ErrorMesssageModal from "./modals/ErrorMessageModal";
-import { PROFILE_SERVICE, USER_SERVICE } from "../api/apiEndPoints";
+import {
+  KHHT_SERVICE,
+  PROFILE_SERVICE,
+  USER_SERVICE,
+} from "../api/apiEndPoints";
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import useAuth from "../hooks/useAuth";
+import LoadingButton from "./LoadingButton";
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/";
-  const { setAuth} = useAuth();
-
+  const { setAuth } = useAuth();
+  const [loading, setLoading] = useState<boolean>(false);
   const [maSo, setMaSo] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  // Fetching hocKy data when the component mounts
+  const fetchHocKy = async (maSo: string) => {
+    try {
+      const response = await axios.get(
+        KHHT_SERVICE.GET_HOCKY.replace(":maSo", maSo),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+      localStorage.setItem("hocKy", JSON.stringify(response.data.data));
+    } catch (error) {
+      console.error("Error fetching hoc ky:", error);
+      setError("Không thể lấy thông tin học kỳ. Vui lòng thử lại.");
+    }
+  };
 
   const handleFetchUserInfo = async (maSo: string, token: string) => {
     try {
-      const response = await axios.get(PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo",maSo), {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        withCredentials: true,
-      });
+      const response = await axios.get(
+        PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", maSo),
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          withCredentials: true,
+        }
+      );
       return response.data.data;
     } catch (error) {
       console.error("Error fetching user info:", error);
       throw error;
     }
-  }
+  };
 
   const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+    setLoading(true);
     e.preventDefault();
     try {
       const response = await axios.post(
@@ -55,7 +82,10 @@ const Login: React.FC = () => {
           return;
         }
 
-        const userInfo = await handleFetchUserInfo(decodedToken.sub, response.data.token);
+        const userInfo = await handleFetchUserInfo(
+          decodedToken.sub,
+          response.data.token
+        );
         if (!userInfo) {
           setError("Không thể lấy thông tin người dùng. Vui lòng thử lại.");
           return;
@@ -63,16 +93,16 @@ const Login: React.FC = () => {
         // Set the authentication state
         setAuth({
           token: response.data.token,
-          user: { maSo: decodedToken?.sub, roles: decodedToken?.scope , khoaHoc: userInfo.khoaHoc },
+          user: {
+            maSo: decodedToken?.sub,
+            roles: decodedToken?.scope,
+            khoaHoc: userInfo.khoaHoc,
+          },
         });
-
+        fetchHocKy(maSo);
         setMaSo("");
         setPassword("");
         navigate(from, { replace: true });
-      } else {
-        setError(
-          "Đăng nhập không thành công. Vui lòng kiểm tra lại thông tin."
-        );
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -86,8 +116,9 @@ const Login: React.FC = () => {
       } else {
         setError("Đã xảy ra lỗi. Vui lòng thử lại sau.");
       }
+    } finally {
+      setLoading(false);
     }
-    
   };
   return (
     <>
@@ -126,7 +157,13 @@ const Login: React.FC = () => {
                   type="submit"
                   className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
                 >
-                  Đăng Nhập
+                  {loading ? (
+                    <LoadingButton loading={true} variant="primary">
+                      Đang đăng nhập...
+                    </LoadingButton>
+                  ) : (
+                    "Đăng Nhập"
+                  )}
                 </button>
               </form>
               <p className="text-center mt-4 text-sm hover:underline cursor-pointer">

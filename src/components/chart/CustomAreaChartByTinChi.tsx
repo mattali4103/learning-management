@@ -34,46 +34,48 @@ const CustomTooltip = ({
         <p style={{ fontWeight: 600, marginBottom: "4px" }}>{label}</p>
         <p
           style={{ color: "#8884d8", fontWeight: 500 }}
-        >{`Điểm: ${payload[0].value}`}</p>
+        >{`Tích luỹ: ${payload[0].value}`}</p>
+        <p
+          style={{ color: "#3b32eb", fontWeight: 500 }}
+        >{`Cải thiện: ${payload[1].value}`}</p>
       </div>
     );
   }
   return null;
 };
-
-
-type AreaChartData = {
+interface AreaChartData{
   name: string | null;
-  diem: number | 0;
+  tinChiTichLuy: number | 0;
+  tinChiCaiThien: number | 0;
 };
 
-
-
-interface AreaChartComponentProps {
+interface DiemChartProps {
   tableName: string;
   data: AreaChartData[];
 }
-export default function AreaChartComponent({
-  tableName,
-  data,
-}: AreaChartComponentProps) {
-  const navigate = useNavigate();  const handleClick = (data : any) => {
-      if(data && data.activePayload && data.activePayload.length > 0) {
-        const clickedData = data.activePayload[0].payload;
-        console.log("Clicked data:", clickedData);
-        
-        // Điều hướng với ID năm học và học kỳ nếu có
-        const navigationUrl = createKeHoachHocTapNavigationUrl(
-          clickedData.namHocId,
-          clickedData.hocKyId
-        );
-        navigate(navigationUrl);
-      }
+export const CustomAreaChartByDiem = ({ tableName, data }: DiemChartProps) => {
+  const navigate = useNavigate();
+  console.log("Data for chart:", data);  const handleClick = (data: any) => {
+    if (data && data.activePayload && data.activePayload.length > 0) {
+      const clickedData = data.activePayload[0].payload;
+      console.log("Clicked data:", clickedData);
+      
+      // Điều hướng với ID năm học và học kỳ nếu có
+      const navigationUrl = createKeHoachHocTapNavigationUrl(
+        clickedData.namHocId,
+        clickedData.hocKyId
+      );
+      navigate(navigationUrl);
+    }
   };
 
   return (
     <ResponsiveContainer width="100%" height={120}>
-      <AreaChart onClick={handleClick} data={data} style={{ cursor: "pointer" }}>
+      <AreaChart
+        onClick={handleClick}
+        data={data}
+        style={{ cursor: "pointer" }}
+      >
         <CartesianGrid
           stroke="#e5e7eb"
           strokeDasharray="3 3"
@@ -105,13 +107,22 @@ export default function AreaChartComponent({
         <Tooltip content={<CustomTooltip />} />
         <Area
           type="monotone"
-          dataKey="diem"
+          dataKey="tinChiTichLuy"
+          stroke="#8884d8"
+          fill="#8884d8"
+          fillOpacity={0.25}
+          strokeWidth={2}
+        />
+        <Area
+          type="monotone"
+          dataKey="tinChiCaiThien"
           stroke="#8884d8"
           fill="#8884d8"
           fillOpacity={0.25}
           strokeWidth={2}
         />
       </AreaChart>
-    </ResponsiveContainer>
-  );
-}
+    </ResponsiveContainer>  );
+};
+
+export default CustomAreaChartByDiem;

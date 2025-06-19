@@ -1,13 +1,13 @@
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 
 
-interface ErrorMesssageModalProps {
+interface ErrorMessageModalProps {
   message: string | null;
   isOpen : boolean;
   onClose?: () => void;
 }
 
-const ErrorMesssageModal = (props : ErrorMesssageModalProps) =>{
+const ErrorMessageModal = (props : ErrorMessageModalProps) =>{
 
   if( !props.isOpen ) {
     return null;
@@ -56,4 +56,4 @@ const ErrorMesssageModal = (props : ErrorMesssageModalProps) =>{
       </div>
     );
 }
-export default ErrorMesssageModal;
+export default ErrorMessageModal;

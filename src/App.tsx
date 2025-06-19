@@ -4,12 +4,13 @@ import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
 import KetQuaHocTap from "./pages/KetQuaHocTap/KetQuaHocTap";
 import KetQuaHocTapDetail from "./pages/KetQuaHocTap/KetQuaHocTapDetail";
-import KeHoachHocTap, { KeHoachHocTapTable } from "./pages/KeHoachHocTap/KeHoachHocTap";
 import NhapKeHoachHocTap from "./pages/KeHoachHocTap/NhapKetQuaHocTap";
 import NotFound from "./pages/NotFound";
 import RequireAuth from "./components/RequireAuth";
 import Unauthorized from "./pages/Unauthorized";
 import { KetQuaHocTapLayout } from "./pages/KetQuaHocTap/KetQuaHocTapLayout";
+import KeHoachHocTapDetail from "./pages/KeHoachHocTap/KeHoachHocTapDetail";
+import KeHoachHocTap, { KeHoachHocTapPage } from "./pages/KeHoachHocTap/KeHoachHocTap";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -29,8 +30,9 @@ function App() {
         <Route element={<RequireAuth allowedRoles={[ROLES.SINHVIEN]} />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/khht" element={<KeHoachHocTap />}>
-            <Route index element={<KeHoachHocTapTable />} />
-            <Route path="chung" element={<KeHoachHocTapTable />} />
+            <Route index element={<KeHoachHocTapPage />} />
+            <Route path="chung" element={<KeHoachHocTapPage />} />
+            <Route path="detail" element={<KeHoachHocTapDetail/>} />
             <Route path="add" element={<NhapKeHoachHocTap />} />
           </Route>
           <Route path="/kqht" element={<KetQuaHocTapLayout />}>

@@ -1,58 +1,148 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Loading from "../components/Loading";
-import GridColumn from "../components/GridCollum";
 import AreaChartComponent from "../components/chart/Area";
-import { diemTBTichLuyData, namHocData } from "../types/utils";
 import useAuth from "../hooks/useAuth";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
-import { PROFILE_SERVICE } from "../api/apiEndPoints";
+import { KHHT_SERVICE, PROFILE_SERVICE } from "../api/apiEndPoints";
+import CustomAreaChartByDiem from "../components/chart/CustomAreaChartByTinChi";
+import { diemTBTichLuyData } from "../types/utils";
+import {
+  User,
+  Calendar,
+  BookOpen,
+  Award,
+  TrendingUp,
+  GraduationCap,
+  Clock,
+  Target,
+  BarChart3,
+} from "lucide-react";
 
 interface UserInfo {
   maSo: string;
   hoTen: string;
+  ngaySinh: Date;
+  gioiTinh: boolean;
   maLop: string;
   khoaHoc: string;
   tenNganh: string;
 }
+interface ThongKeTinChiByHocKy {
+  hocKy: any;
+  soTinChiCaiThien: number;
+  soTinChiDangKy: number;
+}
+interface ThongKeTinChi {
+  tongSoTinChi: number;
+  soTinChiTichLuy: number;
+  soTinChiCaiThien: number;
+}
+// interface NamHoc {
+//   id: number;
+//   namBatDau: number;
+//   namKetThuc: number;
+// }
+// interface HocKy {
+//   maHocKy: number;
+//   tenHocKy: string;
+//   ngayBatDau: string;
+//   ngayKetThuc: string;
+//   namHoc: NamHoc;
+// }
 const Dashboard = () => {
+  // Get user info from auth context
+  const { auth } = useAuth();
   // Custom hook to handle private axios requests
   const axiosPrivate = useAxiosPrivate();
   // State to manage user information and loading/error states
   const [error, setError] = useState<string | null>(null);
   // State to hold user information
-  const [useInfo, setUserInfo] = useState<UserInfo | null>(null);
-  // Get user info from auth context
-  const { auth } = useAuth();
-  // Function to fetch user information
-  const fetchUserInfo = async () => {
-    try {
-      setLoading(true);
-      const response = await axiosPrivate.get(
-        PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", auth.user?.maSo || ""),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${auth.token}`,
-          },
-          withCredentials: true,
-        }
-      );
-      if (response.data) {
-        const userInfo: UserInfo = response.data.data;
-        setUserInfo(userInfo);
-        console.log("User Info:", userInfo);
-      }
-    } catch (error) {
-      setError("Không thể lấy thông tin người dùng. Vui lòng thử lại.");
-      console.error("Error fetching user info:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  // State to hold the list of tin chi tich luy by the user
+  const [tinChiTichLuy, setTinChiTichLuy] = useState<ThongKeTinChiByHocKy[]>(
+    []
+  );
+  const [thongKeTinChi, setThongKeTinChi] = useState<ThongKeTinChi>({
+    tongSoTinChi: 0,
+    soTinChiTichLuy: 0,
+    soTinChiCaiThien: 0,
+  });
+
   // Fetch user information when the component mounts
   useEffect(() => {
+    const fetchThongKeTinChi = async () => {
+      try{
+        const response = await axiosPrivate.get<any>(
+          KHHT_SERVICE.COUNT_TINCHI_IN_KHHT.replace(
+            ":khoaHoc", auth.user?.khoaHoc || "")
+              .replace(":maSo", auth.user?.maSo || ""),         
+          {
+            headers: { "Content-Type": "application/json" },
+            withCredentials: true,
+          }
+        );
+        setThongKeTinChi(response.data.data);
+      }
+      finally{
+        setLoading(false);
+      }
+    };
+
+    const fetchUserInfo = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosPrivate.get(
+          PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", auth.user?.maSo || "")
+        );
+        setUserInfo(response.data.data);
+      } catch (error) {
+        setError("Không thể lấy thông tin người dùng. Vui lòng thử lại.");
+        console.error("Error fetching user info:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    const fetchTinChiTichLuy = async () => {
+      try {
+        const response = await axiosPrivate.get<any>(
+          KHHT_SERVICE.COUNT_TINCHI_GROUP_BY_HOCKY.replace(
+            ":maSo",
+            auth.user?.maSo || ""
+          ),
+          {
+            headers: { "Content-Type": "application/json" },
+            withCredentials: true,
+          }
+        );
+        setTinChiTichLuy(response.data.data);
+      } catch (error) {
+        setError("Không thể lấy dữ liệu tín chỉ tích lũy. Vui lòng thử lại.");
+        console.error("Error fetching tin chi tich luy:", error);
+      }
+    };
     fetchUserInfo();
-  }, []);
+    fetchThongKeTinChi();
+    fetchTinChiTichLuy();
+  }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc]); 
+  // Tính toán thống kê từ dữ liệu thực
+  const statistics = useMemo(() => {
+    const { tongSoTinChi, soTinChiTichLuy, soTinChiCaiThien } = thongKeTinChi;
+    const tinChiConLai = Math.max(0, tongSoTinChi - soTinChiTichLuy); 
+    return {
+      tongSoTinChi,
+      soTinChiTichLuy,
+      tinChiConLai,
+      soTinChiCaiThien,
+      tinChiCanCaiThien: 0,
+    };
+  }, [thongKeTinChi]);
+  // Lấy thời gian hiện tại để chào hỏi
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour >= 0 && hour < 12) return "Chào buổi sáng";
+    if (hour <= 18 && hour >= 12) return "Chào buổi chiều";
+    return "Chào buổi tối";
+  };
 
   // State to manage loading state
   const [loading, setLoading] = useState<boolean>(true);
@@ -67,75 +157,302 @@ const Dashboard = () => {
       </div>
     );
   }
-
   return (
-    <div className="grid grid-cols-4 grid-rows-2 p-4 m-5 gap-4">
-      <div className="col-span-2 row-span-2 bg-gray-50">
-        <h2 className="text-center text-lg p-3 uppercase font-bold">
-          Thông tin sinh viên
-        </h2>
-        <div className="grid gap-4 p-4">
-          <div className="grid grid-cols-4 justify-center content-center border-y-gray-400 border-b-1">
-            <span className="p-2 mb-1.5 bg-gray-200">Mã số sinh viên:</span>
-            <p className="font-semibold p-2 mb-1 col-span-3">{useInfo?.maSo}</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
+      {/* Welcome Header */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+              <GraduationCap className="w-8 h-8 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-800">
+                {getGreeting()}, {userInfo?.hoTen?.split(" ").pop()}!
+              </h1>
+              <p className="text-gray-600 flex items-center mt-1">
+                <User className="w-4 h-4 mr-2" />
+                {userInfo?.maSo} - {userInfo?.tenNganh}
+              </p>
+            </div>
           </div>
-          <div className="grid grid-cols-4 justify-center content-center border-y-gray-400 border-b-1">
-            <span className="p-2 mb-1.5 bg-gray-200">Họ và tên:</span>
-            <p className="font-semibold p-2 mb-1 col-span-3">{useInfo?.hoTen}</p>
-            <p>{useInfo?.hoTen}</p>
-          </div>
-          <div className="grid grid-cols-4 justify-center content-center border-y-gray-400 border-b-1">
-            <span className="p-2 mb-1.5 bg-gray-200">Lớp</span>
-            <p className="font-semibold p-2 mb-1 col-span-3">{useInfo?.maLop}</p>
-          </div>
-          <div className="grid grid-cols-4 justify-center content-center border-y-gray-400 border-b-1">
-            <span className="p-2 mb-1.5 bg-gray-200">Khóa học:</span>
-            <p className="font-semibold p-2 mb-1 col-span-3">{useInfo?.khoaHoc}</p>
-          </div>
-          <div className="grid grid-cols-4 justify-center content-center border-y-gray-400 border-b-1">
-            <span className="p-2 mb-1.5 bg-gray-200">Ngành học:</span>
-            <p className="font-semibold p-2 mb-1 col-span-3">{useInfo?.tenNganh}</p>
+          <div className="text-right">
+            <p className="text-sm text-gray-500 flex items-center justify-end">
+              <Clock className="w-4 h-4 mr-1" />
+              {new Date().toLocaleDateString("vi-VN")}
+            </p>
           </div>
         </div>
       </div>
-      <div className="relative col-span-1 row-span-1 bg-gray-50 rounded-lg shadow-md p-1.5">
-          
-      </div>
-      <div className="relative col-span-1 row-span-1 bg-gray-50 rounded-lg shadow-md p-1.5">
 
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white ">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-green-100 text-sm font-medium">
+                Tín chỉ tích lũy
+              </p>
+              <p className="text-3xl font-bold">{statistics.soTinChiTichLuy}</p>
+            </div>
+            <BookOpen className="w-12 h-12 text-green-200" />
+          </div>
+          <div className="mt-4 flex items-center">
+            <TrendingUp className="w-4 h-4 mr-1" />
+            <span className="text-sm">Đã hoàn thành</span>
+          </div>
+        </div>
+        <div className="bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-lg p-6 text-white ">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-yellow-100 text-sm font-medium">
+                Tín chỉ còn lại
+              </p>
+              <p className="text-3xl font-bold">{statistics.tinChiConLai}</p>
+            </div>
+            <Target className="w-12 h-12 text-yellow-200" />
+          </div>
+          <div className="mt-4 flex items-center">
+            <Clock className="w-4 h-4 mr-1" />
+            <span className="text-sm">Cần hoàn thành</span>
+          </div>
+        </div>{" "}
+        <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-red-100 text-sm font-medium">
+                Tín chỉ cần cải thiện
+              </p>
+              <p className="text-3xl font-bold">
+                {statistics.tinChiCanCaiThien}
+              </p>
+            </div>
+            <Award className="w-12 h-12 text-red-200" />
+          </div>
+          <div className="mt-4 flex items-center">
+            <BarChart3 className="w-4 h-4 mr-1" />
+            <span className="text-sm">Cần cải thiện</span>
+          </div>
+        </div>{" "}
+        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-purple-100 text-sm font-medium">
+                Tín chỉ đã cải thiện
+              </p>
+              <p className="text-3xl font-bold">
+                {statistics.soTinChiCaiThien}
+              </p>
+            </div>
+            <GraduationCap className="w-12 h-12 text-purple-200" />
+          </div>
+          <div className="mt-4 flex items-center">
+            <Award className="w-4 h-4 mr-1" />
+            <span className="text-sm">Đã nâng cao</span>
+          </div>
+        </div>
       </div>
-      <div className="relative col-span-2 row-span-1 bg-gray-50 rounded-lg shadow-md p-1.5">
-        <p className="uppercase font-bold text-lg text-center">
-          Điểm trung bình tích luỹ
-        </p>
-        <AreaChartComponent
-          data={diemTBTichLuyData.map((item) => ({
-            name: `${item.hocKy.tenHocky} - ${namHocData.find((namHoc) => namHoc.id === item.hocKy.namHocId)?.namBatDau} - ${namHocData.find((namHoc) => namHoc.id === item.hocKy.namHocId)?.namKetThuc}`,
-            diem: item.diemTB,
-          }))}
-          tableName=""
-        />
+
+      {/* Progress Section */}
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="flex items-center mb-6">
+          <Target className="w-6 h-6 text-indigo-600 mr-3" />
+          <h2 className="text-xl font-bold text-gray-800">Tiến độ học tập</h2>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-sm font-medium text-gray-700">
+                Tín chỉ tích lũy
+              </span>
+              <span className="text-sm font-bold text-gray-900">
+                {statistics.soTinChiTichLuy}/{statistics.tongSoTinChi} tín chỉ
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div
+                className="bg-gradient-to-r from-green-500 to-emerald-600 h-3 rounded-full transition-all duration-1000 ease-out"
+                style={{
+                  width: `${Math.min((statistics.soTinChiTichLuy / statistics.tongSoTinChi) * 100, 100)}%`,
+                }}
+              />
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              {((statistics.soTinChiTichLuy / statistics.tongSoTinChi) * 100).toFixed(1)}% hoàn thành
+            </p>
+          </div>
+
+          {statistics.tinChiCanCaiThien > 0 && (
+            <div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Tín chỉ cần cải thiện
+                </span>
+                <span className="text-sm font-bold text-red-600">
+                  {statistics.tinChiCanCaiThien} tín chỉ
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-gradient-to-r from-red-500 to-pink-600 h-2 rounded-full transition-all duration-1000 ease-out"
+                  style={{
+                    width: `${Math.min((statistics.tinChiCanCaiThien / statistics.tongSoTinChi) * 100, 100)}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4 mt-6">
+            <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-blue-600">
+                {tinChiTichLuy.length}
+              </p>
+              <p className="text-sm text-gray-600">Học kỳ đã hoàn thành</p>
+            </div>{" "}
+            <div className="text-center p-4 bg-green-50 rounded-lg">
+              <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-green-600">
+                {(() => {
+                  if (tinChiTichLuy.length === 0) return 0;
+
+                  // Tính tín chỉ của từng học kỳ riêng lẻ từ dữ liệu tích lũy
+                  let totalTinChiRiengLe = 0;
+                  for (let i = 0; i < tinChiTichLuy.length; i++) {
+                    const tinChiHocKy =
+                      i === 0
+                        ? tinChiTichLuy[i].soTinChiDangKy
+                        : tinChiTichLuy[i].soTinChiDangKy -
+                          tinChiTichLuy[i - 1].soTinChiDangKy;
+                    totalTinChiRiengLe += tinChiHocKy;
+                  }
+
+                  return (totalTinChiRiengLe / tinChiTichLuy.length).toFixed(1);
+                })()}
+              </p>
+              <p className="text-sm text-gray-600">Tín chỉ TB/học kỳ</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <GridColumn
-        className="bg-green-300 col-span-1 mt-2 h-24 rounded-lg shadow-md p-4 "
-        value="50"
-        name="Số tính chỉ tích luỹ"
-      />
-      <GridColumn
-        className="bg-yellow-400 col-span-1 mt-2 h-24 rounded-lg shadow-md p-4 "
-        value="105"
-        name="Số tính chỉ còn lại"
-      />
-      <GridColumn
-        className="bg-red-400 col-span-1 mt-2 h-24 rounded-lg shadow-md p-4 "
-        value="5"
-        name="Số tính chỉ cần cải thiện"
-      />
-      <GridColumn
-        className="bg-lime-600 col-span-1 mt-2 h-24 rounded-lg shadow-md p-4 "
-        value="1"
-        name="Số tín chỉ đã cải thiện"
-      />
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Student Info Section */}
+        <div className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="flex items-center mb-6">
+            <User className="w-6 h-6 text-blue-600 mr-3" />
+            <h2 className="text-xl font-bold text-gray-800">
+              Thông tin sinh viên
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              {
+                label: "Mã số sinh viên",
+                value: userInfo?.maSo,
+                icon: BookOpen,
+              },
+              { label: "Họ và tên", value: userInfo?.hoTen, icon: User },
+              {
+                label: "Ngày sinh",
+                value: userInfo?.ngaySinh
+                  ? new Date(userInfo.ngaySinh).toLocaleDateString("vi-VN")
+                  : "",
+                icon: Calendar,
+              },
+              {
+                label: "Giới tính",
+                value: userInfo?.gioiTinh === true ? "Nữ" : "Nam",
+                icon: User,
+              },
+              { label: "Lớp", value: userInfo?.maLop, icon: GraduationCap },
+              { label: "Khóa học", value: userInfo?.khoaHoc, icon: Calendar },
+              { label: "Ngành học", value: userInfo?.tenNganh, icon: BookOpen },
+            ].map((item, index) => {
+              const IconComponent = item.icon;
+              return (
+                <div
+                  key={index}
+                  className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
+                >
+                  <IconComponent className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
+                  <div className="flex-1">
+                    <span className="text-sm text-gray-600 block">
+                      {item.label}
+                    </span>
+                    <span className="font-semibold text-gray-800">
+                      {item.value}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Tin Chi Chart */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-center mb-4">
+              <BarChart3 className="w-6 h-6 text-green-600 mr-3" />
+              <h3 className="text-xl font-bold text-gray-800">
+                Số tín chỉ tích lũy qua các học kỳ
+              </h3>
+            </div>
+            <div className="h-[250px]">
+              <CustomAreaChartByDiem
+                data={
+                  tinChiTichLuy &&
+                  tinChiTichLuy.map((item, index) => ({
+                    name: `Học Kỳ ${index + 1}`,
+                    tinChiTichLuy: item.soTinChiDangKy,
+                    tinChiCaiThien: item.soTinChiCaiThien,
+                    hocKyId: item.hocKy?.maHocKy || null,
+                    namHocId: item.hocKy?.namHoc?.id || null,
+                  }))
+                }
+                tableName=""
+              />
+            </div>
+          </div>
+
+          {/* Diem TB Chart */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-center mb-4">
+              <TrendingUp className="w-6 h-6 text-blue-600 mr-3" />
+              <h3 className="text-xl font-bold text-gray-800">
+                Điểm trung bình tích lũy qua các học kỳ
+              </h3>
+            </div>
+            <div className="h-[250px]">
+              <AreaChartComponent
+                data={diemTBTichLuyData.map((item, index) => ({
+                  name: `Học Kỳ ${index + 1}`,
+                  diem: item.diemTB,
+                  hocKyId: null,
+                  namHocId: null,
+                }))}
+                tableName=""
+              />
+            </div>{" "}
+          </div>
+        </div>
+      </div>
+      {/* Quick Actions Footer */}
+      <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center text-gray-600">
+            <Clock className="w-5 h-5 mr-2" />
+            <span className="text-sm">
+              Cập nhật lần cuối: {new Date().toLocaleString("vi-VN")}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

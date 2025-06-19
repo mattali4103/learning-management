@@ -1,11 +1,11 @@
 export interface KeHoachHocTap {
-id: number;
+  id: number;
   maHp: string;
   tenHp: string;
   tinChi: number;
   hocPhanTienQuyet: string;
   loaiHp: string;
-  maHocKy: number; 
+  maHocKy: number;
   tenHocKy: string;
   namHocId: number;
   namBdNamKt: string;

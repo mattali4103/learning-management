@@ -35,7 +35,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user: {
           maSo: decoded.sub,
           roles: decoded.scope,
-          khoaHoc: decoded.khoaHoc
+          khoaHoc: parsed.user?.khoaHoc || "",
         },
       };
     } catch (error) {
