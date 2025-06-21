@@ -1,8 +1,7 @@
-import { useAuth } from "../hooks/UseAuth";
+import useAuth from "../hooks/useAuth";
 
-const Home = () => {
-  const { user } = useAuth();
-  console.log("Current user:", user);
+const Home = () => {  const { auth } = useAuth();
+  console.log("Current user:", auth?.user);
 
 
   return (

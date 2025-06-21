@@ -1,11 +1,10 @@
 import { useEffect, useState, useMemo } from "react";
 import Loading from "../components/Loading";
-import AreaChartComponent from "../components/chart/Area";
 import useAuth from "../hooks/useAuth";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
-import { KHHT_SERVICE, PROFILE_SERVICE } from "../api/apiEndPoints";
-import CustomAreaChartByDiem from "../components/chart/CustomAreaChartByTinChi";
-import { diemTBTichLuyData } from "../types/utils";
+import { KHHT_SERVICE, PROFILE_SERVICE, KQHT_SERVICE } from "../api/apiEndPoints";
+import TinChiChart from "../components/chart/TinChiChart";
+import GPAChart from "../components/chart/GPAChart";
 import {
   User,
   Calendar,
@@ -37,6 +36,11 @@ interface ThongKeTinChi {
   soTinChiTichLuy: number;
   soTinChiCaiThien: number;
 }
+
+interface DiemTrungBinhHocKy {
+  maHocKy: number;
+  diemTrungBinhTichLuy: number;
+}
 // interface NamHoc {
 //   id: number;
 //   namBatDau: number;
@@ -57,8 +61,7 @@ const Dashboard = () => {
   // State to manage user information and loading/error states
   const [error, setError] = useState<string | null>(null);
   // State to hold user information
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-  // State to hold the list of tin chi tich luy by the user
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);  // State to hold the list of tin chi tich luy by the user
   const [tinChiTichLuy, setTinChiTichLuy] = useState<ThongKeTinChiByHocKy[]>(
     []
   );
@@ -67,10 +70,11 @@ const Dashboard = () => {
     soTinChiTichLuy: 0,
     soTinChiCaiThien: 0,
   });
+  // State to hold the GPA data by semester
+  const [diemTrungBinhHocKy, setDiemTrungBinhHocKy] = useState<DiemTrungBinhHocKy[]>([]);
 
   // Fetch user information when the component mounts
-  useEffect(() => {
-    const fetchThongKeTinChi = async () => {
+  useEffect(() => {    const fetchThongKeTinChi = async () => {
       try{
         const response = await axiosPrivate.get<any>(
           KHHT_SERVICE.COUNT_TINCHI_IN_KHHT.replace(
@@ -81,28 +85,39 @@ const Dashboard = () => {
             withCredentials: true,
           }
         );
-        setThongKeTinChi(response.data.data);
-      }
-      finally{
+        
+        // Check response code
+        if (response.status === 200 && response.data?.code === 200) {
+          setThongKeTinChi(response.data.data);
+        } else {
+          console.warn("API returned non-200 code for thong ke tin chi:", response.data?.code);
+        }
+      } catch (error) {
+        console.error("Error fetching thong ke tin chi:", error);
+        // Don't show error to user for non-critical data
+      } finally{
         setLoading(false);
       }
-    };
-
-    const fetchUserInfo = async () => {
+    };    const fetchUserInfo = async () => {
       try {
         setLoading(true);
         const response = await axiosPrivate.get(
           PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", auth.user?.maSo || "")
         );
-        setUserInfo(response.data.data);
+        
+        // Check response code
+        if (response.status === 200 && response.data?.code === 200) {
+          setUserInfo(response.data.data);
+        } else {
+          throw new Error(`API returned code: ${response.data?.code || response.status}`);
+        }
       } catch (error) {
         setError("Không thể lấy thông tin người dùng. Vui lòng thử lại.");
         console.error("Error fetching user info:", error);
       } finally {
         setLoading(false);
       }
-    };
-    const fetchTinChiTichLuy = async () => {
+    };    const fetchTinChiTichLuy = async () => {
       try {
         const response = await axiosPrivate.get<any>(
           KHHT_SERVICE.COUNT_TINCHI_GROUP_BY_HOCKY.replace(
@@ -114,15 +129,45 @@ const Dashboard = () => {
             withCredentials: true,
           }
         );
-        setTinChiTichLuy(response.data.data);
+          // Check response code
+        if (response.status === 200 && response.data?.code === 200) {
+          console.log("Raw TinChi API response:", response.data.data);
+          setTinChiTichLuy(response.data.data);
+        } else {
+          console.warn("API returned non-200 code for tin chi tich luy:", response.data?.code);
+        }
       } catch (error) {
-        setError("Không thể lấy dữ liệu tín chỉ tích lũy. Vui lòng thử lại.");
         console.error("Error fetching tin chi tich luy:", error);
+        // Don't show error for non-critical data
       }
     };
-    fetchUserInfo();
+
+    const fetchDiemTrungBinh = async () => {
+      try {
+        const response = await axiosPrivate.post<any>(
+          KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY,{
+            maSo: auth.user?.maSo || "",
+          },
+          {
+            headers: { "Content-Type": "application/json" },
+            withCredentials: true,
+          }
+        );
+          // Check response code
+        if (response.status === 200 && response.data?.code === 200) {
+          console.log("Raw GPA API response:", response.data.data);
+          setDiemTrungBinhHocKy(response.data.data);
+        } else {
+          console.warn("API returned non-200 code for GPA data:", response.data?.code);
+        }
+      } catch (error) {
+        console.error("Error fetching diem trung binh:", error);
+        // Don't show error for GPA data as it's not critical
+      }
+    };    fetchUserInfo();
     fetchThongKeTinChi();
     fetchTinChiTichLuy();
+    fetchDiemTrungBinh();
   }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc]); 
   // Tính toán thống kê từ dữ liệu thực
   const statistics = useMemo(() => {
@@ -391,55 +436,57 @@ const Dashboard = () => {
               );
             })}
           </div>
-        </div>
-
-        {/* Charts Section */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Tin Chi Chart */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center mb-4">
-              <BarChart3 className="w-6 h-6 text-green-600 mr-3" />
-              <h3 className="text-xl font-bold text-gray-800">
-                Số tín chỉ tích lũy qua các học kỳ
-              </h3>
-            </div>
-            <div className="h-[250px]">
-              <CustomAreaChartByDiem
-                data={
-                  tinChiTichLuy &&
-                  tinChiTichLuy.map((item, index) => ({
-                    name: `Học Kỳ ${index + 1}`,
-                    tinChiTichLuy: item.soTinChiDangKy,
-                    tinChiCaiThien: item.soTinChiCaiThien,
-                    hocKyId: item.hocKy?.maHocKy || null,
-                    namHocId: item.hocKy?.namHoc?.id || null,
-                  }))
-                }
-                tableName=""
-              />
-            </div>
-          </div>
-
-          {/* Diem TB Chart */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center mb-4">
-              <TrendingUp className="w-6 h-6 text-blue-600 mr-3" />
-              <h3 className="text-xl font-bold text-gray-800">
-                Điểm trung bình tích lũy qua các học kỳ
-              </h3>
-            </div>
-            <div className="h-[250px]">
-              <AreaChartComponent
-                data={diemTBTichLuyData.map((item, index) => ({
-                  name: `Học Kỳ ${index + 1}`,
-                  diem: item.diemTB,
-                  hocKyId: null,
-                  namHocId: null,
-                }))}
-                tableName=""
-              />
-            </div>{" "}
-          </div>
+        </div>        {/* Charts Section */}
+        <div className="lg:col-span-2 space-y-6">          {/* Tin Chi Chart */}
+          <TinChiChart
+            data={
+              tinChiTichLuy && tinChiTichLuy.length > 0
+                ? tinChiTichLuy.map((item, index) => {
+                    const hocKyId = item.hocKy?.maHocKy || null;
+                    const namHocId = item.hocKy?.namHoc?.id || null;
+                    
+                    console.log(`TinChi data point ${index}:`, {
+                      name: `Học Kỳ ${index + 1}`,
+                      hocKyId,
+                      namHocId,
+                      item: item.hocKy
+                    });
+                    
+                    return {
+                      name: `Học Kỳ ${index + 1}`,
+                      tinChiTichLuy: item.soTinChiDangKy || 0,
+                      tinChiCaiThien: item.soTinChiCaiThien || 0,
+                      hocKyId,
+                      namHocId,
+                    };
+                  })
+                : []
+            }
+          />          {/* GPA Chart */}
+          <GPAChart
+            data={
+              diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0                ? diemTrungBinhHocKy.map((item: any, index) => {
+                    const hocKyId = item.maHocKy || null;
+                    const namHocId = item.namHocId || item.namHoc?.id || null;
+                    
+                    console.log(`GPA data point ${index}:`, {
+                      name: `Học Kỳ ${index + 1}`,
+                      hocKyId,
+                      namHocId,
+                      diem: item.diemTrungBinhTichLuy,
+                      rawItem: item
+                    });
+                    
+                    return {
+                      name: `Học Kỳ ${index + 1}`,
+                      diem: Number(item.diemTrungBinhTichLuy) || 0,
+                      hocKyId,
+                      namHocId,
+                    };
+                  })
+                : []
+            }
+          />
         </div>
       </div>
       {/* Quick Actions Footer */}

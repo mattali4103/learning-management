@@ -1,371 +1,541 @@
-import { useEffect, useMemo, useState } from "react";
-import { hocKy, ketQuaHocTapData, namHocData } from "../../types/utils";
-import type { NamHoc } from "../../types/namHoc";
-import {
-  flexRender,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-  type ColumnDef,
-} from "@tanstack/react-table";
-import { ArrowUpDown, Asterisk } from "lucide-react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
+import NavigationPanel from "../../components/navigation/NavigationPanel";
 import KetQuaHocTapTable, {
   type KetQuaHocTapTableType,
 } from "../../components/table/KetQuaHocTapTable";
+import Loading from "../../components/Loading";
+import { KQHT_SERVICE } from "../../api/apiEndPoints";
+import useAuth from "../../hooks/useAuth";
+import type { HocKy } from "../../types/HocKy";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 
-const yearTab = [
-  { label: "Tất cả", index: 0 },
-  ...namHocData.map((item: NamHoc) => ({
-    label: `${item.namBatDau} - ${item.namKetThuc}`,
-    index: item.id,
-  })),
-];
-
-const hocKyTab = [
-  { label: "Tất cả", index: 0, namHocId: null },
-  ...hocKy.map((item) => ({
-    label: item.tenHocky,
-    index: item.id,
-    namHocId: item.namHocId,
-  })),
-];
-
-const hocKyData = ketQuaHocTapData.map((item) => ({
-  id: item.id,
-  maHp: item.maHp,
-  tenHp: item.tenHp,
-  dieuKien: item.dieuKien,
-  nhomHp: item.nhomHp,
-  soTinChi: item.soTinChi,
-  diemChu: item.diemChu,
-  diemSo: item.diemSo,
-  hocKy: item.hocKy,
-  namHoc: item.namHoc,
-}));
-
-const columns: ColumnDef<KetQuaHocTapTableType>[] = [
-  {
-    accessorKey: "id",
-    header: () => <span className="text-center hidden"></span>,
-  },
-  {
-    accessorKey: "maHp",
-    header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Mã học phần
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "tenHp",
-    header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Tên học phần
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "dieuKien",
-    header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Tên học phần
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
-    ),
-    cell: ({ row }) => (
-      <div className="flex items-center justify-center">
-        {row.getValue("dieuKien") ? (
-          <Asterisk className="text-black w-3  h-3" />
-        ) : (
-          <></>
-        )}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "nhomHp",
-    header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Nhóm học phần
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "soTinChi",
-    header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Số tín chỉ
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "diemChu",
-    header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Điểm chữ
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
-    ),
-  },
-  {
-    accessorKey: "diemSo",
-    header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Điểm số
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
-    ),
-  },
-];
-
-//   // Lọc dữ liệu theo năm học
-export default function KetQuaHocTapDetail() {
-  const [yearTabIndex, setYearTabIndex] = useState<number>(
-    yearTab[yearTab.length - 1].index
-  );
-  const [globalFilter, setGlobalFilter] = useState("");
-  const handleTabChange = (index: number) => {
-    setYearTabIndex(index);
-  };
-
-  const memoizedColumns = useMemo<ColumnDef<KetQuaHocTapTableType>[]>(
-    () => columns,
-    []
-  );
-
-  // Initialize table
-  const table = useReactTable({
-    data: hocKyData,
-    columns: memoizedColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    state: {
-      globalFilter,
-    },
-    onGlobalFilterChange: setGlobalFilter,
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
-  return (
-    <>
-      <div className="bg-white rounded-lg shadow-md">
-        <div
-          className={`flex gap-2 items-center justify-center ${yearTabIndex === 0 ? "mb-8" : "mb-0"}`}
-        >
-          {yearTab.map((tab) => (
-            <button
-              key={tab.index}
-              className={`px-4 py-2 mt-2 text-sm font-medium rounded-lg ${yearTabIndex === tab.index ? "bg-blue-500 text-white" : "bg-gray-300 text-gray-800 hover:bg-blue-100"}`}
-              onClick={() => handleTabChange(tab.index)}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-        {yearTabIndex !== 0 && <TableByYear yearTabIndex={yearTabIndex} />}
-        {yearTabIndex === 0 && (
-          <div className="container mx-auto p-4">
-            <div className="overflow-y-auto p-4 rounded-lg shadow-xl bg-gray-200 mb-2">
-              <div className="text-center flex bg-blue-400 py-2 text-lg border-b-1 text-white">
-                <div className="absolute ml-1">
-                  <input
-                    type="text"
-                    value={globalFilter ?? ""}
-                    onChange={(e) => setGlobalFilter(e.target.value)}
-                    placeholder="Tìm kiếm..."
-                    className="flex justify-baseline border-none px-1 rounded-lg bg-gray-200 text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500"
-                  />
-                </div>
-                <p className="w-full flex justify-center items-center">
-                  Kết Quả Học Tập
-                </p>
-              </div>
-              <table className="w-full border-collapse">
-                <thead>
-                  {table.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id} className="text-center">
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className={`px-2 py-4 border-1 text-black bg-blue-400  text-center text-base font-medium border-b ${
-                            header.id === "id" ? "hidden" : ""
-                          }`}
-                        >
-                          {header.isPlaceholder
-                            ? null
-                            : flexRender(
-                                header.column.columnDef.header,
-                                header.getContext()
-                              )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody>
-                  {table.getRowModel().rows.map((row) => (
-                    <tr
-                      key={row.id}
-                      className={`hover:bg-gray-200 bg-gray-50 ${
-                        row.id === "id" ? "hidden" : ""
-                      }`}
-                    >
-                      {row.getVisibleCells().map((cell) => (
-                        <td
-                          key={cell.id}
-                          className={`px-1.5 py-3 border-b-1 border-gray-200 text-center border-x-gray-300 border-x-1 ${
-                            cell.column.id === "id" ? "hidden" : ""
-                          }`}
-                        >
-                          {flexRender(
-                            cell.column.columnDef.cell,
-
-                            cell.getContext()
-                          )}
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-      </div>
-    </>
-  );
-}
-
-interface TableByYearProps {
-  yearTabIndex: number;
-}
-const TableByYear: React.FC<TableByYearProps> = ({ yearTabIndex }) => {
-  const [hocKyTabIndex, setHocKyTabIndex] = useState<number>(0);
-  const handleHocKyTabChange = (index: number) => {
-    setHocKyTabIndex(index);
-  };
+const KetQuaHocTapDetail = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedNamHoc, setSelectedNamHoc] = useState<string>("Tất cả");
+  const [selectedHocKy, setSelectedHocKy] = useState<string>("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [navigationLoading, setNavigationLoading] = useState<boolean>(false);
+  const [hocKyFromAPI, setHocKyFromAPI] = useState<HocKy[]>([]);
+  const axiosPrivate = useAxiosPrivate();
+  const { auth } = useAuth();
+  const { maSo } = auth.user || {};  // Fetch dữ liệu học kỳ từ API
+  const fetchHocKy = useCallback(async (maSo: string) => {
+    try {
+      setLoading(true);
+      const response = await axiosPrivate.get(
+        KQHT_SERVICE.GET_HOCKY.replace(":maSo", maSo),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+      
+      // Kiểm tra response code
+      if (response.status === 200 && response.data?.code === 200) {
+        const hocKyData = response.data.data;
+        setHocKyFromAPI(hocKyData);
+        localStorage.setItem("hocKy", JSON.stringify(hocKyData));
+        setError(null);
+      } else {
+        throw new Error(`API returned code: ${response.data?.code || response.status}`);
+      }
+    } catch (error) {
+      console.error("Error fetching hoc ky:", error);
+      setError("Không thể lấy thông tin học kỳ. Vui lòng thử lại.");
+      // Fallback to localStorage or mock data if API fails
+      try {
+        const localData = localStorage.getItem("hocKy");
+        if (localData) {
+          setHocKyFromAPI(JSON.parse(localData));
+          setError(null); // Clear error if localStorage data is available
+        } else {
+          // Nếu không có localStorage, hiển thị lỗi
+          console.error("Không có dữ liệu học kỳ trong localStorage");
+        }
+      } catch (localError) {
+        console.error(
+          "Lỗi khi parse dữ liệu học kỳ từ localStorage:",
+          localError
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [axiosPrivate]);
+  
+  // Lấy dữ liệu học kỳ từ API khi component mount
   useEffect(() => {
-    setHocKyTabIndex(0);
-  }, [yearTabIndex]);
+    if (maSo) {
+      fetchHocKy(maSo);
+    } else {
+      // Nếu không có maSo, hiển thị lỗi
+      setError("Không tìm thấy mã số sinh viên");
+      setLoading(false);
+    }
+  }, [maSo, fetchHocKy]);
 
-  const data = useMemo(() => {
-    return hocKyData
-      .filter((item) => item.namHoc.id === yearTabIndex)
-      .map((item) => ({
-        id: item.id,
-        maHp: item.maHp,
-        tenHp: item.tenHp,
-        dieuKien: item.dieuKien,
-        nhomHp: item.nhomHp,
-        soTinChi: item.soTinChi,
-        diemChu: item.diemChu,
-        diemSo: item.diemSo,
-        hocKy: item.hocKy,
-        namHoc: item.namHoc,
-      }));
-  }, [yearTabIndex]);
+  // Lấy dữ liệu học kỳ từ state
+  const hocKyFromStorage: HocKy[] = useMemo(() => {
+    return hocKyFromAPI;
+  }, [hocKyFromAPI]);
+
+  // Tạo danh sách năm học từ dữ liệu
+  const namHocList = useMemo(() => {
+    const years = new Set<string>();
+    hocKyFromStorage.forEach((hk) => {
+      if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
+        years.add(`${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`);
+      }
+    });
+    return ["Tất cả", ...Array.from(years).sort()];
+  }, [hocKyFromStorage]);
+
+  // Tạo mapping ID năm học -> tên năm học
+  const namHocIdToName = useMemo(() => {
+    const mapping: Record<number, string> = {};
+    hocKyFromStorage.forEach((hk) => {
+      if (
+        hk.namHoc &&
+        hk.namHoc.id &&
+        hk.namHoc.namBatDau &&
+        hk.namHoc.namKetThuc
+      ) {
+        mapping[hk.namHoc.id] =
+          `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
+      }
+    });
+    return mapping;
+  }, [hocKyFromStorage]);
+
+  // Tạo mapping tên năm học -> ID năm học
+  const namHocNameToId = useMemo(() => {
+    const mapping: Record<string, number> = {};
+    hocKyFromStorage.forEach((hk) => {
+      if (
+        hk.namHoc &&
+        hk.namHoc.id &&
+        hk.namHoc.namBatDau &&
+        hk.namHoc.namKetThuc
+      ) {
+        const namHoc = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
+        mapping[namHoc] = hk.namHoc.id;
+      }
+    });
+    return mapping;
+  }, [hocKyFromStorage]);
+
+  // Tạo dữ liệu học kỳ theo năm học
+  const hocKyData = useMemo(() => {
+    const data: Record<string, string[]> = {};
+    hocKyFromStorage.forEach((hk) => {
+      if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
+        const namHoc = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
+        if (!data[namHoc]) {
+          data[namHoc] = [];
+        }
+        if (hk.tenHocKy && !data[namHoc].includes(hk.tenHocKy)) {
+          data[namHoc].push(hk.tenHocKy);
+        }
+      }
+    });
+    // Sắp xếp học kỳ theo thứ tự
+    Object.keys(data).forEach((key) => {
+      data[key].sort();
+    });
+    return data;
+  }, [hocKyFromStorage]);
+
+  // Tạo mapping ID học kỳ -> tên học kỳ
+  const hocKyIdToName = useMemo(() => {
+    const mapping: Record<number, string> = {};
+    hocKyFromStorage.forEach((hk) => {
+      if (hk.maHocKy && hk.tenHocKy) {
+        mapping[hk.maHocKy] = hk.tenHocKy;
+      }
+    });
+    return mapping;
+  }, [hocKyFromStorage]);
+
+  // Tạo mapping tên học kỳ -> ID học kỳ (theo năm học)
+  const hocKyNameToId = useMemo(() => {
+    const mapping: Record<string, Record<string, number>> = {};
+    hocKyFromStorage.forEach((hk) => {
+      if (
+        hk.namHoc &&
+        hk.namHoc.namBatDau &&
+        hk.namHoc.namKetThuc &&
+        hk.maHocKy &&
+        hk.tenHocKy
+      ) {
+        const namHoc = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
+        if (!mapping[namHoc]) {
+          mapping[namHoc] = {};
+        }
+        mapping[namHoc][hk.tenHocKy] = hk.maHocKy;
+      }
+    });
+    return mapping;
+  }, [hocKyFromStorage]);
+
+  useEffect(() => {
+    const namHocIdParam = searchParams.get("namHocId");
+    const hocKyIdParam = searchParams.get("hocKyId");
+
+    // Xử lý param năm học
+    if (namHocIdParam) {
+      const namHocId = parseInt(namHocIdParam);
+      if (namHocIdToName[namHocId]) {
+        setSelectedNamHoc(namHocIdToName[namHocId]);
+      }
+    }
+
+    // Xử lý param học kỳ
+    if (hocKyIdParam) {
+      const hocKyId = parseInt(hocKyIdParam);
+      if (hocKyIdToName[hocKyId]) {
+        setSelectedHocKy(hocKyIdToName[hocKyId]);
+      }
+    }
+  }, [searchParams, namHocIdToName, hocKyIdToName]); 
+  // Hàm để thay đổi năm học và cập nhật URL
+  const handleNamHocChange = (namHoc: string) => {
+    setNavigationLoading(true);
+    setSelectedNamHoc(namHoc);
+    setSelectedHocKy(""); // Reset học kỳ khi thay đổi năm học
+    const newParams = new URLSearchParams(searchParams);
+    if (namHoc === "Tất cả") {
+      newParams.delete("namHocId");
+    } else {
+      const namHocId = namHocNameToId[namHoc];
+      if (namHocId) {
+        newParams.set("namHocId", namHocId.toString());
+      }
+    }
+    newParams.delete("hocKyId"); // Xóa param học kỳ khi thay đổi năm học
+
+    setTimeout(() => {
+      setSearchParams(newParams);
+      setNavigationLoading(false);
+    }, 500);
+  };
+
+  // Hàm để thay đổi học kỳ
+  const handleHocKyChange = (hocKy: string) => {
+    setNavigationLoading(true);
+    setSelectedHocKy(hocKy);
+    const newParams = new URLSearchParams(searchParams);
+
+    // Lấy ID học kỳ từ tên học kỳ và năm học hiện tại
+    const hocKyId = hocKyNameToId[selectedNamHoc]?.[hocKy];
+    if (hocKyId) {
+      newParams.set("hocKyId", hocKyId.toString());
+    }
+
+    // Thêm timeout 1 giây
+    setTimeout(() => {
+      setSearchParams(newParams);
+      setNavigationLoading(false);
+    }, 1000);
+  };
   return (
-    <>
-      <div className="container mx-auto p-4">
-        <div className="flex gap-2 items-center justify-center">
-          {hocKyTab
-            .filter(
-              (item) => item.namHocId === yearTabIndex || item.index === 0
-            )
-            .map((tab) => (
-              <button
-                key={tab.index}
-                className={`px-4 py-2 m-2 text-sm font-medium rounded-lg ${hocKyTabIndex === tab.index ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800 hover:bg-blue-100"}`}
-                onClick={() => handleHocKyTabChange(tab.index)}
-              >
-                {tab.label}
-              </button>
-            ))}
+    <div className="w-full space-y-4">
+      {loading && <Loading />}
+      {error && (
+        <div className="p-4 text-red-500 bg-red-50 border border-red-200 rounded-lg">
+          Lỗi: {error}
         </div>
-        {hocKyTabIndex == 0 && <KetQuaHocTapTable data={data} />}
-        {hocKyTabIndex !== 0 && (
-          <TableByHocKy
-            hocKyTabIndex={hocKyTabIndex}
-            yearTabIndex={yearTabIndex}
+      )}
+      {!loading && !error && (
+        <>
+          {/* Thanh điều hướng */}
+          <NavigationPanel
+            namHocList={namHocList}
+            selectedNamHoc={selectedNamHoc}
+            selectedHocKy={selectedHocKy}
+            hocKyData={hocKyData}
+            onNamHocChange={handleNamHocChange}
+            onHocKyChange={handleHocKyChange}
           />
-        )}
-      </div>
-    </>
+          {/* Nội dung hiển thị */}
+          {navigationLoading ? (
+            <div className="bg-white rounded-lg shadow-sm p-8 flex justify-center items-center">
+              <div className="flex flex-col items-center space-y-4">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p className="text-gray-600">Đang tải dữ liệu...</p>
+              </div>
+            </div>
+          ) : (
+            <ContentDisplay
+              selectedNamHoc={selectedNamHoc}
+              selectedHocKy={selectedHocKy}
+            />
+          )}
+        </>
+      )}
+    </div>
   );
 };
-interface TableByHocKyProps {
-  hocKyTabIndex: number;
-  yearTabIndex: number;
+
+interface ContentDisplayProps {
+  selectedNamHoc: string;
+  selectedHocKy: string;
 }
-const TableByHocKy: React.FC<TableByHocKyProps> = ({
-  hocKyTabIndex,
-  yearTabIndex,
-}) => {
-  const data = useMemo(() => {
-    return hocKyData
-      .filter(
-        (item) =>
-          item.hocKy.id === hocKyTabIndex && item.namHoc.id === yearTabIndex
-      )
-      .map((item) => ({
-        id: item.id,
-        maHp: item.maHp,
-        tenHp: item.tenHp,
-        dieuKien: item.dieuKien,
-        nhomHp: item.nhomHp,
-        soTinChi: item.soTinChi,
-        diemChu: item.diemChu,
-        diemSo: item.diemSo,
-        hocKy: item.hocKy,
-        namHoc: item.namHoc,
-      }));
-  }, [hocKyTabIndex, yearTabIndex]);
-  return (
-    <>
-      {hocKyTabIndex === 0 && <KetQuaHocTapTable data={data} />}
-      {hocKyTabIndex !== 0 && <KetQuaHocTapTable data={data} />}
-    </>
+
+const ContentDisplay = ({
+  selectedNamHoc,
+  selectedHocKy,
+}: ContentDisplayProps) => {
+  const [tableLoading, setTableLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ketQuaData, setKetQuaData] = useState<KetQuaHocTapTableType[]>([]);
+  const [searchParams] = useSearchParams();
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    pageSize: 10,
+    totalElements: 0,
+  });
+  const axiosPrivate = useAxiosPrivate();
+  const { auth } = useAuth();
+  const { maSo } = auth.user || {}; // Fetch dữ liệu kết quả học tập từ API với phân trang
+  const fetchKetQuaHocTap = useCallback(
+    async (
+      maSo: string,
+      hocKyId?: number,
+      page: number = 1,
+      size: number = 10
+    ) => {
+      try {
+        setTableLoading(true);
+        setError(null);
+
+        let url: string;
+        let params: Record<string, string>;
+
+        if (hocKyId) {
+          // Sử dụng API không phân trang khi có học kỳ cụ thể
+          url = KQHT_SERVICE.GET_KETQUA_BY_HOCKY;
+          params = {
+            maSo: maSo,
+            maHocKy: hocKyId.toString(),
+          };
+        } else {
+          // Sử dụng API phân trang khi lấy tất cả
+          url = KQHT_SERVICE.GET_KETQUA;
+          params = {
+            maSo: maSo,
+            page: page.toString(), // API sử dụng 1-based indexing (bắt đầu từ 1)
+            size: size.toString(),
+          };
+        }        const response = await axiosPrivate.get(url, {
+          params,
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        });
+
+        // Kiểm tra response code trước khi xử lý data
+        if (response.status !== 200 || response.data?.code !== 200) {
+          throw new Error(`API returned code: ${response.data?.code || response.status} - ${response.data?.message || 'Unknown error'}`);
+        }
+
+        // Xử lý response từ API
+        const responseData = response.data.data;
+        console.log("API Response structure:", {
+          responseData,
+          isArray: Array.isArray(responseData),
+          hasData: responseData?.data,
+          dataIsArray: Array.isArray(responseData?.data),
+          hasKetQuaList: responseData?.ketQuaHocTapList,
+          ketQuaListIsArray: Array.isArray(responseData?.ketQuaHocTapList),
+        });
+
+        let data: any[] = [];
+
+        if (hocKyId) {
+          // Không có phân trang, data từ ketQuaHocTapList
+          data = Array.isArray(responseData?.ketQuaHocTapList)
+            ? responseData.ketQuaHocTapList
+            : [];
+          setPagination({
+            currentPage: 1,
+            totalPages: 1,
+            pageSize: data.length,
+            totalElements: data.length,
+          });
+        } else {
+          // Có phân trang, lấy từ responseData.data
+          data = Array.isArray(responseData?.data) ? responseData.data : [];
+          setPagination({
+            currentPage: responseData?.currentPage || 1,
+            totalPages: responseData?.totalPages || 1,
+            pageSize: responseData?.pageSize || size,
+            totalElements: responseData?.totalElements || 0,
+          });
+        }
+
+        // Kiểm tra data có phải là array không trước khi transform
+        if (!Array.isArray(data)) {
+          console.error("API response data is not an array:", data);
+          setKetQuaData([]);
+          return;
+        } // Transform API data to match KetQuaHocTapTableType
+        const transformedData: KetQuaHocTapTableType[] = data.map(
+          (item: any) => {
+            // For semester-specific data, use the top-level hocKy info
+            const hocKyInfo =
+              hocKyId && responseData?.hocKy ? responseData.hocKy : item.hocKy;
+
+            return {
+              id: item.id,
+              maHp: item.hocPhan?.maHp || "",
+              tenHp: item.hocPhan?.tenHp || "",
+              dieuKien: item.dieuKien || false,
+              nhomHp: item.hocPhan?.loaiHp || "",
+              soTinChi: item.soTinChi || item.hocPhan?.tinChi || 0,
+              diemChu: item.diemChu || "",
+              diemSo: item.diemSo ? Math.round(item.diemSo * 10) / 10 : 0, // Làm tròn về 1 chữ số thập phân
+              hocKy: {
+                maHocKy: hocKyInfo?.maHocKy || 0,
+                tenHocKy: hocKyInfo?.tenHocKy || "",
+                ngayBatDau: hocKyInfo?.ngayBatDau || "",
+                ngayKetThuc: hocKyInfo?.ngayKetThuc || "",
+                namHoc: {
+                  id: hocKyInfo?.namHoc?.id || 0,
+                  namBatDau: hocKyInfo?.namHoc?.namBatDau || "",
+                  namKetThuc: hocKyInfo?.namHoc?.namKetThuc || "",
+                },
+              },
+              namHoc: {
+                id: hocKyInfo?.namHoc?.id || 0,
+                namBatDau: hocKyInfo?.namHoc?.namBatDau || "",
+                namKetThuc: hocKyInfo?.namHoc?.namKetThuc || "",
+              },
+            };
+          }
+        );
+        setKetQuaData(transformedData);
+      } catch (error) {
+        console.error("Error fetching ket qua hoc tap:", error);
+        setError("Không thể lấy thông tin kết quả học tập. Vui lòng thử lại.");
+        setKetQuaData([]);
+        setPagination({
+          currentPage: 1,
+          totalPages: 1,
+          pageSize: 10,
+          totalElements: 0,
+        });
+      } finally {
+        setTableLoading(false);
+      }
+    },
+    [axiosPrivate]
   );
+  useEffect(() => {
+    if (maSo) {
+      // Lấy hocKyId từ URL params nếu có
+      const hocKyIdParam = searchParams.get("hocKyId");
+      const hocKyId = hocKyIdParam ? parseInt(hocKyIdParam) : undefined;
+
+      fetchKetQuaHocTap(
+        maSo,
+        hocKyId,
+        pagination.currentPage,
+        pagination.pageSize
+      );
+    } else {
+      setError("Không tìm thấy mã số sinh viên");
+      setTableLoading(false);
+    }
+  }, [
+    maSo,
+    searchParams,
+    pagination.currentPage,
+    pagination.pageSize,
+    fetchKetQuaHocTap,
+  ]); // Hàm xử lý thay đổi trang
+  const handlePageChange = (newPage: number) => {
+    setTableLoading(true);
+    // Thêm timeout 1 giây để cải thiện UX
+    setTimeout(() => {
+      setPagination((prev) => ({ ...prev, currentPage: newPage }));
+    }, 1000);
+  };
+
+  // Hàm xử lý thay đổi kích thước trang
+  const handlePageSizeChange = (newSize: number) => {
+    setTableLoading(true);
+    // Thêm timeout 1 giây để cải thiện UX
+    setTimeout(() => {
+      setPagination((prev) => ({ ...prev, pageSize: newSize, currentPage: 1 }));
+    }, 1000);
+  };
+
+  // Hàm để lọc dữ liệu theo năm học và học kỳ (chỉ dùng cho client-side filter nếu cần)
+  const filterDataByParams = (data: KetQuaHocTapTableType[]) => {
+    if (!data || data.length === 0) return [];
+    let filteredData = [...data];
+
+    // Nếu đã fetch theo học kỳ cụ thể thì không cần filter thêm
+    const hocKyIdParam = searchParams.get("hocKyId");
+    if (hocKyIdParam) {
+      return filteredData; // API đã filter theo học kỳ
+    }
+
+    // Lọc theo năm học nếu không phải "Tất cả"
+    if (selectedNamHoc !== "Tất cả") {
+      filteredData = filteredData.filter((item) => {
+        const namHoc = `${item.namHoc.namBatDau}-${item.namHoc.namKetThuc}`;
+        return namHoc === selectedNamHoc;
+      });
+    }
+
+    // Lọc theo học kỳ nếu có chọn học kỳ cụ thể
+    if (selectedHocKy) {
+      filteredData = filteredData.filter(
+        (item) => item.hocKy.tenHocKy === selectedHocKy
+      );
+    }
+
+    return filteredData;
+  }; // Tạo dữ liệu đã lọc
+  const filteredData = filterDataByParams(ketQuaData);
+
+  if (error) {
+    return (
+      <div className="p-4 text-red-500 bg-red-50 border border-red-200 rounded-lg">
+        Lỗi: {error}
+      </div>
+    );
+  }
+  const renderContent = () => {
+    return (
+      <div className="p-4">
+        <div>
+          {" "}
+          <KetQuaHocTapTable
+            name="Kết quả học tập"
+            data={filteredData}
+            enableServerPagination={!searchParams.get("hocKyId")} // Chỉ dùng server pagination khi không filter theo học kỳ
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalElements={pagination.totalElements}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            loading={tableLoading}
+          />
+        </div>
+      </div>
+    );
+  };
+
+  return <div className="bg-white rounded-lg shadow-sm">{renderContent()}</div>;
 };
+
+export default KetQuaHocTapDetail;

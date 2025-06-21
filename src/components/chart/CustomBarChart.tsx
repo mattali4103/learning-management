@@ -29,7 +29,8 @@ export default function CustomBarChart({ data }: any) {
   const [height, setHeight] = useState<number>(DEFAULT_HEIGHT);
   useEffect(() => {
     setHeight(isOpen ? DEFAULT_HEIGHT : 400);
-  }, [isOpen]);  const statistics = useMemo<KhhtStatistics[]>(() => {
+  }, [isOpen]);
+  const statistics = useMemo<KhhtStatistics[]>(() => {
     const statsMap = new Map<
       string,
       {
@@ -48,8 +49,9 @@ export default function CustomBarChart({ data }: any) {
         soTinChi: 0,
         soTinChiCaiThien: 0,
         namBatDau: item.namHoc.namBatDau,
-        maHocKy: item.hocKy.maHocKy,        namHocId: item.namHoc.id,
-        hocKyId: item.hocKy.maHocKy, // Sử dụng maHocKy làm ID
+        maHocKy: item.hocKy.maHocKy,
+        namHocId: item.namHoc.id,
+        hocKyId: item.hocKy.maHocKy,
       };
 
       // Add total credits
@@ -89,11 +91,12 @@ export default function CustomBarChart({ data }: any) {
     if (data && data.activePayload && data.activePayload.length > 0) {
       const clickedData = data.activePayload[0].payload as KhhtStatistics;
       const { namHocId, hocKyId } = clickedData;
-      
+
       // Chuyển hướng đến trang chi tiết với params đúng format
       navigate(`/khht/detail?namHocId=${namHocId}&hocKyId=${hocKyId}`);
     }
-  };return (
+  };
+  return (
     <div className="bg-gray-50 p-2">
       <ResponsiveContainer width="100%" height={height}>
         <BarChart data={statistics} onClick={handleBarClick}>
@@ -101,19 +104,25 @@ export default function CustomBarChart({ data }: any) {
           <XAxis dataKey="name" />
           <YAxis />
           <Legend />
-          <Tooltip 
-            cursor={{ fill: 'rgba(59, 130, 246, 0.1)' }}
+          <Tooltip
+            cursor={{ fill: "rgba(59, 130, 246, 0.1)" }}
             content={({ active, payload, label }) => {
               if (active && payload && payload.length) {
                 return (
                   <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
                     <p className="font-semibold text-gray-800 mb-2">{`${label}`}</p>
                     {payload.map((entry, index) => (
-                      <p key={index} style={{ color: entry.color }} className="text-sm">
+                      <p
+                        key={index}
+                        style={{ color: entry.color }}
+                        className="text-sm"
+                      >
                         {`${entry.name}: ${entry.value} tín chỉ`}
                       </p>
                     ))}
-                    <p className="text-xs text-gray-500 mt-2 italic">Nhấn để xem chi tiết</p>
+                    <p className="text-xs text-gray-500 mt-2 italic">
+                      Nhấn để xem chi tiết
+                    </p>
                   </div>
                 );
               }
@@ -126,7 +135,7 @@ export default function CustomBarChart({ data }: any) {
             name="Số tín chỉ"
             stackId="a"
             barSize={30}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: "pointer" }}
           />
           <Bar
             dataKey="soTinChiCaiThien"
@@ -134,7 +143,7 @@ export default function CustomBarChart({ data }: any) {
             name="Số tín chỉ cải thiện"
             stackId="a"
             barSize={30}
-            style={{ cursor: 'pointer' }}
+            style={{ cursor: "pointer" }}
           />
         </BarChart>
       </ResponsiveContainer>

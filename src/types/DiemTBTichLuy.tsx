@@ -1,4 +1,4 @@
-import type { HocKy } from "./hocKy";
+import type { HocKy } from "./HocKy";
 
 export interface DiemTBTichLuy {
   hocKy: HocKy;

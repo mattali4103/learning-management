@@ -58,24 +58,23 @@ export default function Sidebar() {
     return item.to === location.pathname;
   };  return (
     <aside
-      className={`bg-blue-600 border-r border-blue-700 min-h-[calc(100vh-64px)] ${
+      className={`bg-blue-900 border-r border-blue-800 min-h-[calc(100vh-64px)] ${
         isOpen ? "w-64" : "w-16"
       } transition-width duration-200 flex flex-col`}
     >
       {/* Header */}
-      <div className={`p-4 border-b border-blue-500 ${isOpen ? "" : "flex justify-center"}`}>
+      <div className={`p-4 border-b border-blue-700 ${isOpen ? "" : "flex justify-center"}`}>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 rounded-lg hover:bg-blue-500 text-white hover:text-blue-100 transition-colors"
+          className="p-2 rounded-lg hover:bg-blue-700 text-white hover:text-blue-100 transition-colors"
           aria-label={isOpen ? "Thu gọn menu" : "Mở rộng menu"}
           title={isOpen ? "Thu gọn menu" : "Mở rộng menu"}
         >
           <MenuIcon className="w-5 h-5" />
-        </button>
-        {isOpen && (
+        </button>        {isOpen && (
           <div className="ml-3">
             <h2 className="text-sm font-semibold text-white">Menu</h2>
-            <p className="text-xs text-blue-200">Quản lý học tập</p>
+            <p className="text-xs text-blue-100">Quản lý học tập</p>
           </div>
         )}
       </div>
@@ -94,8 +93,8 @@ export default function Sidebar() {
                   onClick={() => toggleItem(index)}
                   className={`w-full flex items-center px-3 py-2.5 text-left rounded-lg group transition-colors ${
                     isActive
-                      ? "bg-blue-500 text-white border border-blue-400"
-                      : "text-blue-100 hover:bg-blue-500 hover:text-white"
+                      ? "bg-blue-700 text-white border border-blue-600"
+                      : "text-blue-100 hover:bg-blue-700 hover:text-white"
                   }`}
                   title={!isOpen ? item.name : ""}
                 >
@@ -128,8 +127,8 @@ export default function Sidebar() {
                   className={({ isActive }) =>
                     `flex items-center px-3 py-2.5 rounded-lg group transition-colors ${
                       isActive
-                        ? "bg-blue-500 text-white border border-blue-400"
-                        : "text-blue-100 hover:bg-blue-500 hover:text-white"
+                        ? "bg-blue-700 text-white border border-blue-600"
+                        : "text-blue-100 hover:bg-blue-700 hover:text-white"
                     }`
                   }
                   title={!isOpen ? item.name : ""}
@@ -156,12 +155,12 @@ export default function Sidebar() {
                       className={({ isActive }) =>
                         `flex items-center px-3 py-2 rounded-md text-sm transition-colors ${
                           isActive
-                            ? "bg-blue-400 text-white font-medium"
-                            : "text-blue-200 hover:bg-blue-500 hover:text-white"
+                            ? "bg-blue-600 text-white font-medium"
+                            : "text-blue-100 hover:bg-blue-700 hover:text-white"
                         }`
                       }
                     >
-                      <div className="w-1.5 h-1.5 bg-blue-300 rounded-full mr-3 flex-shrink-0"></div>
+                      <div className="w-1.5 h-1.5 bg-blue-200 rounded-full mr-3 flex-shrink-0"></div>
                       <span className="truncate">{child.name}</span>
                     </NavLink>
                   ))}
@@ -172,8 +171,8 @@ export default function Sidebar() {
         })}
       </nav>      {/* Footer */}
       {isOpen && (
-        <div className="p-4 border-t border-blue-500">
-          <div className="text-xs text-blue-200 text-center">
+        <div className="p-4 border-t border-blue-700">
+          <div className="text-xs text-blue-100 text-center">
             <p>Learning Management</p>
             <p className="mt-1">v1.0.0</p>
           </div>

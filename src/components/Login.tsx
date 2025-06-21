@@ -153,18 +153,20 @@ const Login: React.FC = () => {
                     placeholder="Điền mật khẩu"
                   />
                 </div>
-                <button
-                  type="submit"
-                  className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  {loading ? (
+                {loading ? (
+                  <div>
                     <LoadingButton loading={true} variant="primary">
                       Đang đăng nhập...
                     </LoadingButton>
-                  ) : (
-                    "Đăng Nhập"
-                  )}
-                </button>
+                  </div>
+                ) : (
+                  <button
+                    type="submit"
+                    className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
+                  >
+                    Đăng Nhập
+                  </button>
+                )}
               </form>
               <p className="text-center mt-4 text-sm hover:underline cursor-pointer">
                 Quên mật khẩu?

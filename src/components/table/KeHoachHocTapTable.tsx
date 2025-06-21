@@ -7,7 +7,15 @@ import {
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
-import { ArrowUp, FileText, TriangleAlert } from "lucide-react";
+import {
+  ArrowUp,
+  FileText,
+  TriangleAlert,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 
 interface KeHoachHocTapTableProps {
@@ -17,38 +25,6 @@ interface KeHoachHocTapTableProps {
   initialExpanded?: boolean;
 }
 
-// Custom global filter function to handle nested objects and Vietnamese text
-// const globalFilterFn = (row: Row<any>, _columnId: string, value: string): boolean => {
-//   if (!value) return true;
-//   const search = value.toLowerCase().trim();
-//   // Recursive function to extract all text from nested objects
-//   const extractAllText = (obj: any): string => {
-//     if (obj === null || obj === undefined) return '';
-
-//     if (typeof obj === 'string' || typeof obj === 'number') {
-//       return String(obj);
-//     }
-
-//     if (typeof obj === 'object') {
-//       return Object.values(obj)
-//         .map(extractAllText)
-//         .filter(text => text.length > 0)
-//         .join(' ');
-//     }
-
-//     return '';
-//   };
-
-//   // Get all searchable content from the row
-//   const searchableContent = extractAllText(row.original).toLowerCase();
-
-//   // Support multiple search terms (split by space)
-//   const searchTerms = search.split(' ').filter(term => term.length > 0);
-
-//   // All search terms must be found (AND logic)
-//   return searchTerms.every(term => searchableContent.includes(term));
-// };
-
 export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   name,
   data,
@@ -57,16 +33,17 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
 
-  // State to manage the expanded state of the table
-  // This allows the table to be collapsed or expanded
+  //  Khởi tạo trạng thái mở rộng của bảng
+  // Điều chỉnh trạng thái mở rộng của bảng
   const [isExpanded, setIsExpanded] = useState<boolean>(initialExpanded);
 
-  // Sync state with prop changes
+  //  Sử dụng useEffect để cập nhật trạng thái mở rộng khi initialExpanded thay đổi
   useEffect(() => {
     setIsExpanded(initialExpanded);
   }, [initialExpanded]);
-
-  // Memoize the data to prevent unnecessary re-renders
+  //   Chuyển đổi dữ liệu thành dạng phù hợp với bảng
+  //   Sử dụng useMemo để tối ưu hóa hiệu suất
+  //   Chỉ cập nhật khi dữ liệu thay đổi
   const dataRow = useMemo(() => data, [data]);
   const table = useReactTable({
     data: dataRow,
@@ -74,11 +51,17 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
     state: {
       globalFilter,
     },
+    //   Thiết lập các tùy chọn cho bảng
     onGlobalFilterChange: setGlobalFilter,
     getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 7,
+      },
+    },
   });
   return (
     <div className="overflow-x-auto rounded-lg shadow-xl bg-gray-200 transition-all duration-200 hover:shadow-2xl">
@@ -98,9 +81,15 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
           {data.length > 0 && (
             <span className="ml-3 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
               {globalFilter
-                ? `${table.getRowModel().rows.length}/${data.length}`
+                ? `${table.getFilteredRowModel().rows.length}/${data.length}`
                 : `${data.length}`}{" "}
               học phần
+              {table.getPageCount() > 1 && (
+                <span className="ml-1">
+                  • Trang {table.getState().pagination.pageIndex + 1}/
+                  {table.getPageCount()}
+                </span>
+              )}
             </span>
           )}
         </div>
@@ -206,10 +195,187 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                     </div>
                   </td>
                 </tr>
-              )}
+              )}{" "}
             </tbody>
           </table>
-        </div>
+        </div>{" "}
+        {/* Pagination Controls */}
+        {(table.getPageCount() > 1 ||
+          table.getFilteredRowModel().rows.length > 7) && (
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-t border-gray-200">
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center text-sm text-gray-700">
+                <span>
+                  Hiển thị{" "}
+                  <span className="font-medium">
+                    {table.getState().pagination.pageIndex *
+                      table.getState().pagination.pageSize +
+                      1}
+                  </span>{" "}
+                  đến{" "}
+                  <span className="font-medium">
+                    {Math.min(
+                      (table.getState().pagination.pageIndex + 1) *
+                        table.getState().pagination.pageSize,
+                      table.getFilteredRowModel().rows.length
+                    )}
+                  </span>{" "}
+                  trong tổng số{" "}
+                  <span className="font-medium">
+                    {table.getFilteredRowModel().rows.length}
+                  </span>{" "}
+                  học phần
+                </span>
+              </div>
+              {/* Page size selector */}
+              <div className="flex items-center space-x-2 text-sm text-gray-700">
+                <span>Số dòng:</span>
+                <select
+                  value={table.getState().pagination.pageSize}
+                  onChange={(e) => {
+                    table.setPageSize(Number(e.target.value));
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {[5, 7, 10, 20, 50].map((pageSize) => (
+                    <option key={pageSize} value={pageSize}>
+                      {pageSize}
+                    </option>
+                  ))}
+                </select>
+              </div>{" "}
+            </div>
+
+            {/* Phân trang chỉ hiển thị khi có hơn 2 trang*/}
+            {table.getPageCount() > 1 && (
+              <div className="flex items-center space-x-2">
+                {/* First page button */}
+                <button
+                  onClick={() => table.setPageIndex(0)}
+                  disabled={!table.getCanPreviousPage()}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    !table.getCanPreviousPage()
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                  }`}
+                  title="Trang đầu"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </button>
+
+                {/* Previous page button */}
+                <button
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    !table.getCanPreviousPage()
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                  }`}
+                  title="Trang trước"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center space-x-1">
+                  {(() => {
+                    const currentPage = table.getState().pagination.pageIndex;
+                    const totalPages = table.getPageCount();
+                    const pages = [];
+
+                    // Always show first page
+                    if (totalPages > 0) {
+                      pages.push(0);
+                    }
+
+                    // Show pages around current page
+                    const start = Math.max(1, currentPage - 1);
+                    const end = Math.min(totalPages - 2, currentPage + 1);
+
+                    // Add ellipsis if needed
+                    if (start > 1) {
+                      pages.push(-1); // -1 represents ellipsis
+                    }
+
+                    // Add middle pages
+                    for (let i = start; i <= end; i++) {
+                      if (i > 0 && i < totalPages - 1) {
+                        pages.push(i);
+                      }
+                    }
+
+                    // Add ellipsis if needed
+                    if (end < totalPages - 2) {
+                      pages.push(-2); // -2 represents ellipsis
+                    }
+
+                    // Always show last page
+                    if (totalPages > 1) {
+                      pages.push(totalPages - 1);
+                    }
+
+                    return pages.map((page, index) => {
+                      if (page === -1 || page === -2) {
+                        return (
+                          <span
+                            key={`ellipsis-${index}`}
+                            className="px-2 py-1 text-gray-400"
+                          >
+                            ...
+                          </span>
+                        );
+                      }
+
+                      const isActive = page === currentPage;
+                      return (
+                        <button
+                          key={page}
+                          onClick={() => table.setPageIndex(page)}
+                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                            isActive
+                              ? "bg-blue-500 text-white"
+                              : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        >
+                          {page + 1}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+
+                {/* Next page button */}
+                <button
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    !table.getCanNextPage()
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                  }`}
+                  title="Trang tiếp"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+
+                {/* Last page button */}
+                <button
+                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                  disabled={!table.getCanNextPage()}
+                  className={`p-2 rounded-lg transition-colors duration-200 ${
+                    !table.getCanNextPage()
+                      ? "text-gray-400 cursor-not-allowed"
+                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                  }`}
+                  title="Trang cuối"
+                >
+                  <ChevronsRight className="h-4 w-4" />{" "}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

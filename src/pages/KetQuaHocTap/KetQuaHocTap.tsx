@@ -1,16 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Loading from "../../components/Loading";
-import type { HocKy } from "../../types/hocKy";
-import type { NamHoc } from "../../types/namHoc";
-
 import AreaChartComponent from "../../components/chart/Area";
-import {
-  diemTBTichLuyData,
-  ketQuaHocTapData,
-  namHocData,
-} from "../../types/utils";
-
 import CustomPieChart from "../../components/chart/CustomPieChart";
+import useAuth from "../../hooks/useAuth";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+import { KQHT_SERVICE } from "../../api/apiEndPoints";
+import type { HocKy } from "../../types/HocKy";
+import type { NamHoc } from "../../types/NamHoc";
 
 export interface KetQuaHocTapTableProps {
   id: number;
@@ -35,22 +31,64 @@ export interface KeHoachHocTapTableProps{
   namHoc: NamHoc;
 }
 
-
-const yearTab = [
-  { label: "Tất cả", index: 0 },
-  ...namHocData.map((item: NamHoc) => ({
-    label: `${item.namBatDau} - ${item.namKetThuc}`,
-    index: item.id,
-  })),
-];
-
 export default function KetQuaHocTap() {
+  const { auth } = useAuth();
+  const axiosPrivate = useAxiosPrivate();
   const [loading, setLoading] = useState(true);
   const [yearTabIndex, setYearTabIndex] = useState<number>(0);
-  setTimeout(() => {
-    setLoading(false);
-  }, 1000);
+  const [hocKyList, setHocKyList] = useState<HocKy[]>([]);
+  const [namHocData, setNamHocData] = useState<NamHoc[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchHocKy = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosPrivate.get(
+          KQHT_SERVICE.GET_HOCKY.replace(":maSo", auth.user?.maSo || "")
+        );
+        const hocKyData = response.data.data || [];
+        setHocKyList(hocKyData);
+        
+        // Extract unique namHoc data from hocKy
+        const uniqueNamHoc = hocKyData.reduce((acc: NamHoc[], hocKy: HocKy) => {
+          if (hocKy.namHoc && !acc.find(nh => nh.id === hocKy.namHoc.id)) {
+            acc.push(hocKy.namHoc);
+          }
+          return acc;
+        }, []);
+        setNamHocData(uniqueNamHoc);
+      } catch (error) {
+        console.error("Error fetching hoc ky:", error);
+        setError("Không thể tải dữ liệu học kỳ");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (auth.user?.maSo) {
+      fetchHocKy();
+    }
+  }, [axiosPrivate, auth.user?.maSo]);
+
+  const yearTab = [
+    { label: "Tất cả", index: 0 },
+    ...namHocData.map((item: NamHoc) => ({
+      label: `${item.namBatDau} - ${item.namKetThuc}`,
+      index: item.id,
+    })),
+  ];
+
   if (loading) return <Loading />;
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <p className="text-red-500">{error}</p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="flex gap-2 my-4 items-center justify-center">
@@ -65,10 +103,9 @@ export default function KetQuaHocTap() {
         ))}
       </div>
       <div className="">
-        {yearTabIndex === 0 && <KetQuaHocTapAll />}
-        {yearTabIndex !== 0 && (
+        {yearTabIndex === 0 && <KetQuaHocTapAll hocKyList={hocKyList} namHocData={namHocData} />}        {yearTabIndex !== 0 && (
           <div className="">
-            <KetQuaHocTapByYear yearTabIndex={yearTabIndex} />
+            <KetQuaHocTapByYear yearTabIndex={yearTabIndex} hocKyList={hocKyList} />
           </div>
         )}
       </div>
@@ -76,10 +113,45 @@ export default function KetQuaHocTap() {
   );
 }
 
-const KetQuaHocTapAll: React.FC = () => {
-  const data = diemTBTichLuyData.map((item) => ({
-    name: `${item.hocKy.tenHocky} - ${namHocData.find((namHoc) => namHoc.id === item.hocKy.namHocId)?.namBatDau} - ${namHocData.find((namHoc) => namHoc.id === item.hocKy.namHocId)?.namKetThuc}`,
-    diem: item.diemTB,
+interface KetQuaHocTapComponentProps {
+  hocKyList: HocKy[];
+  namHocData: NamHoc[];
+}
+
+interface KetQuaHocTapByYearProps {
+  yearTabIndex: number;
+  hocKyList: HocKy[];
+}
+
+const KetQuaHocTapAll: React.FC<KetQuaHocTapComponentProps> = ({ hocKyList }) => {
+  const { auth } = useAuth();
+  const axiosPrivate = useAxiosPrivate();
+  const [ketQuaHocTapData, setKetQuaHocTapData] = useState<KetQuaHocTapTableProps[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchKetQuaHocTap = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosPrivate.get(
+          KQHT_SERVICE.GET_KETQUA.replace(":maSo", auth.user?.maSo || "")
+        );
+        setKetQuaHocTapData(response.data.data || []);
+      } catch (error) {
+        console.error("Error fetching ket qua hoc tap:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (auth.user?.maSo) {
+      fetchKetQuaHocTap();
+    }
+  }, [axiosPrivate, auth.user?.maSo]);
+
+  const data = hocKyList.map((hocKy) => ({
+    name: `${hocKy.tenHocKy} - ${hocKy.namHoc.namBatDau} - ${hocKy.namHoc.namKetThuc}`,
+    diem: 7.5, // Placeholder - should calculate from actual grades
   }));
 
   const sortedKetQuaHocTap = [...ketQuaHocTapData].sort(
@@ -88,6 +160,9 @@ const KetQuaHocTapAll: React.FC = () => {
   const ketQuaHocTapSortedAndFiltered = sortedKetQuaHocTap.filter(
     (item) => item.diemSo !== 0 && item.diemSo !== undefined
   );
+
+  if (loading) return <Loading />;
+
   return (
     <>
       <AreaChartComponent data={data} tableName="Điểm Trung Bình Tích Lũy" />
@@ -100,14 +175,20 @@ const KetQuaHocTapAll: React.FC = () => {
             <p className="font-semibold text-2xl text-center">
               Số Tín Chỉ Tích Luỹ
             </p>
-            <p className="grade text-6xl text-center mt-2">150</p>
-            <p className="text-xl text-center mt-2">Bạn đang đúng tiến độ</p>
-          </div>
+            <p className="grade text-6xl text-center mt-2">
+              {ketQuaHocTapData.reduce((total, item) => total + item.soTinChi, 0)}
+            </p>
+            <p className="text-xl text-center mt-2">Bạn đang đúng tiến độ</p>          </div>
           <div className="h-1/2 bg-green-300 p-2 flex justify-center rounded-md flex-col ">
             <p className="font-semibold text-2xl text-center">
               Điểm Trung Bình Tích Luỹ
             </p>
-            <p className="grade text-6xl text-center mt-2">3.2</p>
+            <p className="grade text-6xl text-center mt-2">
+              {ketQuaHocTapData.length > 0 
+                ? (ketQuaHocTapData.reduce((total, item) => total + item.diemSo, 0) / ketQuaHocTapData.length).toFixed(2)
+                : "0.00"
+              }
+            </p>
             <p className="text-xl text-center mt-2">Xếp loại: Giỏi!</p>
           </div>
         </div>
@@ -130,50 +211,88 @@ const KetQuaHocTapAll: React.FC = () => {
     </>
   );
 };
-interface KetQuaHocTapByYearProps {
-  yearTabIndex: number;
-}
+
 const KetQuaHocTapByYear: React.FC<KetQuaHocTapByYearProps> = ({
   yearTabIndex,
+  hocKyList,
 }) => {
-  const filteredKetQuaHocTapData = ketQuaHocTapData.filter(
-    (item) => item.namHoc.id === yearTabIndex); 
+  const { auth } = useAuth();
+  const axiosPrivate = useAxiosPrivate();
+  const [ketQuaHocTapData, setKetQuaHocTapData] = useState<KetQuaHocTapTableProps[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const sortedKetQuaHocTap = [...filteredKetQuaHocTapData].sort(
+  useEffect(() => {
+    const fetchKetQuaHocTap = async () => {
+      try {
+        setLoading(true);
+        const response = await axiosPrivate.get(
+          KQHT_SERVICE.GET_KETQUA.replace(":maSo", auth.user?.maSo || "")
+        );
+        const allData = response.data.data || [];
+        // Filter by year
+        const filteredData = allData.filter((item: KetQuaHocTapTableProps) => 
+          item.namHoc.id === yearTabIndex
+        );
+        setKetQuaHocTapData(filteredData);
+      } catch (error) {
+        console.error("Error fetching ket qua hoc tap:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (auth.user?.maSo && yearTabIndex) {
+      fetchKetQuaHocTap();
+    }
+  }, [axiosPrivate, auth.user?.maSo, yearTabIndex]);
+
+  const filteredHocKy = hocKyList.filter(hocKy => hocKy.namHoc.id === yearTabIndex);
+  
+  const data = filteredHocKy.map((hocKy) => ({
+    name: `${hocKy.tenHocKy} - ${hocKy.namHoc.namBatDau} - ${hocKy.namHoc.namKetThuc}`,
+    diem: 7.5, // Placeholder - should calculate from actual grades
+  }));
+
+  const sortedKetQuaHocTap = [...ketQuaHocTapData].sort(
     (a, b) => a.diemSo - b.diemSo
   );
   const ketQuaHocTapSortedAndFiltered = sortedKetQuaHocTap.filter(
     (item) => item.diemSo !== 0 && item.diemSo !== undefined
   );
+
+  if (loading) return <Loading />;
+
   return (
     <>
       <div>
         <AreaChartComponent
-          data={diemTBTichLuyData
-            .filter((item) => item.hocKy.namHocId === yearTabIndex)
-            .map((item) => ({
-              name: `${item.hocKy.tenHocky} - ${namHocData.find((namHoc) => namHoc.id === item.hocKy.namHocId)?.namBatDau} - ${namHocData.find((namHoc) => namHoc.id === item.hocKy.namHocId)?.namKetThuc}`,
-              diem: item.diemTB,
-            }))}
+          data={data}
           tableName="Điểm Trung Bình Tích Lũy"
         />
         <div className="flex gap-2  p-2 m-5">
           <div className="p-4 bg-gray-100 font-medium text-gray-700 rounded-lg shadow-md min-w-160 max-w-190 w-full">
-            <CustomPieChart rowData={filteredKetQuaHocTapData} />
+            <CustomPieChart rowData={ketQuaHocTapData} />
           </div>
           <div className="font-medium  text-gray-700 rounded-lg shadow-md md:w-1/4 w-full flex flex-col content-center justify-items-center gap-4">
             <div className="h-1/2 bg-green-300 p-2 flex justify-center rounded-md flex-col ">
               <p className="font-semibold text-2xl text-center">
                 Số Tín Chỉ Tích Luỹ
               </p>
-              <p className="grade text-6xl text-center mt-2">150</p>
+              <p className="grade text-6xl text-center mt-2">
+                {ketQuaHocTapData.reduce((total, item) => total + item.soTinChi, 0)}
+              </p>
               <p className="text-xl text-center mt-2">Bạn đang đúng tiến độ</p>
             </div>
             <div className="h-1/2 bg-green-300 p-2 flex justify-center rounded-md flex-col ">
               <p className="font-semibold text-2xl text-center">
                 Điểm Trung Bình Tích Luỹ
               </p>
-              <p className="grade text-6xl text-center mt-2">3.2</p>
+              <p className="grade text-6xl text-center mt-2">
+                {ketQuaHocTapData.length > 0 
+                  ? (ketQuaHocTapData.reduce((total, item) => total + item.diemSo, 0) / ketQuaHocTapData.length).toFixed(2)
+                  : "0.00"
+                }
+              </p>
               <p className="text-xl text-center mt-2">Xếp loại: Giỏi!</p>
             </div>
           </div>
@@ -200,83 +319,3 @@ const KetQuaHocTapByYear: React.FC<KetQuaHocTapByYearProps> = ({
     </>
   );
 };
-
-//   const [tabIndex, setTabIndex] = useState<number>(1);
-//   return (
-//     <>
-//       <div>
-//         <div className="flex gap-2 my-4 items-center justify-center">
-//           {hocKyTab.map((tab) => (
-//             <button
-//               key={tab.index}
-//               className={`p-1.5 rounded-2xl font-semibold shadow-2xl ${tabIndex === tab.index ? "bg-blue-700 text-white" : "bg-gray-200 text-gray-800"}`}
-//               onClick={() => setTabIndex(tab.index)}
-//             >
-//               {tab.label}
-//             </button>
-//           ))}
-//         </div>
-//       </div>
-//       <div>
-//         {tabIndex === 1 && (
-//           <>
-//             <AreaChartComponent
-//               data={diemTBTichLuyData
-//                 .filter((item) => item.hocKy === "HK1")
-//                 .map((item) => ({
-//                   name: `${item.hocKy} - ${item.namHoc}`,
-//                   diem: item.diemTB,
-//                 }))}
-//               tableName="Điểm Trung Bình Tích Lũy "
-//             />
-//           </>
-//         )}
-//         {tabIndex === 2 && (
-//           <>
-//             <AreaChartComponent
-//               data={diemTBTichLuyData
-//                 .filter((item) => item.hocKy === "HK2")
-//                 .map((item) => ({
-//                   name: `${item.hocKy} - ${item.namHoc}`,
-//                   diem: item.diemTB,
-//                 }))}
-//               tableName="Điểm Trung Bình Tích Lũy"
-//             />
-//             <div className="p-4 bg-gray-50 font-medium text-gray-700 rounded-lg shadow-md m-5"></div>
-//           </>
-//         )}
-//         {tabIndex === 3 && (
-//           <>
-//             <AreaChartComponent
-//               data={diemTBTichLuyData
-//                 .filter((item) => item.hocKy === "HK3")
-//                 .map((item) => ({
-//                   name: `${item.hocKy} - ${item.namHoc}`,
-//                   diem: item.diemTB,
-//                 }))}
-//               tableName="Điểm Trung Bình Tích Lũy"
-//             />
-//             <div className="p-4 bg-gray-50 font-medium text-gray-700 rounded-lg shadow-md m-5">
-//               <DataGridComponent
-//                 dataRows={ketQuaHocTapData
-//                   .filter((item) => item.hocKy.tenHocky === "HK3")
-//                   .map((item) => ({
-//                     id: item.id,
-//                     maHp: item.maHp,
-//                     tenHp: item.tenHp,
-//                     dieuKien: item.dieuKien,
-//                     nhomHp: item.nhomHp,
-//                     soTinChi: item.soTinChi,
-//                     diemChu: item.diemChu,
-//                     diemSo: item.diemSo,
-//                     hocKy: item.hocKy,
-//                     namHoc: item.namHoc,
-//                   }))}
-//               />
-//             </div>
-//           </>
-//         )}
-//       </div>
-//     </>
-//   );
-// };

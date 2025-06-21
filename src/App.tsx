@@ -4,13 +4,13 @@ import Layout from "./pages/Layout";
 import Dashboard from "./pages/Dashboard";
 import KetQuaHocTap from "./pages/KetQuaHocTap/KetQuaHocTap";
 import KetQuaHocTapDetail from "./pages/KetQuaHocTap/KetQuaHocTapDetail";
-import NhapKeHoachHocTap from "./pages/KeHoachHocTap/NhapKetQuaHocTap";
 import NotFound from "./pages/NotFound";
 import RequireAuth from "./components/RequireAuth";
 import Unauthorized from "./pages/Unauthorized";
 import { KetQuaHocTapLayout } from "./pages/KetQuaHocTap/KetQuaHocTapLayout";
 import KeHoachHocTapDetail from "./pages/KeHoachHocTap/KeHoachHocTapDetail";
 import KeHoachHocTap, { KeHoachHocTapPage } from "./pages/KeHoachHocTap/KeHoachHocTap";
+import NhapKeHoachHocTap from "./pages/KeHoachHocTap/NhapKeHoachHocTap";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",

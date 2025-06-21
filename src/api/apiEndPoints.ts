@@ -2,6 +2,7 @@ export const USER_SERIVCE_URL = "http://localhost:8088";
 export const KHHT_SERVICE_URL = "http://localhost:8087";
 export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
 export const PROFILE_SERVICE_URL = "http://localhost:8083";
+export const KQHT_SERVICE_URL = "http://localhost:8089";
 // const PATH = "http://172.30.121.19:8088"
 export const USER_SERVICE = {
   LOGIN: USER_SERIVCE_URL + "/api/auth/login",
@@ -36,3 +37,10 @@ export const KHHT_SERVICE = {
   COUNT_TINCHI_IN_KHHT: KHHT_SERVICE_URL + "/api/khht/sinhvien/tinchi/count/:khoaHoc/:maSo",
   COUNT_TINCHI_GROUP_BY_HOCKY: KHHT_SERVICE_URL + "/api/khht/sinhvien/tinchi/count_by_hoc_ky/:maSo",
 };
+
+export const KQHT_SERVICE = {
+  GET_HOCKY: KQHT_SERVICE_URL + "/api/kqht/hoc-ky/:maSo",
+  GET_KETQUA: KQHT_SERVICE_URL + "/api/kqht/detail/page",  // phân trang: ?maSo=xxx&page=0&size=20
+  GET_KETQUA_BY_HOCKY: KQHT_SERVICE_URL + "/api/kqht/detail",  // theo học kỳ: ?maSo=xxx&maHocKy=yyy
+  GET_DIEM_TRUNG_BINH_BY_HOCKY: KQHT_SERVICE_URL + "/api/kqht/diem/trung_binh_hoc_ky/list",
+}
