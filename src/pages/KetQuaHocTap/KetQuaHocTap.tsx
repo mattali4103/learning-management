@@ -8,6 +8,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import Loading from "../../components/Loading";
+import StatisticsCard from "../../components/StatisticsCard";
 import GPABarChart, {
   type RawSemesterData,
 } from "../../components/chart/GPABarChart";
@@ -33,7 +34,6 @@ export interface KetQuaHocTapData {
   hocKy: HocKy;
   namHoc: NamHoc;
 }
-
 // Để tương thích với component cũ
 export interface KetQuaHocTapTableProps {
   id: number;
@@ -47,8 +47,8 @@ export interface KetQuaHocTapTableProps {
   hocKy: HocKy;
   namHoc: NamHoc;
 }
-
-export default function KetQuaHocTap() {  const [loading, setLoading] = useState(true);
+export default function KetQuaHocTap() {
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ketQuaData, setKetQuaData] = useState<KetQuaHocTapData[]>([]);
   const [semesterData, setSemesterData] = useState<RawSemesterData[]>([]);
@@ -62,11 +62,9 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
       setLoading(false);
       return;
     }
-
     try {
       setLoading(true);
       setError(null);
-
       // Fetch dữ liệu điểm trung bình đã tính toán từ server
       const response = await axiosPrivate.post(
         KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY,
@@ -79,7 +77,8 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
           },
           withCredentials: true,
         }
-      );      if (response.status !== 200 || response.data?.code !== 200) {
+      );
+      if (response.status !== 200 || response.data?.code !== 200) {
         throw new Error(
           `API returned code: ${response.data?.code || response.status}`
         );
@@ -140,7 +139,8 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
 
         setKetQuaData(transformedDetailData);
       }
-    } catch (error) {      console.error("Error fetching ket qua hoc tap:", error);
+    } catch (error) {
+      console.error("Error fetching ket qua hoc tap:", error);
       setError("Không thể lấy thông tin kết quả học tập. Vui lòng thử lại.");
       setKetQuaData([]);
       setSemesterData([]);
@@ -150,7 +150,7 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
   }, [maSo, axiosPrivate]);
   useEffect(() => {
     fetchKetQuaHocTap();
-  }, [fetchKetQuaHocTap]);  // Tính toán thống kê tổng quan từ dữ liệu semester và raw data
+  }, [fetchKetQuaHocTap]); // Tính toán thống kê tổng quan từ dữ liệu semester và raw data
   const statistics = useMemo(() => {
     if (!ketQuaData.length || !semesterData.length)
       return {
@@ -178,7 +178,9 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
 
     // Lấy điểm TB tích lũy từ học kỳ cuối cùng
     const latestSemester = semesterData[semesterData.length - 1];
-    const diemTBTichLuy = latestSemester ? latestSemester.diemTrungBinhTichLuy : 0;
+    const diemTBTichLuy = latestSemester
+      ? latestSemester.diemTrungBinhTichLuy
+      : 0;
 
     return {
       tongTinChi,
@@ -186,7 +188,7 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
       tinChiCanCaiThien,
       tinChiNo,
     };
-  }, [ketQuaData, semesterData]);  // Prepare raw data for pie chart component
+  }, [ketQuaData, semesterData]); // Prepare raw data for pie chart component
   const gradeRawData: RawGradeData[] = useMemo(() => {
     return ketQuaData.map((item) => ({
       tenHp: item.tenHp,
@@ -232,65 +234,49 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
             </p>
           </div>
         </div>
-      </div>
+      </div>{" "}
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Điểm TB tích lũy
-              </p>
-              <p className="text-3xl font-bold text-blue-600">
-                {statistics.diemTBTichLuy}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <Award className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Tổng tín chỉ</p>
-              <p className="text-3xl font-bold text-green-600">
-                {statistics.tongTinChi}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>{" "}
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">
-                Tín chỉ cần cải thiện
-              </p>
-              <p className="text-3xl font-bold text-purple-600">
-                {statistics.tinChiCanCaiThien}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <Target className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Số tín chỉ nợ</p>
-              <p className="text-3xl font-bold text-orange-600">
-                {statistics.tinChiNo}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
+        <StatisticsCard
+          title="Điểm TB tích lũy"
+          value={statistics.diemTBTichLuy}
+          icon={Award}
+          gradient="bg-gradient-to-br from-blue-500 to-indigo-600"
+          textColor="text-blue-100"
+          iconColor="text-blue-200"
+          subtitle="Đã đạt được"
+          subtitleIcon={TrendingUp}
+        />
+        <StatisticsCard
+          title="Tổng tín chỉ"
+          value={statistics.tongTinChi}
+          icon={BookOpen}
+          gradient="bg-gradient-to-br from-green-500 to-emerald-600"
+          textColor="text-green-100"
+          iconColor="text-green-200"
+          subtitle="Đã tích lũy"
+          subtitleIcon={TrendingUp}
+        />
+        <StatisticsCard
+          title="Tín chỉ cần cải thiện"
+          value={statistics.tinChiCanCaiThien}
+          icon={Target}
+          gradient="bg-gradient-to-br from-purple-500 to-indigo-600"
+          textColor="text-purple-100"
+          iconColor="text-purple-200"
+          subtitle="Cần cải thiện"
+          subtitleIcon={BarChart3}
+        />
+        <StatisticsCard
+          title="Số tín chỉ nợ"
+          value={statistics.tinChiNo}
+          icon={Calendar}
+          gradient="bg-gradient-to-br from-red-500 to-pink-600"
+          textColor="text-red-100"
+          iconColor="text-red-200"
+          subtitle="Cần bổ sung"
+          subtitleIcon={Award}
+        />
       </div>
       {/* Charts Section - Two charts in one row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -308,7 +294,8 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
                 So sánh điểm TB học kỳ và điểm TB tích lũy
               </p>
             </div>
-          </div>          {semesterData.length > 0 ? (
+          </div>
+          {semesterData.length > 0 ? (
             <GPABarChart rawData={semesterData} height={400} />
           ) : (
             <div className="flex items-center justify-center h-64 text-gray-500">
@@ -321,7 +308,8 @@ export default function KetQuaHocTap() {  const [loading, setLoading] = useState
               </div>
             </div>
           )}
-        </div>        {/* Grade Distribution Pie Chart */}
+        </div>{" "}
+        {/* Grade Distribution Pie Chart */}
         <GradeDistributionPieChart rawData={gradeRawData} />
       </div>
     </div>

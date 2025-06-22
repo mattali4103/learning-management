@@ -5,16 +5,17 @@ import { KHHT_SERVICE, PROFILE_SERVICE, KQHT_SERVICE } from "../api/apiEndPoints
 import Loading from "../components/Loading";
 import TinChiChart from "../components/chart/TinChiChart";
 import GPAChart from "../components/chart/GPAChart";
+import CreditProgressCard from "../components/progress/CreditProgressCard";
+import GPAProgressCard from "../components/progress/GPAProgressCard";
+import StatusCard from "../components/progress/StatusCard";
 import {
   User,
   Calendar,
   BookOpen,
   Award,
-  TrendingUp,
   GraduationCap,
   Clock,
   Target,
-  BarChart3,
 } from "lucide-react";
 
 interface UserInfo {
@@ -52,18 +53,6 @@ interface DiemTrungBinhHocKy {
   diemTrungBinh: number;
   diemTrungBinhTichLuy: number;
 }
-// interface NamHoc {
-//   id: number;
-//   namBatDau: number;
-//   namKetThuc: number;
-// }
-// interface HocKy {
-//   maHocKy: number;
-//   tenHocKy: string;
-//   ngayBatDau: string;
-//   ngayKetThuc: string;
-//   namHoc: NamHoc;
-// }
 const Dashboard = () => {
   // Get user info from auth context
   const { auth } = useAuth();
@@ -177,19 +166,25 @@ const Dashboard = () => {
     fetchThongKeTinChi();
     fetchTinChiTichLuy();
     fetchDiemTrungBinh();
-  }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc]); 
-  // Tính toán thống kê từ dữ liệu thực
+  }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc]);  // Tính toán thống kê từ dữ liệu thực
   const statistics = useMemo(() => {
     const { tongSoTinChi, soTinChiTichLuy, soTinChiCaiThien } = thongKeTinChi;
     const tinChiConLai = Math.max(0, tongSoTinChi - soTinChiTichLuy); 
+    
+    // Tính điểm TB tích lũy từ dữ liệu GPA cuối cùng
+    const latestGPA = diemTrungBinhHocKy.length > 0 
+      ? diemTrungBinhHocKy[diemTrungBinhHocKy.length - 1].diemTrungBinhTichLuy 
+      : 0;
+    
     return {
       tongSoTinChi,
       soTinChiTichLuy,
       tinChiConLai,
       soTinChiCaiThien,
       tinChiCanCaiThien: 0,
+      diemTBTichLuy: latestGPA,
     };
-  }, [thongKeTinChi]);
+  }, [thongKeTinChi, diemTrungBinhHocKy]);
   // Lấy thời gian hiện tại để chào hỏi
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -242,156 +237,72 @@ const Dashboard = () => {
             </p>
           </div>
         </div>
-      </div>
-
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl shadow-lg p-6 text-white ">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-green-100 text-sm font-medium">
-                Tín chỉ tích lũy
-              </p>
-              <p className="text-3xl font-bold">{statistics.soTinChiTichLuy}</p>
-            </div>
-            <BookOpen className="w-12 h-12 text-green-200" />
-          </div>
-          <div className="mt-4 flex items-center">
-            <TrendingUp className="w-4 h-4 mr-1" />
-            <span className="text-sm">Đã hoàn thành</span>
-          </div>
-        </div>
-        <div className="bg-gradient-to-br from-yellow-500 to-orange-600 rounded-xl shadow-lg p-6 text-white ">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-yellow-100 text-sm font-medium">
-                Tín chỉ còn lại
-              </p>
-              <p className="text-3xl font-bold">{statistics.tinChiConLai}</p>
-            </div>
-            <Target className="w-12 h-12 text-yellow-200" />
-          </div>
-          <div className="mt-4 flex items-center">
-            <Clock className="w-4 h-4 mr-1" />
-            <span className="text-sm">Cần hoàn thành</span>
-          </div>
-        </div>{" "}
-        <div className="bg-gradient-to-br from-red-500 to-pink-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-red-100 text-sm font-medium">
-                Tín chỉ cần cải thiện
-              </p>
-              <p className="text-3xl font-bold">
-                {statistics.tinChiCanCaiThien}
-              </p>
-            </div>
-            <Award className="w-12 h-12 text-red-200" />
-          </div>
-          <div className="mt-4 flex items-center">
-            <BarChart3 className="w-4 h-4 mr-1" />
-            <span className="text-sm">Cần cải thiện</span>
-          </div>
-        </div>{" "}
-        <div className="bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-lg p-6 text-white transform hover:scale-105 transition-all duration-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-100 text-sm font-medium">
-                Tín chỉ đã cải thiện
-              </p>
-              <p className="text-3xl font-bold">
-                {statistics.soTinChiCaiThien}
-              </p>
-            </div>
-            <GraduationCap className="w-12 h-12 text-purple-200" />
-          </div>
-          <div className="mt-4 flex items-center">
-            <Award className="w-4 h-4 mr-1" />
-            <span className="text-sm">Đã nâng cao</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Progress Section */}
+      </div>      
+      {/* Progress Section with Circular Progress Bars */}
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
         <div className="flex items-center mb-6">
           <Target className="w-6 h-6 text-indigo-600 mr-3" />
           <h2 className="text-xl font-bold text-gray-800">Tiến độ học tập</h2>
         </div>
-        <div className="space-y-4">
-          <div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">
-                Tín chỉ tích lũy
-              </span>
-              <span className="text-sm font-bold text-gray-900">
-                {statistics.soTinChiTichLuy}/{statistics.tongSoTinChi} tín chỉ
-              </span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <div
-                className="bg-gradient-to-r from-green-500 to-emerald-600 h-3 rounded-full transition-all duration-1000 ease-out"
-                style={{
-                  width: `${Math.min((statistics.soTinChiTichLuy / statistics.tongSoTinChi) * 100, 100)}%`,
-                }}
-              />
-            </div>
-            <p className="mt-1 text-xs text-gray-500">
-              {((statistics.soTinChiTichLuy / statistics.tongSoTinChi) * 100).toFixed(1)}% hoàn thành
+          {/* Main Progress Grid */}        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Tín chỉ tích lũy */}
+          <CreditProgressCard 
+            currentCredits={statistics.soTinChiTichLuy}
+            totalCredits={statistics.tongSoTinChi}
+          />
+
+          {/* Điểm trung bình tích lũy */}
+          <GPAProgressCard 
+            currentGPA={statistics.diemTBTichLuy}
+            maxGPA={4.0}
+          />
+
+          {/* Trạng thái tiến độ */}
+          <StatusCard 
+            currentCredits={statistics.soTinChiTichLuy}
+            totalCredits={statistics.tongSoTinChi}
+          />
+        </div>
+
+        {/* Additional Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200">
+          <div className="text-center p-4 bg-blue-50 rounded-lg">
+            <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-blue-600">
+              {tinChiTichLuy.length}
             </p>
+            <p className="text-sm text-gray-600">Học kỳ đã hoàn thành</p>
+          </div>
+          
+          <div className="text-center p-4 bg-green-50 rounded-lg">
+            <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-green-600">
+              {(() => {
+                if (tinChiTichLuy.length === 0) return 0;
+
+                // Tính tín chỉ của từng học kỳ riêng lẻ từ dữ liệu tích lũy
+                let totalTinChiRiengLe = 0;
+                for (let i = 0; i < tinChiTichLuy.length; i++) {
+                  const tinChiHocKy =
+                    i === 0
+                      ? tinChiTichLuy[i].soTinChiDangKy
+                      : tinChiTichLuy[i].soTinChiDangKy -
+                        tinChiTichLuy[i - 1].soTinChiDangKy;
+                  totalTinChiRiengLe += tinChiHocKy;
+                }
+
+                return (totalTinChiRiengLe / tinChiTichLuy.length).toFixed(1);
+              })()}
+            </p>
+            <p className="text-sm text-gray-600">Tín chỉ TB/học kỳ</p>
           </div>
 
-          {statistics.tinChiCanCaiThien > 0 && (
-            <div>
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">
-                  Tín chỉ cần cải thiện
-                </span>
-                <span className="text-sm font-bold text-red-600">
-                  {statistics.tinChiCanCaiThien} tín chỉ
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className="bg-gradient-to-r from-red-500 to-pink-600 h-2 rounded-full transition-all duration-1000 ease-out"
-                  style={{
-                    width: `${Math.min((statistics.tinChiCanCaiThien / statistics.tongSoTinChi) * 100, 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          )}
-
-          <div className="grid grid-cols-2 gap-4 mt-6">
-            <div className="text-center p-4 bg-blue-50 rounded-lg">
-              <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-blue-600">
-                {tinChiTichLuy.length}
-              </p>
-              <p className="text-sm text-gray-600">Học kỳ đã hoàn thành</p>
-            </div>{" "}
-            <div className="text-center p-4 bg-green-50 rounded-lg">
-              <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
-              <p className="text-2xl font-bold text-green-600">
-                {(() => {
-                  if (tinChiTichLuy.length === 0) return 0;
-
-                  // Tính tín chỉ của từng học kỳ riêng lẻ từ dữ liệu tích lũy
-                  let totalTinChiRiengLe = 0;
-                  for (let i = 0; i < tinChiTichLuy.length; i++) {
-                    const tinChiHocKy =
-                      i === 0
-                        ? tinChiTichLuy[i].soTinChiDangKy
-                        : tinChiTichLuy[i].soTinChiDangKy -
-                          tinChiTichLuy[i - 1].soTinChiDangKy;
-                    totalTinChiRiengLe += tinChiHocKy;
-                  }
-
-                  return (totalTinChiRiengLe / tinChiTichLuy.length).toFixed(1);
-                })()}
-              </p>
-              <p className="text-sm text-gray-600">Tín chỉ TB/học kỳ</p>
-            </div>
+          <div className="text-center p-4 bg-indigo-50 rounded-lg">
+            <GraduationCap className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-indigo-600">
+              {((statistics.soTinChiTichLuy / statistics.tongSoTinChi) * 100).toFixed(1)}%
+            </p>
+            <p className="text-sm text-gray-600">Tiến độ tổng thể</p>
           </div>
         </div>
       </div>
