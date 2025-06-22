@@ -1,15 +1,5 @@
 import { useEffect, useState } from "react";
 import axios, { AxiosError } from "axios";
-import {
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Typography,
-} from "@mui/material";
 import Loading from "../components/Loading";
 import Error from "../components/Error";
 import type { HocPhan } from "../types/HocPhan";
@@ -71,86 +61,66 @@ export default function BasicTable() {
   if (error) {
     return <Error error={error} />;
   }
-
   return (
-    <TableContainer
-      component={Paper}
-      sx={{
-        maxWidth: 1400,
-        mx: "auto",
-        my: 4,
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
-        borderRadius: 2,
-        overflowX: "auto",
-      }}
-    >
-      <Table
-        sx={{
-          minWidth: 650,
-          "& .MuiTableCell-root": {
-            borderBottom: "1px solid rgba(0, 0, 0, 0.1)",
-            py: 1.5,
-          },
-        }}
-        aria-label="Bảng học phần"
-      >
-        <TableHead>
-          <TableRow
-            sx={{
-              backgroundColor: "#1976d2",
-              "& th": {
-                color: "#fff",
-                fontWeight: "bold",
-                fontSize: "1.1rem",
-              },
-            }}
-          >
-            <TableCell align="center">Mã Học Phần</TableCell>
-            <TableCell align="center">Tên Học Phần</TableCell>
-            <TableCell align="center">Tín Chỉ</TableCell>
-            <TableCell align="center">Học Phần Tiên Quyết</TableCell>
-            <TableCell align="center">Loại Học Phần</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.length === 0 && (
-            <TableRow>
-              <TableCell colSpan={5} align="center">
-                <Typography
-                  variant="body1"
-                  color="text.secondary"
-                  sx={{ py: 2 }}
+    <div className="max-w-7xl mx-auto my-8 px-4">
+      <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-blue-600">
+              <tr>
+                <th className="px-6 py-3 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Mã Học Phần
+                </th>
+                <th className="px-6 py-3 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Tên Học Phần
+                </th>
+                <th className="px-6 py-3 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Tín Chỉ
+                </th>
+                <th className="px-6 py-3 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Học Phần Tiên Quyết
+                </th>
+                <th className="px-6 py-3 text-center text-sm font-bold text-white uppercase tracking-wider">
+                  Loại Học Phần
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {rows.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    <div className="text-lg">Không có dữ liệu học phần</div>
+                  </td>
+                </tr>
+              )}
+              {rows.map((row, index) => (
+                <tr
+                  key={row.maHp || index}
+                  className={`hover:bg-gray-50 transition-colors ${
+                    index % 2 === 0 ? "bg-gray-50" : "bg-white"
+                  }`}
                 >
-                  Không có dữ liệu học phần
-                </Typography>
-              </TableCell>
-            </TableRow>
-          )}
-          {rows.map((row, index) => (
-            <TableRow
-              key={row.maHp || index}
-              sx={{
-                "&:hover": {
-                  backgroundColor: "rgba(0, 0, 0, 0.04)",
-                },
-                backgroundColor: index % 2 === 0 ? "#f9fafb" : "#fff",
-              }}
-            >
-              <TableCell
-                component="th"
-                scope="row"
-                sx={{ fontWeight: "medium" }}
-              >
-                {row.maHp}
-              </TableCell>
-              <TableCell align="center">{row.tenHp}</TableCell>
-              <TableCell align="center">{row.tinChi}</TableCell>
-              <TableCell align="center">{row.hocPhanTienQuyet}</TableCell>
-              <TableCell align="center">{row.loaiHp}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 text-center">
+                    {row.maHp}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                    {row.tenHp}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                    {row.tinChi}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                    {row.hocPhanTienQuyet}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-center">
+                    {row.loaiHp}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 }

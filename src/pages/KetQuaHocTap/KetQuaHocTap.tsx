@@ -9,9 +9,12 @@ import {
 } from "lucide-react";
 import Loading from "../../components/Loading";
 import GPABarChart, {
-  type ChartData,
+  type RawSemesterData,
 } from "../../components/chart/GPABarChart";
-import SemesterOverviewTable from "../../components/table/SemesterOverviewTable";
+import GradeDistributionPieChart, {
+  type RawGradeData,
+} from "../../components/chart/GradeDistributionPieChart";
+
 import useAuth from "../../hooks/useAuth";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KQHT_SERVICE } from "../../api/apiEndPoints";
@@ -45,11 +48,10 @@ export interface KetQuaHocTapTableProps {
   namHoc: NamHoc;
 }
 
-export default function KetQuaHocTap() {
-  const [loading, setLoading] = useState(true);
+export default function KetQuaHocTap() {  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [ketQuaData, setKetQuaData] = useState<KetQuaHocTapData[]>([]);
-  const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [semesterData, setSemesterData] = useState<RawSemesterData[]>([]);
 
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
@@ -77,30 +79,16 @@ export default function KetQuaHocTap() {
           },
           withCredentials: true,
         }
-      );
-
-      if (response.status !== 200 || response.data?.code !== 200) {
+      );      if (response.status !== 200 || response.data?.code !== 200) {
         throw new Error(
           `API returned code: ${response.data?.code || response.status}`
         );
       }
       const responseData = response.data.data;
-      const data = Array.isArray(responseData) ? responseData : []; // Transform API data cho chart
-      const transformedChartData: ChartData[] = data.map(
-        (item: any, index: number) => ({
-          tenHocKy: `Học kỳ ${index + 1}`, // Đánh số thứ tự thay vì tên học kỳ thực
-          namHoc: `${item.hocKy?.namHoc?.namBatDau || ""}-${item.hocKy?.namHoc?.namKetThuc || ""}`,
-          diemTBHocKy: item.diemTrungBinh
-            ? Math.round(item.diemTrungBinh * 100) / 100
-            : 0,
-          diemTBTichLuy: item.diemTrungBinhTichLuy
-            ? Math.round(item.diemTrungBinhTichLuy * 100) / 100
-            : 0,
-          soTinChi: item.soTinChi || 0,
-        })
-      );
+      const data = Array.isArray(responseData) ? responseData : [];
 
-      setChartData(transformedChartData);
+      // Store raw semester data without transformation
+      setSemesterData(data);
 
       // Fetch thêm dữ liệu chi tiết để tính thống kê tổng quan
       const detailResponse = await axiosPrivate.get(KQHT_SERVICE.GET_KETQUA, {
@@ -152,20 +140,19 @@ export default function KetQuaHocTap() {
 
         setKetQuaData(transformedDetailData);
       }
-    } catch (error) {
-      console.error("Error fetching ket qua hoc tap:", error);
+    } catch (error) {      console.error("Error fetching ket qua hoc tap:", error);
       setError("Không thể lấy thông tin kết quả học tập. Vui lòng thử lại.");
       setKetQuaData([]);
-      setChartData([]);
+      setSemesterData([]);
     } finally {
       setLoading(false);
     }
   }, [maSo, axiosPrivate]);
   useEffect(() => {
     fetchKetQuaHocTap();
-  }, [fetchKetQuaHocTap]); // Tính toán thống kê tổng quan từ dữ liệu chart và raw data
+  }, [fetchKetQuaHocTap]);  // Tính toán thống kê tổng quan từ dữ liệu semester và raw data
   const statistics = useMemo(() => {
-    if (!ketQuaData.length || !chartData.length)
+    if (!ketQuaData.length || !semesterData.length)
       return {
         tongTinChi: 0,
         diemTBTichLuy: 0,
@@ -190,8 +177,8 @@ export default function KetQuaHocTap() {
       .reduce((sum, item) => sum + item.soTinChi, 0);
 
     // Lấy điểm TB tích lũy từ học kỳ cuối cùng
-    const latestSemester = chartData[chartData.length - 1];
-    const diemTBTichLuy = latestSemester ? latestSemester.diemTBTichLuy : 0;
+    const latestSemester = semesterData[semesterData.length - 1];
+    const diemTBTichLuy = latestSemester ? latestSemester.diemTrungBinhTichLuy : 0;
 
     return {
       tongTinChi,
@@ -199,7 +186,13 @@ export default function KetQuaHocTap() {
       tinChiCanCaiThien,
       tinChiNo,
     };
-  }, [ketQuaData, chartData]);
+  }, [ketQuaData, semesterData]);  // Prepare raw data for pie chart component
+  const gradeRawData: RawGradeData[] = useMemo(() => {
+    return ketQuaData.map((item) => ({
+      tenHp: item.tenHp,
+      diemChu: item.diemChu,
+    }));
+  }, [ketQuaData]);
 
   if (loading) {
     return (
@@ -299,54 +292,38 @@ export default function KetQuaHocTap() {
           </div>
         </div>
       </div>
-      {/* Chart */}
-      <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center space-x-3 mb-6">
-          {" "}
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-            <BarChart3 className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              Biểu đồ điểm trung bình qua các học kỳ
-            </h2>
-            <p className="text-gray-600">
-              So sánh điểm TB học kỳ và điểm TB tích lũy
-            </p>
-          </div>
-        </div>{" "}
-        {chartData.length > 0 ? (
-          <GPABarChart data={chartData} height={400} />
-        ) : (
-          <div className="flex items-center justify-center h-64 text-gray-500">
-            <div className="text-center">
-              <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-              <p className="text-lg font-medium">Chưa có dữ liệu</p>
-              <p className="text-sm">
-                Không có dữ liệu kết quả học tập để hiển thị biểu đồ
-              </p>
-            </div>
-          </div>
-        )}
-      </div>{" "}
-      {/* Recent Semesters Table */}
-      {chartData.length > 0 && (
+      {/* Charts Section - Two charts in one row */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* GPA Bar Chart */}
         <div className="bg-white rounded-xl shadow-lg p-6">
           <div className="flex items-center space-x-3 mb-6">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-white" />
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+              <BarChart3 className="w-5 h-5 text-white" />
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900">
-                Bảng điểm chi tiết
+                Biểu đồ điểm trung bình qua các học kỳ
               </h2>
-              <p className="text-gray-600">Thống kê điểm số qua các học kỳ</p>
+              <p className="text-gray-600">
+                So sánh điểm TB học kỳ và điểm TB tích lũy
+              </p>
             </div>
-          </div>
-
-          <SemesterOverviewTable data={chartData} loading={loading} />
-        </div>
-      )}
+          </div>          {semesterData.length > 0 ? (
+            <GPABarChart rawData={semesterData} height={400} />
+          ) : (
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium">Chưa có dữ liệu</p>
+                <p className="text-sm">
+                  Không có dữ liệu kết quả học tập để hiển thị biểu đồ
+                </p>
+              </div>
+            </div>
+          )}
+        </div>        {/* Grade Distribution Pie Chart */}
+        <GradeDistributionPieChart rawData={gradeRawData} />
+      </div>
     </div>
   );
 }

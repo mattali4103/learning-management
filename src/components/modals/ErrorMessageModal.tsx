@@ -1,5 +1,4 @@
-import WarningAmberIcon from '@mui/icons-material/WarningAmber';
-
+import { MessageCircleWarning } from "lucide-react"
 
 interface ErrorMessageModalProps {
   message: string | null;
@@ -25,7 +24,7 @@ const ErrorMessageModal = (props : ErrorMessageModalProps) =>{
             <div className="bg-gray-100 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
               <div className="sm:flex sm:items-start">
                 <div className="mx-auto flex size-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:size-10">
-                  <WarningAmberIcon className="h-6 w-6 text-red-600" />
+                  <MessageCircleWarning className="h-6 w-6 text-red-600" />
                 </div>
                 <div className="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
                   <h1 

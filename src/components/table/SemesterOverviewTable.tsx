@@ -11,14 +11,22 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import Loading from "../Loading";
-import type { ChartData } from "../chart/GPABarChart";
+
+// Local interface for table data
+interface SemesterTableData {
+  tenHocKy: string;
+  namHoc: string;
+  diemTBHocKy: number;
+  diemTBTichLuy: number;
+  soTinChi: number;
+}
 
 interface SemesterOverviewTableProps {
-  data: ChartData[];
+  data: SemesterTableData[];
   loading?: boolean;
 }
 
-const columns: ColumnDef<ChartData>[] = [
+const columns: ColumnDef<SemesterTableData>[] = [
   {
     accessorKey: "tenHocKy",
     header: ({ column }) => (
