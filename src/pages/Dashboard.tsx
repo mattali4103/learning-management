@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
-import Loading from "../components/Loading";
 import useAuth from "../hooks/useAuth";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import { KHHT_SERVICE, PROFILE_SERVICE, KQHT_SERVICE } from "../api/apiEndPoints";
+import Loading from "../components/Loading";
 import TinChiChart from "../components/chart/TinChiChart";
 import GPAChart from "../components/chart/GPAChart";
 import {
@@ -38,7 +38,18 @@ interface ThongKeTinChi {
 }
 
 interface DiemTrungBinhHocKy {
-  maHocKy: number;
+  hocKy: {
+    maHocKy: number;
+    tenHocKy: string;
+    ngayBatDau: string;
+    ngayKetThuc: string;
+    namHoc: {
+      id: number;
+      namBatDau: string;
+      namKetThuc: string;
+    };
+  };
+  diemTrungBinh: number;
   diemTrungBinhTichLuy: number;
 }
 // interface NamHoc {
@@ -117,7 +128,8 @@ const Dashboard = () => {
       } finally {
         setLoading(false);
       }
-    };    const fetchTinChiTichLuy = async () => {
+    };    
+    const fetchTinChiTichLuy = async () => {
       try {
         const response = await axiosPrivate.get<any>(
           KHHT_SERVICE.COUNT_TINCHI_GROUP_BY_HOCKY.replace(
@@ -128,10 +140,8 @@ const Dashboard = () => {
             headers: { "Content-Type": "application/json" },
             withCredentials: true,
           }
-        );
-          // Check response code
+        );        // Check response code
         if (response.status === 200 && response.data?.code === 200) {
-          console.log("Raw TinChi API response:", response.data.data);
           setTinChiTichLuy(response.data.data);
         } else {
           console.warn("API returned non-200 code for tin chi tich luy:", response.data?.code);
@@ -152,10 +162,8 @@ const Dashboard = () => {
             headers: { "Content-Type": "application/json" },
             withCredentials: true,
           }
-        );
-          // Check response code
+        );        // Check response code
         if (response.status === 200 && response.data?.code === 200) {
-          console.log("Raw GPA API response:", response.data.data);
           setDiemTrungBinhHocKy(response.data.data);
         } else {
           console.warn("API returned non-200 code for GPA data:", response.data?.code);
@@ -164,7 +172,8 @@ const Dashboard = () => {
         console.error("Error fetching diem trung binh:", error);
         // Don't show error for GPA data as it's not critical
       }
-    };    fetchUserInfo();
+    };    
+    fetchUserInfo();
     fetchThongKeTinChi();
     fetchTinChiTichLuy();
     fetchDiemTrungBinh();
@@ -190,9 +199,14 @@ const Dashboard = () => {
   };
 
   // State to manage loading state
-  const [loading, setLoading] = useState<boolean>(true);
-  if (loading) {
-    return <Loading />;
+  const [loading, setLoading] = useState<boolean>(true);  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <Loading showOverlay={false} message="Đang tải thông tin dashboard..." />
+        </div>
+      </div>
+    );
   }
   // If there's an error, display it
   if (error) {
@@ -437,23 +451,15 @@ const Dashboard = () => {
             })}
           </div>
         </div>        {/* Charts Section */}
-        <div className="lg:col-span-2 space-y-6">          {/* Tin Chi Chart */}
-          <TinChiChart
+        <div className="lg:col-span-2 space-y-6">          {/* Tin Chi Chart */}          <TinChiChart
             data={
               tinChiTichLuy && tinChiTichLuy.length > 0
                 ? tinChiTichLuy.map((item, index) => {
                     const hocKyId = item.hocKy?.maHocKy || null;
                     const namHocId = item.hocKy?.namHoc?.id || null;
                     
-                    console.log(`TinChi data point ${index}:`, {
-                      name: `Học Kỳ ${index + 1}`,
-                      hocKyId,
-                      namHocId,
-                      item: item.hocKy
-                    });
-                    
                     return {
-                      name: `Học Kỳ ${index + 1}`,
+                      name: `${item.hocKy?.tenHocKy || `Học Kỳ ${index + 1}`}`,
                       tinChiTichLuy: item.soTinChiDangKy || 0,
                       tinChiCaiThien: item.soTinChiCaiThien || 0,
                       hocKyId,
@@ -462,23 +468,15 @@ const Dashboard = () => {
                   })
                 : []
             }
-          />          {/* GPA Chart */}
-          <GPAChart
+          />{/* GPA Chart */}          <GPAChart
             data={
-              diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0                ? diemTrungBinhHocKy.map((item: any, index) => {
-                    const hocKyId = item.maHocKy || null;
-                    const namHocId = item.namHocId || item.namHoc?.id || null;
-                    
-                    console.log(`GPA data point ${index}:`, {
-                      name: `Học Kỳ ${index + 1}`,
-                      hocKyId,
-                      namHocId,
-                      diem: item.diemTrungBinhTichLuy,
-                      rawItem: item
-                    });
+              diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
+                ? diemTrungBinhHocKy.map((item, index) => {
+                    const hocKyId = item.hocKy?.maHocKy || null;
+                    const namHocId = item.hocKy?.namHoc?.id || null;
                     
                     return {
-                      name: `Học Kỳ ${index + 1}`,
+                      name: `${item.hocKy?.tenHocKy || `Học Kỳ ${index + 1}`}`,
                       diem: Number(item.diemTrungBinhTichLuy) || 0,
                       hocKyId,
                       namHocId,

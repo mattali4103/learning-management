@@ -17,12 +17,14 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
+import Loading from "../Loading";
 
 interface KeHoachHocTapTableProps {
   name: string;
   data: any[];
   columns: ColumnDef<any>[];
   initialExpanded?: boolean;
+  loading?: boolean;
 }
 
 export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
@@ -30,6 +32,7 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   data,
   columns,
   initialExpanded = true,
+  loading = false,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
 
@@ -139,10 +142,23 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                     </th>
                   ))}
                 </tr>
-              ))}
-            </thead>
+              ))}            </thead>
             <tbody>
-              {table.getRowModel().rows.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan={
+                      table
+                        .getHeaderGroups()[0]
+                        ?.headers.filter((header) => header.id !== "id")
+                        .length || columns.length
+                    }
+                    className="px-5 py-8 text-center text-gray-500 bg-gray-50 border-b-1 border-gray-200"
+                  >
+                    <Loading showOverlay={false} message="Đang tải dữ liệu..." />
+                  </td>
+                </tr>
+              ) : table.getRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
@@ -199,51 +215,32 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
             </tbody>
           </table>
         </div>{" "}
-        {/* Pagination Controls */}
+        {/* Pagination Controls */}{" "}
         {(table.getPageCount() > 1 ||
           table.getFilteredRowModel().rows.length > 7) && (
           <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-t border-gray-200">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center text-sm text-gray-700">
-                <span>
-                  Hiển thị{" "}
-                  <span className="font-medium">
-                    {table.getState().pagination.pageIndex *
-                      table.getState().pagination.pageSize +
-                      1}
-                  </span>{" "}
-                  đến{" "}
-                  <span className="font-medium">
-                    {Math.min(
-                      (table.getState().pagination.pageIndex + 1) *
-                        table.getState().pagination.pageSize,
-                      table.getFilteredRowModel().rows.length
-                    )}
-                  </span>{" "}
-                  trong tổng số{" "}
-                  <span className="font-medium">
-                    {table.getFilteredRowModel().rows.length}
-                  </span>{" "}
-                  học phần
-                </span>
-              </div>
-              {/* Page size selector */}
-              <div className="flex items-center space-x-2 text-sm text-gray-700">
-                <span>Số dòng:</span>
-                <select
-                  value={table.getState().pagination.pageSize}
-                  onChange={(e) => {
-                    table.setPageSize(Number(e.target.value));
-                  }}
-                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  {[5, 7, 10, 20, 50].map((pageSize) => (
-                    <option key={pageSize} value={pageSize}>
-                      {pageSize}
-                    </option>
-                  ))}
-                </select>
-              </div>{" "}
+            <div className="flex items-center text-sm text-gray-700">
+              <span>
+                Hiển thị{" "}
+                <span className="font-medium">
+                  {table.getState().pagination.pageIndex *
+                    table.getState().pagination.pageSize +
+                    1}
+                </span>{" "}
+                đến{" "}
+                <span className="font-medium">
+                  {Math.min(
+                    (table.getState().pagination.pageIndex + 1) *
+                      table.getState().pagination.pageSize,
+                    table.getFilteredRowModel().rows.length
+                  )}
+                </span>{" "}
+                trong tổng số{" "}
+                <span className="font-medium">
+                  {table.getFilteredRowModel().rows.length}
+                </span>{" "}
+                học phần
+              </span>
             </div>
 
             {/* Phân trang chỉ hiển thị khi có hơn 2 trang*/}

@@ -1,11 +1,13 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { createElement, useState } from "react";
-import MenuBookIcon from "@mui/icons-material/MenuBook";
-import MenuIcon from "@mui/icons-material/Menu";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import ClassIcon from "@mui/icons-material/Class";
-import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight";
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import { 
+  BookOpen, 
+  Menu, 
+  LayoutDashboard, 
+  GraduationCap, 
+  ChevronRight, 
+  ChevronDown 
+} from "lucide-react";
 import { useSidebar } from "../hooks/UseSidebar";
 
 interface SidebarItem {
@@ -19,12 +21,11 @@ export default function Sidebar() {
   const { isOpen, setIsOpen } = useSidebar();
   const [expandedItems, setExpandedItems] = useState<{ [key: number]: boolean }>({});
   const location = useLocation();
-  
-  const sidebarItems: SidebarItem[] = [
-    { name: "Dashboard", icon: DashboardIcon, to: "/" },
+    const sidebarItems: SidebarItem[] = [
+    { name: "Dashboard", icon: LayoutDashboard, to: "/" },
     {
       name: "Kế Hoạch Học Tập",
-      icon: MenuBookIcon,
+      icon: BookOpen,
       to: "/khht",
       children: [
         { name: "Tổng quan", to: "/khht/chung" },
@@ -34,7 +35,7 @@ export default function Sidebar() {
     },
     {
       name: "Kết Quả Học Tập",
-      icon: ClassIcon,
+      icon: GraduationCap,
       to: "/kqht",
       children: [
         { name: "Tổng quan", to: "/kqht/chung" },
@@ -63,15 +64,14 @@ export default function Sidebar() {
       } transition-width duration-200 flex flex-col`}
     >
       {/* Header */}
-      <div className={`p-4 border-b border-blue-700 ${isOpen ? "" : "flex justify-center"}`}>
-        <button
+      <div className={`p-4 border-b border-blue-700 ${isOpen ? "" : "flex justify-center"}`}>        <button
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 rounded-lg hover:bg-blue-700 text-white hover:text-blue-100 transition-colors"
           aria-label={isOpen ? "Thu gọn menu" : "Mở rộng menu"}
           title={isOpen ? "Thu gọn menu" : "Mở rộng menu"}
         >
-          <MenuIcon className="w-5 h-5" />
-        </button>        {isOpen && (
+          <Menu className="w-5 h-5" />
+        </button>{isOpen && (
           <div className="ml-3">
             <h2 className="text-sm font-semibold text-white">Menu</h2>
             <p className="text-xs text-blue-100">Quản lý học tập</p>
@@ -112,7 +112,7 @@ export default function Sidebar() {
                   </div>                  {isOpen && (
                     <div className="ml-auto">
                       {createElement(
-                        isExpanded ? KeyboardArrowDownIcon : KeyboardArrowRightIcon,
+                        isExpanded ? ChevronDown : ChevronRight,
                         { 
                           className: `w-4 h-4 transition-transform ${
                             isActive ? "text-white" : "text-blue-200"

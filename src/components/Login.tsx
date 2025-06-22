@@ -154,7 +154,7 @@ const Login: React.FC = () => {
                   />
                 </div>
                 {loading ? (
-                  <div>
+                  <div className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors">
                     <LoadingButton loading={true} variant="primary">
                       Đang đăng nhập...
                     </LoadingButton>

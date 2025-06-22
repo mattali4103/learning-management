@@ -356,65 +356,68 @@ const NhapKeHoachHocTap: React.FC = () => {
       },
     ],
     [namHocList, hocKyList]
-  );
-  if (isLoading || hocKyLoading) return <Loading />;
-  if (error && !selectedHocPhan.length) return <Error error={error} />;
-
+  );  if (error && !selectedHocPhan.length) return <Error error={error} />;
   return (
     <div className="container mx-auto p-4 space-y-6">
-      {/* Available học phần table */}
-      <KeHoachHocTapTable
-        name="Danh sách học phần có thể thêm"
-        data={filteredAvailableHocPhan}
-        columns={availableColumns}
-        initialExpanded={true}
-      />
-
-      {/* Selected học phần table */}
-      {selectedHocPhan.length > 0 && (
-        <>
+      {(isLoading || hocKyLoading) ? (
+        <Loading showOverlay={false} message="Đang tải dữ liệu học phần..." />
+      ) : (
+        <>          {/* Available học phần table */}
           <KeHoachHocTapTable
-            name="Học phần đã chọn"
-            data={selectedHocPhan}
-            columns={selectedColumns}
+            name="Danh sách học phần có thể thêm"
+            data={filteredAvailableHocPhan}
+            columns={availableColumns}
             initialExpanded={true}
+            loading={false} // Không loading cho available table vì đã có loading tổng thể
           />
-          {/* Action buttons */}
-          <div className="flex justify-end gap-2">
-            <button
-              onClick={() => setSelectedHocPhan([])}
-              className="px-6 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
-            >
-              Hủy
-            </button>
-            <button
-              disabled={fetchLoading}
-              onClick={handleSaveKHHT}
-              className={`px-6 py-2 rounded-xl text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${
-                fetchLoading
-                  ? "cursor-not-allowed opacity-50 bg-gray-400"
-                  : "bg-green-500 hover:bg-green-600"
-              }`}
-            >
-              {fetchLoading ? "Đang lưu..." : "Lưu kế hoạch học tập"}
-            </button>
-          </div>
+
+          {/* Selected học phần table */}
+          {selectedHocPhan.length > 0 && (
+            <>              <KeHoachHocTapTable
+                name="Học phần đã chọn"
+                data={selectedHocPhan}
+                columns={selectedColumns}
+                initialExpanded={true}
+                loading={false} // Không loading cho selected table vì đã có loading tổng thể
+              />
+              {/* Action buttons */}
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setSelectedHocPhan([])}
+                  className="px-6 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+                >
+                  Hủy
+                </button>
+                <button
+                  disabled={fetchLoading}
+                  onClick={handleSaveKHHT}
+                  className={`px-6 py-2 rounded-xl text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${
+                    fetchLoading
+                      ? "cursor-not-allowed opacity-50 bg-gray-400"
+                      : "bg-green-500 hover:bg-green-600"
+                  }`}
+                >
+                  {fetchLoading ? "Đang lưu..." : "Lưu kế hoạch học tập"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Success/Error modals */}
+          {success && (
+            <ErrorMessageModal
+              isOpen={!!success}
+              onClose={() => setSuccess(null)}
+              message={success}
+            />
+          )}
+          <ErrorMessageModal
+            isOpen={!!error}
+            onClose={() => setError(null)}
+            message={error || "Đã xảy ra lỗi. Vui lòng thử lại."}
+          />
         </>
       )}
-
-      {/* Success/Error modals */}
-      {success && (
-        <ErrorMessageModal
-          isOpen={!!success}
-          onClose={() => setSuccess(null)}
-          message={success}
-        />
-      )}
-      <ErrorMessageModal
-        isOpen={!!error}
-        onClose={() => setError(null)}
-        message={error || "Đã xảy ra lỗi. Vui lòng thử lại."}
-      />
     </div>
   );
 };

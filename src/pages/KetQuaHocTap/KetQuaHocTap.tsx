@@ -1,13 +1,37 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import {
+  TrendingUp,
+  Award,
+  BookOpen,
+  Target,
+  Calendar,
+  BarChart3,
+} from "lucide-react";
 import Loading from "../../components/Loading";
-import AreaChartComponent from "../../components/chart/Area";
-import CustomPieChart from "../../components/chart/CustomPieChart";
+import GPABarChart, {
+  type ChartData,
+} from "../../components/chart/GPABarChart";
+import SemesterOverviewTable from "../../components/table/SemesterOverviewTable";
 import useAuth from "../../hooks/useAuth";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KQHT_SERVICE } from "../../api/apiEndPoints";
 import type { HocKy } from "../../types/HocKy";
 import type { NamHoc } from "../../types/NamHoc";
 
+export interface KetQuaHocTapData {
+  id: number;
+  maHp: string;
+  tenHp: string;
+  dieuKien: boolean;
+  nhomHp: string;
+  soTinChi: number;
+  diemChu: string;
+  diemSo: number;
+  hocKy: HocKy;
+  namHoc: NamHoc;
+}
+
+// Để tương thích với component cũ
 export interface KetQuaHocTapTableProps {
   id: number;
   maHp: string;
@@ -21,301 +45,308 @@ export interface KetQuaHocTapTableProps {
   namHoc: NamHoc;
 }
 
-export interface KeHoachHocTapTableProps{
-  id: number;
-  maHp: string;
-  tenHp: string;
-  hocPhanCaiThien: boolean;
-  soTinChi: number;
-  hocKy: HocKy;
-  namHoc: NamHoc;
-}
-
 export default function KetQuaHocTap() {
-  const { auth } = useAuth();
-  const axiosPrivate = useAxiosPrivate();
   const [loading, setLoading] = useState(true);
-  const [yearTabIndex, setYearTabIndex] = useState<number>(0);
-  const [hocKyList, setHocKyList] = useState<HocKy[]>([]);
-  const [namHocData, setNamHocData] = useState<NamHoc[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [ketQuaData, setKetQuaData] = useState<KetQuaHocTapData[]>([]);
+  const [chartData, setChartData] = useState<ChartData[]>([]);
 
-  useEffect(() => {
-    const fetchHocKy = async () => {
-      try {
-        setLoading(true);
-        const response = await axiosPrivate.get(
-          KQHT_SERVICE.GET_HOCKY.replace(":maSo", auth.user?.maSo || "")
-        );
-        const hocKyData = response.data.data || [];
-        setHocKyList(hocKyData);
-        
-        // Extract unique namHoc data from hocKy
-        const uniqueNamHoc = hocKyData.reduce((acc: NamHoc[], hocKy: HocKy) => {
-          if (hocKy.namHoc && !acc.find(nh => nh.id === hocKy.namHoc.id)) {
-            acc.push(hocKy.namHoc);
-          }
-          return acc;
-        }, []);
-        setNamHocData(uniqueNamHoc);
-      } catch (error) {
-        console.error("Error fetching hoc ky:", error);
-        setError("Không thể tải dữ liệu học kỳ");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (auth.user?.maSo) {
-      fetchHocKy();
+  const axiosPrivate = useAxiosPrivate();
+  const { auth } = useAuth();
+  const { maSo } = auth.user || {}; // Fetch dữ liệu kết quả học tập
+  const fetchKetQuaHocTap = useCallback(async () => {
+    if (!maSo) {
+      setError("Không tìm thấy mã số sinh viên");
+      setLoading(false);
+      return;
     }
-  }, [axiosPrivate, auth.user?.maSo]);
 
-  const yearTab = [
-    { label: "Tất cả", index: 0 },
-    ...namHocData.map((item: NamHoc) => ({
-      label: `${item.namBatDau} - ${item.namKetThuc}`,
-      index: item.id,
-    })),
-  ];
+    try {
+      setLoading(true);
+      setError(null);
 
-  if (loading) return <Loading />;
+      // Fetch dữ liệu điểm trung bình đã tính toán từ server
+      const response = await axiosPrivate.post(
+        KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY,
+        {
+          maSo: maSo,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+
+      if (response.status !== 200 || response.data?.code !== 200) {
+        throw new Error(
+          `API returned code: ${response.data?.code || response.status}`
+        );
+      }
+      const responseData = response.data.data;
+      const data = Array.isArray(responseData) ? responseData : []; // Transform API data cho chart
+      const transformedChartData: ChartData[] = data.map(
+        (item: any, index: number) => ({
+          tenHocKy: `Học kỳ ${index + 1}`, // Đánh số thứ tự thay vì tên học kỳ thực
+          namHoc: `${item.hocKy?.namHoc?.namBatDau || ""}-${item.hocKy?.namHoc?.namKetThuc || ""}`,
+          diemTBHocKy: item.diemTrungBinh
+            ? Math.round(item.diemTrungBinh * 100) / 100
+            : 0,
+          diemTBTichLuy: item.diemTrungBinhTichLuy
+            ? Math.round(item.diemTrungBinhTichLuy * 100) / 100
+            : 0,
+          soTinChi: item.soTinChi || 0,
+        })
+      );
+
+      setChartData(transformedChartData);
+
+      // Fetch thêm dữ liệu chi tiết để tính thống kê tổng quan
+      const detailResponse = await axiosPrivate.get(KQHT_SERVICE.GET_KETQUA, {
+        params: {
+          maSo: maSo,
+          page: 1,
+          size: 1000,
+        },
+        headers: {
+          "Content-Type": "application/json",
+        },
+        withCredentials: true,
+      });
+
+      if (detailResponse.status === 200 && detailResponse.data?.code === 200) {
+        const detailData = Array.isArray(detailResponse.data.data?.data)
+          ? detailResponse.data.data.data
+          : [];
+
+        // Transform detail data for statistics
+        const transformedDetailData: KetQuaHocTapData[] = detailData.map(
+          (item: any) => ({
+            id: item.id,
+            maHp: item.hocPhan?.maHp || "",
+            tenHp: item.hocPhan?.tenHp || "",
+            dieuKien: item.dieuKien || false,
+            nhomHp: item.hocPhan?.loaiHp || "",
+            soTinChi: item.soTinChi || item.hocPhan?.tinChi || 0,
+            diemChu: item.diemChu || "",
+            diemSo: item.diemSo ? Math.round(item.diemSo * 10) / 10 : 0,
+            hocKy: {
+              maHocKy: item.hocKy?.maHocKy || 0,
+              tenHocKy: item.hocKy?.tenHocKy || "",
+              ngayBatDau: item.hocKy?.ngayBatDau || "",
+              ngayKetThuc: item.hocKy?.ngayKetThuc || "",
+              namHoc: {
+                id: item.hocKy?.namHoc?.id || 0,
+                namBatDau: item.hocKy?.namHoc?.namBatDau || "",
+                namKetThuc: item.hocKy?.namHoc?.namKetThuc || "",
+              },
+            },
+            namHoc: {
+              id: item.hocKy?.namHoc?.id || 0,
+              namBatDau: item.hocKy?.namHoc?.namBatDau || "",
+              namKetThuc: item.hocKy?.namHoc?.namKetThuc || "",
+            },
+          })
+        );
+
+        setKetQuaData(transformedDetailData);
+      }
+    } catch (error) {
+      console.error("Error fetching ket qua hoc tap:", error);
+      setError("Không thể lấy thông tin kết quả học tập. Vui lòng thử lại.");
+      setKetQuaData([]);
+      setChartData([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [maSo, axiosPrivate]);
+  useEffect(() => {
+    fetchKetQuaHocTap();
+  }, [fetchKetQuaHocTap]); // Tính toán thống kê tổng quan từ dữ liệu chart và raw data
+  const statistics = useMemo(() => {
+    if (!ketQuaData.length || !chartData.length)
+      return {
+        tongTinChi: 0,
+        diemTBTichLuy: 0,
+        tinChiCanCaiThien: 0,
+        tinChiNo: 0,
+      };
+
+    const validData = ketQuaData.filter(
+      (item) => item.diemChu !== "W" && item.diemChu !== "I" // Bỏ qua điểm W và I
+    );
+
+    const tongTinChi = validData.reduce((sum, item) => sum + item.soTinChi, 0);
+
+    // Tín chỉ cần cải thiện: điểm số <= 6.5
+    const tinChiCanCaiThien = validData
+      .filter((item) => item.diemSo > 0 && item.diemSo <= 6.5)
+      .reduce((sum, item) => sum + item.soTinChi, 0);
+
+    // Tín chỉ nợ: điểm số < 5 hoặc điểm chữ F
+    const tinChiNo = validData
+      .filter((item) => item.diemSo < 5 || item.diemChu === "F")
+      .reduce((sum, item) => sum + item.soTinChi, 0);
+
+    // Lấy điểm TB tích lũy từ học kỳ cuối cùng
+    const latestSemester = chartData[chartData.length - 1];
+    const diemTBTichLuy = latestSemester ? latestSemester.diemTBTichLuy : 0;
+
+    return {
+      tongTinChi,
+      diemTBTichLuy,
+      tinChiCanCaiThien,
+      tinChiNo,
+    };
+  }, [ketQuaData, chartData]);
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <Loading
+          showOverlay={false}
+          message="Đang tải dữ liệu kết quả học tập..."
+        />
+      </div>
+    );
+  }
 
   if (error) {
     return (
-      <div className="p-4">
-        <p className="text-red-500">{error}</p>
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+          Lỗi: {error}
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="flex gap-2 my-4 items-center justify-center">
-        {yearTab.map((tab) => (
-          <button
-            key={tab.index}
-            className={`px-4 py-2 mt-2 text-sm font-medium rounded-lg ${yearTabIndex === tab.index ? "bg-blue-500 text-white" : "bg-gray-200 text-gray-800 hover:bg-blue-100"}`}
-            onClick={() => setYearTabIndex(tab.index)}
-          >
-            {tab.label}
-          </button>
-        ))}
+    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+      {/* Header */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center space-x-3 mb-4">
+          <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+            <TrendingUp className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Tổng quan kết quả học tập
+            </h1>
+            <p className="text-gray-600">
+              Biểu đồ điểm trung bình và thống kê học tập
+            </p>
+          </div>
+        </div>
       </div>
-      <div className="">
-        {yearTabIndex === 0 && <KetQuaHocTapAll hocKyList={hocKyList} namHocData={namHocData} />}        {yearTabIndex !== 0 && (
-          <div className="">
-            <KetQuaHocTapByYear yearTabIndex={yearTabIndex} hocKyList={hocKyList} />
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Điểm TB tích lũy
+              </p>
+              <p className="text-3xl font-bold text-blue-600">
+                {statistics.diemTBTichLuy}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+              <Award className="w-6 h-6 text-blue-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Tổng tín chỉ</p>
+              <p className="text-3xl font-bold text-green-600">
+                {statistics.tongTinChi}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>{" "}
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-purple-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">
+                Tín chỉ cần cải thiện
+              </p>
+              <p className="text-3xl font-bold text-purple-600">
+                {statistics.tinChiCanCaiThien}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+              <Target className="w-6 h-6 text-purple-600" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-500">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Số tín chỉ nợ</p>
+              <p className="text-3xl font-bold text-orange-600">
+                {statistics.tinChiNo}
+              </p>
+            </div>
+            <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+              <Calendar className="w-6 h-6 text-orange-600" />
+            </div>
+          </div>
+        </div>
+      </div>
+      {/* Chart */}
+      <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center space-x-3 mb-6">
+          {" "}
+          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
+            <BarChart3 className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              Biểu đồ điểm trung bình qua các học kỳ
+            </h2>
+            <p className="text-gray-600">
+              So sánh điểm TB học kỳ và điểm TB tích lũy
+            </p>
+          </div>
+        </div>{" "}
+        {chartData.length > 0 ? (
+          <GPABarChart data={chartData} height={400} />
+        ) : (
+          <div className="flex items-center justify-center h-64 text-gray-500">
+            <div className="text-center">
+              <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+              <p className="text-lg font-medium">Chưa có dữ liệu</p>
+              <p className="text-sm">
+                Không có dữ liệu kết quả học tập để hiển thị biểu đồ
+              </p>
+            </div>
           </div>
         )}
-      </div>
-    </>
-  );
-}
-
-interface KetQuaHocTapComponentProps {
-  hocKyList: HocKy[];
-  namHocData: NamHoc[];
-}
-
-interface KetQuaHocTapByYearProps {
-  yearTabIndex: number;
-  hocKyList: HocKy[];
-}
-
-const KetQuaHocTapAll: React.FC<KetQuaHocTapComponentProps> = ({ hocKyList }) => {
-  const { auth } = useAuth();
-  const axiosPrivate = useAxiosPrivate();
-  const [ketQuaHocTapData, setKetQuaHocTapData] = useState<KetQuaHocTapTableProps[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchKetQuaHocTap = async () => {
-      try {
-        setLoading(true);
-        const response = await axiosPrivate.get(
-          KQHT_SERVICE.GET_KETQUA.replace(":maSo", auth.user?.maSo || "")
-        );
-        setKetQuaHocTapData(response.data.data || []);
-      } catch (error) {
-        console.error("Error fetching ket qua hoc tap:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (auth.user?.maSo) {
-      fetchKetQuaHocTap();
-    }
-  }, [axiosPrivate, auth.user?.maSo]);
-
-  const data = hocKyList.map((hocKy) => ({
-    name: `${hocKy.tenHocKy} - ${hocKy.namHoc.namBatDau} - ${hocKy.namHoc.namKetThuc}`,
-    diem: 7.5, // Placeholder - should calculate from actual grades
-  }));
-
-  const sortedKetQuaHocTap = [...ketQuaHocTapData].sort(
-    (a, b) => a.diemSo - b.diemSo
-  );
-  const ketQuaHocTapSortedAndFiltered = sortedKetQuaHocTap.filter(
-    (item) => item.diemSo !== 0 && item.diemSo !== undefined
-  );
-
-  if (loading) return <Loading />;
-
-  return (
-    <>
-      <AreaChartComponent data={data} tableName="Điểm Trung Bình Tích Lũy" />
-      <div className="flex gap-2 p-2 m-5">
-          <div className="p-4 bg-gray-100 font-medium text-gray-700 rounded-lg shadow-md min-w-160 max-w-190 w-full">
-          <CustomPieChart rowData={ketQuaHocTapData} />
-        </div>
-        <div className="font-medium  text-gray-700 rounded-lg shadow-md md:w-1/4 w-full flex flex-col content-center justify-items-center gap-4">
-          <div className="h-1/2 bg-green-300 p-2 flex justify-center rounded-md flex-col ">
-            <p className="font-semibold text-2xl text-center">
-              Số Tín Chỉ Tích Luỹ
-            </p>
-            <p className="grade text-6xl text-center mt-2">
-              {ketQuaHocTapData.reduce((total, item) => total + item.soTinChi, 0)}
-            </p>
-            <p className="text-xl text-center mt-2">Bạn đang đúng tiến độ</p>          </div>
-          <div className="h-1/2 bg-green-300 p-2 flex justify-center rounded-md flex-col ">
-            <p className="font-semibold text-2xl text-center">
-              Điểm Trung Bình Tích Luỹ
-            </p>
-            <p className="grade text-6xl text-center mt-2">
-              {ketQuaHocTapData.length > 0 
-                ? (ketQuaHocTapData.reduce((total, item) => total + item.diemSo, 0) / ketQuaHocTapData.length).toFixed(2)
-                : "0.00"
-              }
-            </p>
-            <p className="text-xl text-center mt-2">Xếp loại: Giỏi!</p>
-          </div>
-        </div>
-        <div className="p-4 bg-yellow-200 font-medium text-gray-700 rounded-lg shadow-md md:w-1/4 w-full ">
-          <p className="font-semibold text-lg text-center mb-2">
-            Gợi ý cải thiện điểm
-          </p>
-          {ketQuaHocTapSortedAndFiltered.length > 0 && (
-            <ul className="">
-              {ketQuaHocTapSortedAndFiltered.slice(0, 5).map((item) => (
-                <li key={item.id} className="mb-2 p-2 bg-[#FFA500] rounded-md">
-                  <span className="font-semibold">{item.tenHp}</span> - Điểm số:{" "}
-                  {item.diemChu}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </div>
-    </>
-  );
-};
-
-const KetQuaHocTapByYear: React.FC<KetQuaHocTapByYearProps> = ({
-  yearTabIndex,
-  hocKyList,
-}) => {
-  const { auth } = useAuth();
-  const axiosPrivate = useAxiosPrivate();
-  const [ketQuaHocTapData, setKetQuaHocTapData] = useState<KetQuaHocTapTableProps[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchKetQuaHocTap = async () => {
-      try {
-        setLoading(true);
-        const response = await axiosPrivate.get(
-          KQHT_SERVICE.GET_KETQUA.replace(":maSo", auth.user?.maSo || "")
-        );
-        const allData = response.data.data || [];
-        // Filter by year
-        const filteredData = allData.filter((item: KetQuaHocTapTableProps) => 
-          item.namHoc.id === yearTabIndex
-        );
-        setKetQuaHocTapData(filteredData);
-      } catch (error) {
-        console.error("Error fetching ket qua hoc tap:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (auth.user?.maSo && yearTabIndex) {
-      fetchKetQuaHocTap();
-    }
-  }, [axiosPrivate, auth.user?.maSo, yearTabIndex]);
-
-  const filteredHocKy = hocKyList.filter(hocKy => hocKy.namHoc.id === yearTabIndex);
-  
-  const data = filteredHocKy.map((hocKy) => ({
-    name: `${hocKy.tenHocKy} - ${hocKy.namHoc.namBatDau} - ${hocKy.namHoc.namKetThuc}`,
-    diem: 7.5, // Placeholder - should calculate from actual grades
-  }));
-
-  const sortedKetQuaHocTap = [...ketQuaHocTapData].sort(
-    (a, b) => a.diemSo - b.diemSo
-  );
-  const ketQuaHocTapSortedAndFiltered = sortedKetQuaHocTap.filter(
-    (item) => item.diemSo !== 0 && item.diemSo !== undefined
-  );
-
-  if (loading) return <Loading />;
-
-  return (
-    <>
-      <div>
-        <AreaChartComponent
-          data={data}
-          tableName="Điểm Trung Bình Tích Lũy"
-        />
-        <div className="flex gap-2  p-2 m-5">
-          <div className="p-4 bg-gray-100 font-medium text-gray-700 rounded-lg shadow-md min-w-160 max-w-190 w-full">
-            <CustomPieChart rowData={ketQuaHocTapData} />
-          </div>
-          <div className="font-medium  text-gray-700 rounded-lg shadow-md md:w-1/4 w-full flex flex-col content-center justify-items-center gap-4">
-            <div className="h-1/2 bg-green-300 p-2 flex justify-center rounded-md flex-col ">
-              <p className="font-semibold text-2xl text-center">
-                Số Tín Chỉ Tích Luỹ
-              </p>
-              <p className="grade text-6xl text-center mt-2">
-                {ketQuaHocTapData.reduce((total, item) => total + item.soTinChi, 0)}
-              </p>
-              <p className="text-xl text-center mt-2">Bạn đang đúng tiến độ</p>
+      </div>{" "}
+      {/* Recent Semesters Table */}
+      {chartData.length > 0 && (
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <div className="flex items-center space-x-3 mb-6">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-white" />
             </div>
-            <div className="h-1/2 bg-green-300 p-2 flex justify-center rounded-md flex-col ">
-              <p className="font-semibold text-2xl text-center">
-                Điểm Trung Bình Tích Luỹ
-              </p>
-              <p className="grade text-6xl text-center mt-2">
-                {ketQuaHocTapData.length > 0 
-                  ? (ketQuaHocTapData.reduce((total, item) => total + item.diemSo, 0) / ketQuaHocTapData.length).toFixed(2)
-                  : "0.00"
-                }
-              </p>
-              <p className="text-xl text-center mt-2">Xếp loại: Giỏi!</p>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">
+                Bảng điểm chi tiết
+              </h2>
+              <p className="text-gray-600">Thống kê điểm số qua các học kỳ</p>
             </div>
           </div>
-          <div className="p-4 bg-yellow-200 font-medium text-gray-700 rounded-lg shadow-md md:w-1/4 w-full ">
-            <p className="font-semibold text-lg text-center mb-2">
-              Gợi ý cải thiện điểm
-            </p>
-            {ketQuaHocTapSortedAndFiltered.length > 0 && (
-              <ul className="">
-                {ketQuaHocTapSortedAndFiltered.slice(0, 5).map((item) => (
-                  <li
-                    key={item.id}
-                    className="mb-2 p-2 bg-[#FFA500] rounded-md"
-                  >
-                    <span className="font-semibold">{item.tenHp}</span> - Điểm
-                    số: {item.diemChu}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+
+          <SemesterOverviewTable data={chartData} loading={loading} />
         </div>
-      </div>
-    </>
+      )}
+    </div>
   );
-};
+}

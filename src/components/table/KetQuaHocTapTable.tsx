@@ -21,7 +21,7 @@ import {
 import React, { useMemo, useState, useEffect } from "react";
 import type { HocKy } from "../../types/HocKy";
 import type { NamHoc } from "../../types/NamHoc";
-
+import Loading from "../Loading";
 
 // define columns for the KetQuaHocTapTable
 export interface KetQuaHocTapTableType {
@@ -69,7 +69,8 @@ const columns: ColumnDef<KetQuaHocTapTableType>[] = [
         </button>
       </div>
     ),
-  },{
+  },
+  {
     accessorKey: "dieuKien",
     header: ({ column }) => (
       <div className="flex items-center justify-center">
@@ -91,7 +92,8 @@ const columns: ColumnDef<KetQuaHocTapTableType>[] = [
         )}
       </div>
     ),
-  },  {
+  },
+  {
     accessorKey: "nhomHp",
     header: ({ column }) => (
       <div className="flex items-center justify-center">
@@ -163,8 +165,8 @@ interface KetQuaHocTapTableProps {
   loading?: boolean;
 }
 
-const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({ 
-  data, 
+const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
+  data,
   name = "Kết Quả Học Tập",
   initialExpanded = true,
   enableServerPagination = false,
@@ -174,7 +176,7 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
   totalElements = 0,
   onPageChange,
   onPageSizeChange,
-  loading = false
+  loading = false,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [isExpanded, setIsExpanded] = useState<boolean>(initialExpanded);
@@ -220,7 +222,7 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
             className="border-none px-3 py-1.5 rounded-lg bg-white/90 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white text-sm placeholder-gray-500 transition-all duration-200 w-48"
           />
         </div>
-          <div className="flex-1 flex justify-center items-center">
+        <div className="flex-1 flex justify-center items-center">
           <h3 className="font-bold uppercase tracking-wide">{name}</h3>
           {(data.length > 0 || enableServerPagination) && (
             <span className="ml-3 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
@@ -250,7 +252,7 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
             </span>
           )}
         </div>
-        
+
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
           <button
             onClick={() => setIsExpanded(!isExpanded)}
@@ -298,7 +300,8 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
                   ))}
                 </tr>
               ))}
-            </thead>            <tbody>
+            </thead>
+            <tbody>
               {loading ? (
                 <tr>
                   <td
@@ -309,12 +312,8 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
                         .length || columns.length
                     }
                     className="px-5 py-8 text-center text-gray-500 bg-gray-50 border-b-1 border-gray-200"
-                  >
-                    <div className="flex flex-col items-center justify-center space-y-3 py-4">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-                      <span className="text-lg font-semibold text-gray-600">
-                        Đang tải dữ liệu...
-                      </span>
+                  >                    <div className="flex flex-col items-center justify-center space-y-3 py-4">
+                      <Loading showOverlay={false} message="Đang tải dữ liệu..." />
                     </div>
                   </td>
                 </tr>
@@ -373,8 +372,9 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
               )}
             </tbody>
           </table>
-        </div>        {/* Pagination Controls */}
-        {((enableServerPagination && totalPages > 1) || 
+        </div>
+        {/* Pagination Controls */}
+        {((enableServerPagination && totalPages > 1) ||
           (!enableServerPagination && (table.getPageCount() > 1 || table.getFilteredRowModel().rows.length > 7))) && (
           <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-t border-gray-200">
             <div className="flex items-center space-x-4">
@@ -441,7 +441,8 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
                   ))}
                 </select>
               </div>
-            </div>            {/* Phân trang chỉ hiển thị khi có hơn 1 trang*/}
+            </div>
+            {/* Phân trang chỉ hiển thị khi có hơn 1 trang*/}
             {((enableServerPagination && totalPages > 1) || (!enableServerPagination && table.getPageCount() > 1)) && (
               <div className="flex items-center space-x-2">
                 {/* First page button */}
@@ -482,7 +483,8 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
                   title="Trang trước"
                 >
                   <ChevronLeft className="h-4 w-4" />
-                </button>                {/* Page numbers */}
+                </button>
+                {/* Page numbers */}
                 <div className="flex items-center space-x-1">
                   {(() => {
                     const currPage = enableServerPagination ? currentPage : table.getState().pagination.pageIndex + 1;

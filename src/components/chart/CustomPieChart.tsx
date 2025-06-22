@@ -29,7 +29,7 @@ interface PieProps {
 export default function CustomPieChart({ rowData }: PieProps) {
   const gradeDistributionData = rowData.reduce((acc, item) => {
     const grade = item.diemChu === "" ? "Non-graded" : item.diemChu;
-    const existing = acc.find((entry) => entry.name === grade);
+    const existing = acc.find((entry: any) => entry.name === grade);
     if (existing) {
       existing.value += 1;
       existing.courses.push(item.tenHp);
@@ -79,7 +79,7 @@ export default function CustomPieChart({ rowData }: PieProps) {
               outerRadius={100}
               label={({ name, value }) => `${name}: ${value}`}
             >
-              {gradeDistributionData.map((entry) => (
+              {gradeDistributionData.map((entry: any) => (
                 <Cell
                   key={`cell-${entry.name}`}
                   fill={GRADE_COLORS[entry.name] || "#D3D3D3"} // Fallback color

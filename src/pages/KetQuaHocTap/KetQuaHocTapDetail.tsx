@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
 import NavigationPanel from "../../components/navigation/NavigationPanel";
+import Loading from "../../components/Loading";
 import KetQuaHocTapTable, {
   type KetQuaHocTapTableType,
 } from "../../components/table/KetQuaHocTapTable";
-import Loading from "../../components/Loading";
 import { KQHT_SERVICE } from "../../api/apiEndPoints";
 import useAuth from "../../hooks/useAuth";
 import type { HocKy } from "../../types/HocKy";
@@ -200,12 +200,14 @@ const KetQuaHocTapDetail = () => {
         setSelectedHocKy(hocKyIdToName[hocKyId]);
       }
     }
-  }, [searchParams, namHocIdToName, hocKyIdToName]); 
-  // Hàm để thay đổi năm học và cập nhật URL
+  }, [searchParams, namHocIdToName, hocKyIdToName]);   // Hàm để thay đổi năm học và cập nhật URL
   const handleNamHocChange = (namHoc: string) => {
+    if (namHoc === selectedNamHoc) return; // Tránh gọi lại không cần thiết
+    
     setNavigationLoading(true);
     setSelectedNamHoc(namHoc);
     setSelectedHocKy(""); // Reset học kỳ khi thay đổi năm học
+    
     const newParams = new URLSearchParams(searchParams);
     if (namHoc === "Tất cả") {
       newParams.delete("namHocId");
@@ -217,64 +219,63 @@ const KetQuaHocTapDetail = () => {
     }
     newParams.delete("hocKyId"); // Xóa param học kỳ khi thay đổi năm học
 
+    // Cập nhật URL và tắt loading
+    setSearchParams(newParams);
     setTimeout(() => {
-      setSearchParams(newParams);
       setNavigationLoading(false);
-    }, 500);
+    }, 300); // Giảm thời gian timeout để responsive hơn
   };
 
   // Hàm để thay đổi học kỳ
   const handleHocKyChange = (hocKy: string) => {
+    if (hocKy === selectedHocKy) return; // Tránh gọi lại không cần thiết
+    
     setNavigationLoading(true);
     setSelectedHocKy(hocKy);
+    
     const newParams = new URLSearchParams(searchParams);
-
     // Lấy ID học kỳ từ tên học kỳ và năm học hiện tại
     const hocKyId = hocKyNameToId[selectedNamHoc]?.[hocKy];
     if (hocKyId) {
       newParams.set("hocKyId", hocKyId.toString());
     }
 
-    // Thêm timeout 1 giây
+    // Cập nhật URL và tắt loading
+    setSearchParams(newParams);
     setTimeout(() => {
-      setSearchParams(newParams);
       setNavigationLoading(false);
-    }, 1000);
-  };
-  return (
+    }, 300); // Giảm thời gian timeout để responsive hơn
+  };return (
     <div className="w-full space-y-4">
-      {loading && <Loading />}
-      {error && (
+      {/* Thanh điều hướng luôn hiển thị */}
+      <NavigationPanel
+        namHocList={namHocList}
+        selectedNamHoc={selectedNamHoc}
+        selectedHocKy={selectedHocKy}
+        hocKyData={hocKyData}
+        onNamHocChange={handleNamHocChange}
+        onHocKyChange={handleHocKyChange}
+      />
+      
+      {/* Content area với loading states */}
+      {loading ? (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <Loading showOverlay={false} message="Đang tải dữ liệu học kỳ..." />
+        </div>
+      ) : error ? (
         <div className="p-4 text-red-500 bg-red-50 border border-red-200 rounded-lg">
           Lỗi: {error}
         </div>
-      )}
-      {!loading && !error && (
-        <>
-          {/* Thanh điều hướng */}
-          <NavigationPanel
-            namHocList={namHocList}
-            selectedNamHoc={selectedNamHoc}
-            selectedHocKy={selectedHocKy}
-            hocKyData={hocKyData}
-            onNamHocChange={handleNamHocChange}
-            onHocKyChange={handleHocKyChange}
-          />
-          {/* Nội dung hiển thị */}
-          {navigationLoading ? (
-            <div className="bg-white rounded-lg shadow-sm p-8 flex justify-center items-center">
-              <div className="flex flex-col items-center space-y-4">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                <p className="text-gray-600">Đang tải dữ liệu...</p>
-              </div>
-            </div>
-          ) : (
-            <ContentDisplay
-              selectedNamHoc={selectedNamHoc}
-              selectedHocKy={selectedHocKy}
-            />
-          )}
-        </>
+      ) : navigationLoading ? (
+        <div className="bg-white rounded-lg shadow-sm p-6">
+          <Loading showOverlay={false} message="Đang cập nhật dữ liệu..." />
+        </div>
+      ) : (
+        /* Nội dung hiển thị */
+        <ContentDisplay
+          selectedNamHoc={selectedNamHoc}
+          selectedHocKy={selectedHocKy}
+        />
       )}
     </div>
   );
@@ -458,22 +459,26 @@ const ContentDisplay = ({
     pagination.currentPage,
     pagination.pageSize,
     fetchKetQuaHocTap,
-  ]); // Hàm xử lý thay đổi trang
+  ]);  // Hàm xử lý thay đổi trang
   const handlePageChange = (newPage: number) => {
+    if (newPage === pagination.currentPage) return; // Tránh gọi API không cần thiết
+    
     setTableLoading(true);
-    // Thêm timeout 1 giây để cải thiện UX
-    setTimeout(() => {
-      setPagination((prev) => ({ ...prev, currentPage: newPage }));
-    }, 1000);
+    // Cập nhật pagination ngay lập tức để UX tốt hơn
+    setPagination((prev) => ({ ...prev, currentPage: newPage }));
   };
 
   // Hàm xử lý thay đổi kích thước trang
   const handlePageSizeChange = (newSize: number) => {
+    if (newSize === pagination.pageSize) return; // Tránh gọi API không cần thiết
+    
     setTableLoading(true);
-    // Thêm timeout 1 giây để cải thiện UX
-    setTimeout(() => {
-      setPagination((prev) => ({ ...prev, pageSize: newSize, currentPage: 1 }));
-    }, 1000);
+    // Reset về trang 1 khi thay đổi page size
+    setPagination((prev) => ({ 
+      ...prev, 
+      pageSize: newSize, 
+      currentPage: 1 
+    }));
   };
 
   // Hàm để lọc dữ liệu theo năm học và học kỳ (chỉ dùng cho client-side filter nếu cần)
@@ -512,25 +517,30 @@ const ContentDisplay = ({
         Lỗi: {error}
       </div>
     );
-  }
-  const renderContent = () => {
+  }  const renderContent = () => {
+    // Nếu đang loading lần đầu, hiển thị loading toàn bộ content area
+    if (tableLoading && ketQuaData.length === 0) {
+      return (
+        <div className="p-6">
+          <Loading showOverlay={false} message="Đang tải kết quả học tập..." />
+        </div>
+      );
+    }
+
     return (
       <div className="p-4">
-        <div>
-          {" "}
-          <KetQuaHocTapTable
-            name="Kết quả học tập"
-            data={filteredData}
-            enableServerPagination={!searchParams.get("hocKyId")} // Chỉ dùng server pagination khi không filter theo học kỳ
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            pageSize={pagination.pageSize}
-            totalElements={pagination.totalElements}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            loading={tableLoading}
-          />
-        </div>
+        <KetQuaHocTapTable
+          name="Kết quả học tập"
+          data={filteredData}
+          enableServerPagination={!searchParams.get("hocKyId")} // Chỉ dùng server pagination khi không filter theo học kỳ
+          currentPage={pagination.currentPage}
+          totalPages={pagination.totalPages}
+          pageSize={pagination.pageSize}
+          totalElements={pagination.totalElements}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          loading={tableLoading}
+        />
       </div>
     );
   };

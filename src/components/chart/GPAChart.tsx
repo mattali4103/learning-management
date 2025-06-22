@@ -55,34 +55,23 @@ const GPAChart = ({ data }: GPAChartProps) => {
   const handleChartClick = () => {
     navigate("/kqht/chitiet");
   };  const handleDataPointClick = (data: any) => {
-    if (data && data.activePayload && data.activePayload[0]) {
-      const clickedData = data.activePayload[0].payload;
-      const hocKyId = clickedData.hocKyId;
-      const namHocId = clickedData.namHocId;
-      
-      console.log('GPAChart click data:', { hocKyId, namHocId });
-      
-      if (hocKyId && namHocId) {
-        console.log('Navigating to study results with both IDs:', { hocKyId, namHocId });
-        // Navigate to specific semester and year details
-        navigate(`/kqht/chitiet?namHocId=${namHocId}&hocKyId=${hocKyId}`);
-      } else if (namHocId) {
-        console.log('Navigating to study results with namHocId only:', namHocId);
-        // Navigate to specific year details
-        navigate(`/kqht/chitiet?namHocId=${namHocId}`);
-      } else if (hocKyId) {
-        console.log('Navigating to study results with hocKyId only:', hocKyId);
-        // Navigate to specific semester (fallback)
-        navigate(`/kqht/chitiet?hocKyId=${hocKyId}`);
-      } else {
-        console.log('No IDs found, navigating to general page');
-        // Fallback to general page
-        navigate('/kqht/chitiet');
-      }
-    } else {
-      console.log('No data point found, navigating to general page');
+    if (!data?.activePayload?.[0]) {
       navigate('/kqht/chitiet');
+      return;
     }
+
+    const clickedData = data.activePayload[0].payload;
+    const { hocKyId, namHocId } = clickedData;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (namHocId) params.append('namHocId', namHocId.toString());
+    if (hocKyId) params.append('hocKyId', hocKyId.toString());
+    
+    const queryString = params.toString();
+    const url = queryString ? `/kqht/chitiet?${queryString}` : '/kqht/chitiet';
+    
+    navigate(url);
   };
 
   const CustomTooltip = ({ active, payload, label }: any) => {
@@ -210,38 +199,6 @@ const GPAChart = ({ data }: GPAChartProps) => {
         <span className="text-gray-500 text-xs">
           Nhấp vào điểm để xem chi tiết học kỳ
         </span>
-      </div>
-
-      {/* Grade scale legend */}
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-        <p className="text-xs text-gray-600 mb-2">Thang điểm xếp loại:</p>
-        <div className="grid grid-cols-5 gap-2 text-xs">
-          <div className="text-center">
-            <div className="w-full h-2 bg-purple-500 rounded mb-1"></div>
-            <span className="text-purple-600 font-medium">Xuất sắc</span>
-            <div className="text-gray-500">≥3.6</div>
-          </div>
-          <div className="text-center">
-            <div className="w-full h-2 bg-green-500 rounded mb-1"></div>
-            <span className="text-green-600 font-medium">Giỏi</span>
-            <div className="text-gray-500">≥3.2</div>
-          </div>
-          <div className="text-center">
-            <div className="w-full h-2 bg-blue-500 rounded mb-1"></div>
-            <span className="text-blue-600 font-medium">Khá</span>
-            <div className="text-gray-500">≥2.5</div>
-          </div>
-          <div className="text-center">
-            <div className="w-full h-2 bg-yellow-500 rounded mb-1"></div>
-            <span className="text-yellow-600 font-medium">TB</span>
-            <div className="text-gray-500">≥2.0</div>
-          </div>
-          <div className="text-center">
-            <div className="w-full h-2 bg-red-500 rounded mb-1"></div>
-            <span className="text-red-600 font-medium">Yếu</span>
-            <div className="text-gray-500">&lt;2.0</div>
-          </div>
-        </div>
       </div>
     </div>
   );

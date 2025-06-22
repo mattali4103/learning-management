@@ -1,13 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
 import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
 import { KHHT_SERVICE } from "../../api/apiEndPoints";
+import Loading from "../../components/Loading";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { Outlet } from "react-router-dom";
 import CustomBarChart from "../../components/chart/CustomBarChart";
 import useAuth from "../../hooks/useAuth";
 import { ArrowUpDown } from "lucide-react";
 import { type ColumnDef } from "@tanstack/react-table";
-import Loading from "../../components/Loading";
 
 interface KHHTData {
   id: number;
@@ -194,12 +194,16 @@ export const KeHoachHocTapPage = () => {
     };
     if (maSo) {
       fetchKeHoachHocTap();
-    }  }, [axiosPrivate, maSo]);
-  
+    }
+  }, [axiosPrivate, maSo]);
   if (loading) {
-    return <Loading message="Đang tải kế hoạch học tập..." />;
+    return (
+      <div className="container mx-auto p-4">
+        <Loading showOverlay={false} message="Đang tải kế hoạch học tập..." />
+      </div>
+    );
   }
-  
+
   if (error) {
     return <div className="text-center p-4 text-red-500">{error}</div>;
   }
@@ -215,10 +219,12 @@ export const KeHoachHocTapPage = () => {
       </div>{" "}
       {/* Bảng kế hoạch học tập tổng hợp */}
       <div className="transition-all duration-300 hover:scale-[1.01]">
+        {" "}
         <KeHoachHocTapTable
           name="Kế hoạch học tập"
           data={keHoachHocTap}
           columns={columns}
+          loading={loading}
         />
       </div>
     </div>
