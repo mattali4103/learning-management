@@ -11,9 +11,6 @@ import { type ColumnDef } from "@tanstack/react-table";
 
 interface KHHTData {
   id: number;
-  loaiHocPhan: string;
-  hocPhanCaiThien: boolean;
-  hocPhan: {
     maHp: string;
     tenHp: string;
     tinChi: number;
