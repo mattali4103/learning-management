@@ -9,8 +9,6 @@ import {
 } from "@tanstack/react-table";
 import {
   ArrowUp,
-  FileText,
-  TriangleAlert,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -18,6 +16,7 @@ import {
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import Loading from "../Loading";
+import { EmptyTableState } from "./EmptyTableState";
 
 interface KeHoachHocTapTableProps {
   name: string;
@@ -25,6 +24,19 @@ interface KeHoachHocTapTableProps {
   columns: ColumnDef<any>[];
   initialExpanded?: boolean;
   loading?: boolean;
+  // Server-side pagination props
+  enableServerPagination?: boolean;
+  currentPage?: number;
+  totalPages?: number;
+  pageSize?: number;
+  totalElements?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (size: number) => void;
+  // Empty state props
+  emptyStateTitle?: string;
+  emptyStateDescription?: string;
+  emptyStateIcon?: React.ComponentType<any>;
+  showEmptyStateWarningBadge?: boolean;
 }
 
 export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
@@ -33,6 +45,19 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   columns,
   initialExpanded = true,
   loading = false,
+  // Server-side pagination props
+  enableServerPagination = false,
+  currentPage = 1,
+  totalPages = 1,
+  pageSize = 10,
+  totalElements = 0,
+  onPageChange,
+  onPageSizeChange,
+  // Empty state props
+  emptyStateTitle,
+  emptyStateDescription,
+  emptyStateIcon,
+  showEmptyStateWarningBadge,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
 
@@ -47,22 +72,36 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   //   Chuyển đổi dữ liệu thành dạng phù hợp với bảng
   //   Sử dụng useMemo để tối ưu hóa hiệu suất
   //   Chỉ cập nhật khi dữ liệu thay đổi
-  const dataRow = useMemo(() => data, [data]);
-  const table = useReactTable({
+  const dataRow = useMemo(() => data, [data]); const table = useReactTable({
     data: dataRow,
     columns: columns,
     state: {
       globalFilter,
+      ...(enableServerPagination && {
+        pagination: {
+          pageIndex: currentPage - 1, // Convert to 0-based for react-table
+          pageSize: pageSize,
+        },
+      }),
     },
     //   Thiết lập các tùy chọn cho bảng
     onGlobalFilterChange: setGlobalFilter,
     getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    ...(enableServerPagination
+      ? {
+        // Server-side pagination setup
+        manualPagination: true,
+        pageCount: totalPages,
+      }
+      : {
+        // Client-side pagination setup
+        getPaginationRowModel: getPaginationRowModel(),
+      }),
     initialState: {
       pagination: {
-        pageSize: 7,
+        pageSize: enableServerPagination ? pageSize : 7,
       },
     },
   });
@@ -83,15 +122,30 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
           <h3 className="font-bold uppercase tracking-wide">{name}</h3>
           {data.length > 0 && (
             <span className="ml-3 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
-              {globalFilter
-                ? `${table.getFilteredRowModel().rows.length}/${data.length}`
-                : `${data.length}`}{" "}
-              học phần
-              {table.getPageCount() > 1 && (
-                <span className="ml-1">
-                  • Trang {table.getState().pagination.pageIndex + 1}/
-                  {table.getPageCount()}
-                </span>
+              {enableServerPagination ? (
+                // Server-side pagination display
+                <>
+                  {totalElements} học phần
+                  {totalPages > 1 && (
+                    <span className="ml-1">
+                      • Trang {currentPage}/{totalPages}
+                    </span>
+                  )}
+                </>
+              ) : (
+                // Client-side pagination display
+                <>
+                  {globalFilter
+                    ? `${table.getFilteredRowModel().rows.length}/${data.length}`
+                    : `${data.length}`}{" "}
+                  học phần
+                  {table.getPageCount() > 1 && (
+                    <span className="ml-1">
+                      • Trang {table.getState().pagination.pageIndex + 1}/
+                      {table.getPageCount()}
+                    </span>
+                  )}
+                </>
               )}
             </span>
           )}
@@ -104,20 +158,18 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
             title={isExpanded ? "Ẩn bảng" : "Hiện bảng"}
           >
             <ArrowUp
-              className={`w-5 h-5 text-white transition-all duration-300 group-hover:scale-110 ${
-                isExpanded ? "rotate-180" : "rotate-0"
-              }`}
+              className={`w-5 h-5 text-white transition-all duration-300 group-hover:scale-110 ${isExpanded ? "rotate-180" : "rotate-0"
+                }`}
             />
           </button>
         </div>
       </div>
 
       <div
-        className={`transition-all duration-400 ease-in-out overflow-hidden ${
-          isExpanded
-            ? "max-h-[2000px] opacity-100 transform translate-y-0"
-            : "max-h-0 opacity-0 transform -translate-y-2"
-        }`}
+        className={`transition-all duration-400 ease-in-out overflow-hidden ${isExpanded
+          ? "max-h-[2000px] opacity-100 transform translate-y-0"
+          : "max-h-0 opacity-0 transform -translate-y-2"
+          }`}
       >
         <div
           className={`transition-all duration-200 ${isExpanded ? "delay-100" : ""}`}
@@ -129,20 +181,20 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className={`px-2 py-3 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600 ${
-                        header.id === "id" ? "hidden" : ""
-                      }`}
+                      className={`px-2 py-3 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600 ${header.id === "id" ? "hidden" : ""
+                        }`}
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                     </th>
                   ))}
                 </tr>
-              ))}            </thead>
+              ))}
+            </thead>
             <tbody>
               {loading ? (
                 <tr>
@@ -162,16 +214,14 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className={`hover:bg-gray-200 bg-gray-50 ${
-                      row.id === "id" ? "hidden" : ""
-                    }`}
+                    className={`hover:bg-gray-200 bg-gray-50 ${row.id === "id" ? "hidden" : ""
+                      }`}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className={`px-5 py-1.5 border-b-1 border-gray-200 text-center border-x-gray-300 border-x-1 ${
-                          cell.column.id === "id" ? "hidden" : ""
-                        }`}
+                        className={`px-5 py-1.5 border-b-1 border-gray-200 text-center border-x-gray-300 border-x-1 ${cell.column.id === "id" ? "hidden" : ""
+                          }`}
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -180,8 +230,7 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       </td>
                     ))}
                   </tr>
-                ))
-              ) : (
+                ))) : (
                 <tr>
                   <td
                     colSpan={
@@ -192,187 +241,328 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                     }
                     className="px-5 py-8 text-center text-gray-500 bg-gray-50 border-b-1 border-gray-200"
                   >
-                    {" "}
-                    <div className="flex flex-col items-center justify-center space-y-3 py-4">
-                      <div className="relative">
-                        <FileText className="w-16 h-16 text-gray-300" />
-                        <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 border-2 border-white">
-                          <TriangleAlert className="w-3 h-3 text-yellow-600" />
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <span className="text-lg font-semibold text-gray-600">
-                          Chưa nhập kế hoạch học tập
-                        </span>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Không có dữ liệu để hiển thị cho mục này
-                        </p>
-                      </div>
-                    </div>
+                    <EmptyTableState
+                      title={emptyStateTitle}
+                      description={emptyStateDescription}
+                      icon={emptyStateIcon}
+                      showWarningBadge={showEmptyStateWarningBadge}
+                    />
                   </td>
                 </tr>
               )}{" "}
             </tbody>
           </table>
-        </div>{" "}
-        {/* Pagination Controls */}{" "}
-        {(table.getPageCount() > 1 ||
-          table.getFilteredRowModel().rows.length > 7) && (
-          <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-t border-gray-200">
-            <div className="flex items-center text-sm text-gray-700">
-              <span>
-                Hiển thị{" "}
-                <span className="font-medium">
-                  {table.getState().pagination.pageIndex *
-                    table.getState().pagination.pageSize +
-                    1}
-                </span>{" "}
-                đến{" "}
-                <span className="font-medium">
-                  {Math.min(
-                    (table.getState().pagination.pageIndex + 1) *
-                      table.getState().pagination.pageSize,
-                    table.getFilteredRowModel().rows.length
-                  )}
-                </span>{" "}
-                trong tổng số{" "}
-                <span className="font-medium">
-                  {table.getFilteredRowModel().rows.length}
-                </span>{" "}
-                học phần
-              </span>
-            </div>
-
-            {/* Phân trang chỉ hiển thị khi có hơn 2 trang*/}
-            {table.getPageCount() > 1 && (
-              <div className="flex items-center space-x-2">
-                {/* First page button */}
-                <button
-                  onClick={() => table.setPageIndex(0)}
-                  disabled={!table.getCanPreviousPage()}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${
-                    !table.getCanPreviousPage()
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                  }`}
-                  title="Trang đầu"
-                >
-                  <ChevronsLeft className="h-4 w-4" />
-                </button>
-
-                {/* Previous page button */}
-                <button
-                  onClick={() => table.previousPage()}
-                  disabled={!table.getCanPreviousPage()}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${
-                    !table.getCanPreviousPage()
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                  }`}
-                  title="Trang trước"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </button>
-
-                {/* Page numbers */}
-                <div className="flex items-center space-x-1">
-                  {(() => {
-                    const currentPage = table.getState().pagination.pageIndex;
-                    const totalPages = table.getPageCount();
-                    const pages = [];
-
-                    // Always show first page
-                    if (totalPages > 0) {
-                      pages.push(0);
-                    }
-
-                    // Show pages around current page
-                    const start = Math.max(1, currentPage - 1);
-                    const end = Math.min(totalPages - 2, currentPage + 1);
-
-                    // Add ellipsis if needed
-                    if (start > 1) {
-                      pages.push(-1); // -1 represents ellipsis
-                    }
-
-                    // Add middle pages
-                    for (let i = start; i <= end; i++) {
-                      if (i > 0 && i < totalPages - 1) {
-                        pages.push(i);
-                      }
-                    }
-
-                    // Add ellipsis if needed
-                    if (end < totalPages - 2) {
-                      pages.push(-2); // -2 represents ellipsis
-                    }
-
-                    // Always show last page
-                    if (totalPages > 1) {
-                      pages.push(totalPages - 1);
-                    }
-
-                    return pages.map((page, index) => {
-                      if (page === -1 || page === -2) {
-                        return (
-                          <span
-                            key={`ellipsis-${index}`}
-                            className="px-2 py-1 text-gray-400"
-                          >
-                            ...
-                          </span>
-                        );
-                      }
-
-                      const isActive = page === currentPage;
-                      return (
-                        <button
-                          key={page}
-                          onClick={() => table.setPageIndex(page)}
-                          className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                            isActive
-                              ? "bg-blue-500 text-white"
-                              : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
-                        >
-                          {page + 1}
-                        </button>
-                      );
-                    });
-                  })()}
-                </div>
-
-                {/* Next page button */}
-                <button
-                  onClick={() => table.nextPage()}
-                  disabled={!table.getCanNextPage()}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${
-                    !table.getCanNextPage()
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                  }`}
-                  title="Trang tiếp"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </button>
-
-                {/* Last page button */}
-                <button
-                  onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-                  disabled={!table.getCanNextPage()}
-                  className={`p-2 rounded-lg transition-colors duration-200 ${
-                    !table.getCanNextPage()
-                      ? "text-gray-400 cursor-not-allowed"
-                      : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                  }`}
-                  title="Trang cuối"
-                >
-                  <ChevronsRight className="h-4 w-4" />{" "}
-                </button>
+        </div>{" "}        {/* Pagination Controls */}{" "}
+        {((enableServerPagination && totalPages > 1) ||
+          (!enableServerPagination && (table.getPageCount() > 1 || table.getFilteredRowModel().rows.length > 7))) && (
+            <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-t border-gray-200">
+              <div className="flex items-center text-sm text-gray-700">
+                {enableServerPagination ? (
+                  // Server-side pagination info
+                  <span>
+                    Hiển thị{" "}
+                    <span className="font-medium">
+                      {(currentPage - 1) * pageSize + 1}
+                    </span>{" "}
+                    đến{" "}
+                    <span className="font-medium">
+                      {Math.min(currentPage * pageSize, totalElements)}
+                    </span>{" "}
+                    trong tổng số{" "}
+                    <span className="font-medium">{totalElements}</span> học phần
+                  </span>
+                ) : (
+                  // Client-side pagination info
+                  <span>
+                    Hiển thị{" "}
+                    <span className="font-medium">
+                      {table.getState().pagination.pageIndex *
+                        table.getState().pagination.pageSize +
+                        1}
+                    </span>{" "}
+                    đến{" "}
+                    <span className="font-medium">
+                      {Math.min(
+                        (table.getState().pagination.pageIndex + 1) *
+                        table.getState().pagination.pageSize,
+                        table.getFilteredRowModel().rows.length
+                      )}
+                    </span>{" "}
+                    trong tổng số{" "}
+                    <span className="font-medium">
+                      {table.getFilteredRowModel().rows.length}
+                    </span>{" "}
+                    học phần
+                  </span>
+                )}
               </div>
-            )}
-          </div>
-        )}
+
+              {/* Page size selector for server pagination */}
+              {enableServerPagination && onPageSizeChange && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-700">Hiển thị:</span>
+                  <select
+                    value={pageSize}
+                    onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                    className="border border-gray-300 rounded px-2 py-1 text-sm"
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                  </select>
+                  <span className="text-sm text-gray-700">mục/trang</span>
+                </div>
+              )}            {/* Phân trang chỉ hiển thị khi có hơn 1 trang*/}
+              {((enableServerPagination && totalPages > 1) || (!enableServerPagination && table.getPageCount() > 1)) && (
+                <div className="flex items-center space-x-2">
+                  {enableServerPagination ? (
+                    // Server-side pagination buttons
+                    <>
+                      {/* First page button */}
+                      <button
+                        onClick={() => onPageChange && onPageChange(1)}
+                        disabled={currentPage <= 1}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${currentPage <= 1
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        title="Trang đầu"
+                      >
+                        <ChevronsLeft className="h-4 w-4" />
+                      </button>
+
+                      {/* Previous page button */}
+                      <button
+                        onClick={() => onPageChange && onPageChange(currentPage - 1)}
+                        disabled={currentPage <= 1}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${currentPage <= 1
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        title="Trang trước"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+
+                      {/* Page numbers for server-side */}
+                      <div className="flex items-center space-x-1">
+                        {(() => {
+                          const pages = [];
+                          const current = currentPage;
+                          const total = totalPages;
+
+                          // Always show first page
+                          if (total > 0) {
+                            pages.push(1);
+                          }
+
+                          // Show pages around current page
+                          const start = Math.max(2, current - 1);
+                          const end = Math.min(total - 1, current + 1);
+
+                          // Add ellipsis if needed
+                          if (start > 2) {
+                            pages.push(-1); // -1 represents ellipsis
+                          }
+
+                          // Add middle pages
+                          for (let i = start; i <= end; i++) {
+                            if (i > 1 && i < total) {
+                              pages.push(i);
+                            }
+                          }
+
+                          // Add ellipsis if needed
+                          if (end < total - 1) {
+                            pages.push(-2); // -2 represents ellipsis
+                          }
+
+                          // Always show last page
+                          if (total > 1) {
+                            pages.push(total);
+                          }
+
+                          return pages.map((page, index) => {
+                            if (page === -1 || page === -2) {
+                              return (
+                                <span
+                                  key={`ellipsis-${index}`}
+                                  className="px-2 py-1 text-gray-400"
+                                >
+                                  ...
+                                </span>
+                              );
+                            }
+
+                            const isActive = page === current;
+                            return (
+                              <button
+                                key={page}
+                                onClick={() => onPageChange && onPageChange(page)}
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive
+                                  ? "bg-blue-500 text-white"
+                                  : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                                  }`}
+                              >
+                                {page}
+                              </button>
+                            );
+                          });
+                        })()}
+                      </div>
+
+                      {/* Next page button */}
+                      <button
+                        onClick={() => onPageChange && onPageChange(currentPage + 1)}
+                        disabled={currentPage >= totalPages}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${currentPage >= totalPages
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        title="Trang tiếp"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+
+                      {/* Last page button */}
+                      <button
+                        onClick={() => onPageChange && onPageChange(totalPages)}
+                        disabled={currentPage >= totalPages}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${currentPage >= totalPages
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        title="Trang cuối"
+                      >
+                        <ChevronsRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    // Client-side pagination buttons (existing logic)
+                    <>
+                      {/* First page button */}
+                      <button
+                        onClick={() => table.setPageIndex(0)}
+                        disabled={!table.getCanPreviousPage()}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${!table.getCanPreviousPage()
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        title="Trang đầu"
+                      >
+                        <ChevronsLeft className="h-4 w-4" />
+                      </button>
+
+                      {/* Previous page button */}
+                      <button
+                        onClick={() => table.previousPage()}
+                        disabled={!table.getCanPreviousPage()}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${!table.getCanPreviousPage()
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        title="Trang trước"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+
+                      {/* Page numbers */}
+                      <div className="flex items-center space-x-1">
+                        {(() => {
+                          const currentPageIndex = table.getState().pagination.pageIndex;
+                          const totalPages = table.getPageCount();
+                          const pages = [];
+
+                          // Always show first page
+                          if (totalPages > 0) {
+                            pages.push(0);
+                          }
+
+                          // Show pages around current page
+                          const start = Math.max(1, currentPageIndex - 1);
+                          const end = Math.min(totalPages - 2, currentPageIndex + 1);
+
+                          // Add ellipsis if needed
+                          if (start > 1) {
+                            pages.push(-1); // -1 represents ellipsis
+                          }
+
+                          // Add middle pages
+                          for (let i = start; i <= end; i++) {
+                            if (i > 0 && i < totalPages - 1) {
+                              pages.push(i);
+                            }
+                          }
+
+                          // Add ellipsis if needed
+                          if (end < totalPages - 2) {
+                            pages.push(-2); // -2 represents ellipsis
+                          }
+
+                          // Always show last page
+                          if (totalPages > 1) {
+                            pages.push(totalPages - 1);
+                          }
+
+                          return pages.map((page, index) => {
+                            if (page === -1 || page === -2) {
+                              return (
+                                <span
+                                  key={`ellipsis-${index}`}
+                                  className="px-2 py-1 text-gray-400"
+                                >
+                                  ...
+                                </span>
+                              );
+                            }
+                            const isActive = page === currentPageIndex;
+                            return (
+                              <button
+                                key={page}
+                                onClick={() => table.setPageIndex(page)}
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive
+                                  ? "bg-blue-500 text-white"
+                                  : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                                  }`}
+                              >
+                                {page + 1}
+                              </button>
+                            );
+                          });
+                        })()}
+                      </div>
+
+                      {/* Next page button */}
+                      <button
+                        onClick={() => table.nextPage()}
+                        disabled={!table.getCanNextPage()}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${!table.getCanNextPage()
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        title="Trang tiếp"
+                      >
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                      {/* Last page button */}
+                      <button
+                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                        disabled={!table.getCanNextPage()}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${!table.getCanNextPage()
+                          ? "text-gray-400 cursor-not-allowed"
+                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                          }`}
+                        title="Trang cuối"
+                      >
+                        <ChevronsRight className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
       </div>
     </div>
   );

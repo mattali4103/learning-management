@@ -308,9 +308,35 @@ export default function KetQuaHocTap() {
               </div>
             </div>
           )}
-        </div>{" "}
-        {/* Grade Distribution Pie Chart */}
-        <GradeDistributionPieChart rawData={gradeRawData} />
+        </div>{" "}        {/* Grade Distribution Pie Chart */}
+        {gradeRawData.length > 0 ? (
+          <GradeDistributionPieChart rawData={gradeRawData} />
+        ) : (
+          <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
+                <BarChart3 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  Phân bổ điểm theo loại
+                </h2>
+                <p className="text-gray-600">
+                  Tỷ lệ các loại điểm chữ đã đạt được
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center h-64 text-gray-500">
+              <div className="text-center">
+                <Target className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                <p className="text-lg font-medium">Chưa có dữ liệu</p>
+                <p className="text-sm">
+                  Không có dữ liệu điểm số để hiển thị biểu đồ phân bổ
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

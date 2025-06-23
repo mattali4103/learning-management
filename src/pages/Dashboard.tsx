@@ -74,18 +74,19 @@ const Dashboard = () => {
   const [diemTrungBinhHocKy, setDiemTrungBinhHocKy] = useState<DiemTrungBinhHocKy[]>([]);
 
   // Fetch user information when the component mounts
-  useEffect(() => {    const fetchThongKeTinChi = async () => {
-      try{
+  useEffect(() => {
+    const fetchThongKeTinChi = async () => {
+      try {
         const response = await axiosPrivate.get<any>(
           KHHT_SERVICE.COUNT_TINCHI_IN_KHHT.replace(
             ":khoaHoc", auth.user?.khoaHoc || "")
-              .replace(":maSo", auth.user?.maSo || ""),         
+            .replace(":maSo", auth.user?.maSo || ""),
           {
             headers: { "Content-Type": "application/json" },
             withCredentials: true,
           }
         );
-        
+
         // Check response code
         if (response.status === 200 && response.data?.code === 200) {
           setThongKeTinChi(response.data.data);
@@ -95,16 +96,16 @@ const Dashboard = () => {
       } catch (error) {
         console.error("Error fetching thong ke tin chi:", error);
         // Don't show error to user for non-critical data
-      } finally{
+      } finally {
         setLoading(false);
       }
-    };    const fetchUserInfo = async () => {
+    }; const fetchUserInfo = async () => {
       try {
         setLoading(true);
         const response = await axiosPrivate.get(
           PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", auth.user?.maSo || "")
         );
-        
+
         // Check response code
         if (response.status === 200 && response.data?.code === 200) {
           setUserInfo(response.data.data);
@@ -117,7 +118,7 @@ const Dashboard = () => {
       } finally {
         setLoading(false);
       }
-    };    
+    };
     const fetchTinChiTichLuy = async () => {
       try {
         const response = await axiosPrivate.get<any>(
@@ -144,9 +145,9 @@ const Dashboard = () => {
     const fetchDiemTrungBinh = async () => {
       try {
         const response = await axiosPrivate.post<any>(
-          KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY,{
-            maSo: auth.user?.maSo || "",
-          },
+          KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY, {
+          maSo: auth.user?.maSo || "",
+        },
           {
             headers: { "Content-Type": "application/json" },
             withCredentials: true,
@@ -161,7 +162,7 @@ const Dashboard = () => {
         console.error("Error fetching diem trung binh:", error);
         // Don't show error for GPA data as it's not critical
       }
-    };    
+    };
     fetchUserInfo();
     fetchThongKeTinChi();
     fetchTinChiTichLuy();
@@ -169,13 +170,13 @@ const Dashboard = () => {
   }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc]);  // Tính toán thống kê từ dữ liệu thực
   const statistics = useMemo(() => {
     const { tongSoTinChi, soTinChiTichLuy, soTinChiCaiThien } = thongKeTinChi;
-    const tinChiConLai = Math.max(0, tongSoTinChi - soTinChiTichLuy); 
-    
+    const tinChiConLai = Math.max(0, tongSoTinChi - soTinChiTichLuy);
+
     // Tính điểm TB tích lũy từ dữ liệu GPA cuối cùng
-    const latestGPA = diemTrungBinhHocKy.length > 0 
-      ? diemTrungBinhHocKy[diemTrungBinhHocKy.length - 1].diemTrungBinhTichLuy 
+    const latestGPA = diemTrungBinhHocKy.length > 0
+      ? diemTrungBinhHocKy[diemTrungBinhHocKy.length - 1].diemTrungBinhTichLuy
       : 0;
-    
+
     return {
       tongSoTinChi,
       soTinChiTichLuy,
@@ -194,7 +195,7 @@ const Dashboard = () => {
   };
 
   // State to manage loading state
-  const [loading, setLoading] = useState<boolean>(true);  if (loading) {
+  const [loading, setLoading] = useState<boolean>(true); if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
@@ -237,28 +238,28 @@ const Dashboard = () => {
             </p>
           </div>
         </div>
-      </div>      
+      </div>
       {/* Progress Section with Circular Progress Bars */}
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
         <div className="flex items-center mb-6">
           <Target className="w-6 h-6 text-indigo-600 mr-3" />
           <h2 className="text-xl font-bold text-gray-800">Tiến độ học tập</h2>
         </div>
-          {/* Main Progress Grid */}        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        {/* Main Progress Grid */}        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* Tín chỉ tích lũy */}
-          <CreditProgressCard 
+          <CreditProgressCard
             currentCredits={statistics.soTinChiTichLuy}
             totalCredits={statistics.tongSoTinChi}
           />
 
           {/* Điểm trung bình tích lũy */}
-          <GPAProgressCard 
+          <GPAProgressCard
             currentGPA={statistics.diemTBTichLuy}
             maxGPA={4.0}
           />
 
           {/* Trạng thái tiến độ */}
-          <StatusCard 
+          <StatusCard
             currentCredits={statistics.soTinChiTichLuy}
             totalCredits={statistics.tongSoTinChi}
           />
@@ -273,7 +274,7 @@ const Dashboard = () => {
             </p>
             <p className="text-sm text-gray-600">Học kỳ đã hoàn thành</p>
           </div>
-          
+
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-green-600">
@@ -287,7 +288,7 @@ const Dashboard = () => {
                     i === 0
                       ? tinChiTichLuy[i].soTinChiDangKy
                       : tinChiTichLuy[i].soTinChiDangKy -
-                        tinChiTichLuy[i - 1].soTinChiDangKy;
+                      tinChiTichLuy[i - 1].soTinChiDangKy;
                   totalTinChiRiengLe += tinChiHocKy;
                 }
 
@@ -362,37 +363,39 @@ const Dashboard = () => {
             })}
           </div>
         </div>        {/* Charts Section */}
-        <div className="lg:col-span-2 space-y-6">          {/* Tin Chi Chart */}          <TinChiChart
+        <div className="lg:col-span-2 space-y-6">          {/* Tin Chi Chart */}
+          <TinChiChart
             data={
               tinChiTichLuy && tinChiTichLuy.length > 0
                 ? tinChiTichLuy.map((item, index) => {
-                    const hocKyId = item.hocKy?.maHocKy || null;
-                    const namHocId = item.hocKy?.namHoc?.id || null;
-                    
-                    return {
-                      name: `${item.hocKy?.tenHocKy || `Học Kỳ ${index + 1}`}`,
-                      tinChiTichLuy: item.soTinChiDangKy || 0,
-                      tinChiCaiThien: item.soTinChiCaiThien || 0,
-                      hocKyId,
-                      namHocId,
-                    };
-                  })
+                  const hocKyId = item.hocKy?.maHocKy || null;
+                  const namHocId = item.hocKy?.namHoc?.id || null;
+
+                  return {
+                    name: `${item.hocKy?.tenHocKy || `Học Kỳ ${index + 1}`}`,
+                    tinChiTichLuy: item.soTinChiDangKy || 0,
+                    tinChiCaiThien: item.soTinChiCaiThien || 0,
+                    hocKyId,
+                    namHocId,
+                  };
+                })
                 : []
             }
-          />{/* GPA Chart */}          <GPAChart
+          />{/* GPA Chart */}
+          <GPAChart
             data={
               diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
                 ? diemTrungBinhHocKy.map((item, index) => {
-                    const hocKyId = item.hocKy?.maHocKy || null;
-                    const namHocId = item.hocKy?.namHoc?.id || null;
-                    
-                    return {
-                      name: `${item.hocKy?.tenHocKy || `Học Kỳ ${index + 1}`}`,
-                      diem: Number(item.diemTrungBinhTichLuy) || 0,
-                      hocKyId,
-                      namHocId,
-                    };
-                  })
+                  const hocKyId = item.hocKy?.maHocKy || null;
+                  const namHocId = item.hocKy?.namHoc?.id || null;
+
+                  return {
+                    name: `${item.hocKy?.tenHocKy || `Học Kỳ ${index + 1}`}`,
+                    diem: Number(item.diemTrungBinhTichLuy) || 0,
+                    hocKyId,
+                    namHocId,
+                  };
+                })
                 : []
             }
           />

@@ -472,7 +472,6 @@ const ContentDisplay = ({
   if (error) {
     return <div className="p-4 text-red-500">Lỗi: {error}</div>;
   }
-
   const renderContent = () => {
     return (
       <div className="p-4">
@@ -482,6 +481,8 @@ const ContentDisplay = ({
               name="Khối kiến thức đại cương"
               data={filteredNhomDaiCuongData}
               columns={columns}
+              emptyStateTitle="Chưa có học phần đại cương"
+              emptyStateDescription="Không có học phần nào trong khối kiến thức đại cương"
             />
           </div>
           <div>
@@ -489,6 +490,8 @@ const ContentDisplay = ({
               name="Khối kiến thức cơ sở"
               data={filteredNhomCoSoData}
               columns={columns}
+              emptyStateTitle="Chưa có học phần cơ sở"
+              emptyStateDescription="Không có học phần nào trong khối kiến thức cơ sở ngành"
             />
           </div>
           <div>
@@ -496,6 +499,8 @@ const ContentDisplay = ({
               name="Khối kiến thức chuyên ngành"
               data={filteredNhomChuyenNganhData}
               columns={columns}
+              emptyStateTitle="Chưa có học phần chuyên ngành"
+              emptyStateDescription="Không có học phần nào trong khối kiến thức chuyên ngành"
             />
           </div>
         </div>

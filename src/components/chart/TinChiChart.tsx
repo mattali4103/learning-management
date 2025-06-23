@@ -24,7 +24,8 @@ interface TinChiChartProps {
 
 const TinChiChart = ({ data }: TinChiChartProps) => {
   const navigate = useNavigate();
-
+  console.log("Data", data)
+  
   // Show empty state if no data
   if (!data || data.length === 0) {
     return (
@@ -72,11 +73,23 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
     if (hocKyId) params.append("hocKyId", hocKyId.toString());
 
     const queryString = params.toString();
-    const url = queryString ? `/khht/detail?${queryString}` : "/khht/detail";
-
-    navigate(url);
+    const url = queryString ? `/khht/detail?${queryString}` : "/khht/detail";    navigate(url);
   };
 
+  // Check if there's any improvement credit data to show
+  const hasImprovementData = data.some(item => (item.tinChiCaiThien || 0) > 0);
+  
+  // Calculate optimal chart properties based on data length
+  const dataLength = data.length;
+  const isSmallDataset = dataLength <= 3;
+  
+  // Adjust chart margins and dimensions for better display with few items
+  const chartMargin = {
+    top: 10,
+    right: isSmallDataset ? 40 : 30,
+    left: isSmallDataset ? 40 : 20,
+    bottom: isSmallDataset ? 20 : 10,
+  };
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -86,10 +99,12 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
             <span className="inline-block w-3 h-3 bg-green-500 rounded-full mr-2"></span>
             Tín chỉ tích lũy: {payload[0]?.value}
           </p>
-          <p className="text-purple-600">
-            <span className="inline-block w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-            Tín chỉ cải thiện: {payload[1]?.value}
-          </p>
+          {hasImprovementData && (
+            <p className="text-purple-600">
+              <span className="inline-block w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
+              Tín chỉ cải thiện: {payload[1]?.value}
+            </p>
+          )}
         </div>
       );
     }
@@ -113,12 +128,11 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
           <ExternalLink className="w-4 h-4 mr-1" />
           Chi tiết
         </button>
-      </div>{" "}
-      <div className="h-[250px]">
+      </div>{" "}      <div className="h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
             data={data}
-            margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+            margin={chartMargin}
             onClick={handleDataPointClick}
             className="cursor-pointer"
           >
@@ -144,20 +158,23 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
                 <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-            <XAxis
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />            <XAxis
               dataKey="name"
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: "#64748b" }}
+              angle={isSmallDataset ? 0 : -15}
+              textAnchor={isSmallDataset ? "middle" : "end"}
+              height={isSmallDataset ? 30 : 50}
+              interval={0}
             />
             <YAxis
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12, fill: "#64748b" }}
+              domain={['dataMin - 1', 'dataMax + 1']}
             />
-            <Tooltip content={<CustomTooltip />} />
-            <Area
+            <Tooltip content={<CustomTooltip />} />            <Area
               type="monotone"
               dataKey="tinChiTichLuy"
               stroke="#10b981"
@@ -165,27 +182,30 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
               fillOpacity={1}
               fill="url(#colorTinChiTichLuy)"
             />
-            <Area
-              type="monotone"
-              dataKey="tinChiCaiThien"
-              stroke="#8b5cf6"
-              strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorTinChiCaiThien)"
-            />
+            {hasImprovementData && (
+              <Area
+                type="monotone"
+                dataKey="tinChiCaiThien"
+                stroke="#8b5cf6"
+                strokeWidth={2}
+                fillOpacity={1}
+                fill="url(#colorTinChiCaiThien)"
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
-      </div>
-      <div className="mt-4 flex items-center justify-between text-sm">
+      </div>      <div className="mt-4 flex items-center justify-between text-sm">
         <div className="flex items-center space-x-4">
           <div className="flex items-center">
             <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
             <span className="text-gray-600">Tín chỉ tích lũy</span>
           </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
-            <span className="text-gray-600">Tín chỉ cải thiện</span>
-          </div>
+          {hasImprovementData && (
+            <div className="flex items-center">
+              <div className="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+              <span className="text-gray-600">Tín chỉ cải thiện</span>
+            </div>
+          )}
         </div>
         <span className="text-gray-500 text-xs">
           Nhấp vào điểm để xem chi tiết học kỳ

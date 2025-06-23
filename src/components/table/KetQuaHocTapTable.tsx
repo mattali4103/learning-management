@@ -11,8 +11,6 @@ import {
   ArrowUpDown,
   ArrowUp,
   Asterisk,
-  FileText,
-  TriangleAlert,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -22,6 +20,7 @@ import React, { useMemo, useState, useEffect } from "react";
 import type { HocKy } from "../../types/HocKy";
 import type { NamHoc } from "../../types/NamHoc";
 import Loading from "../Loading";
+import { EmptyTableState } from "./EmptyTableState";
 
 // define columns for the KetQuaHocTapTable
 export interface KetQuaHocTapTableType {
@@ -350,23 +349,10 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
                         .length || columns.length
                     }
                     className="px-5 py-8 text-center text-gray-500 bg-gray-50 border-b-1 border-gray-200"
-                  >
-                    <div className="flex flex-col items-center justify-center space-y-3 py-4">
-                      <div className="relative">
-                        <FileText className="w-16 h-16 text-gray-300" />
-                        <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 border-2 border-white">
-                          <TriangleAlert className="w-3 h-3 text-yellow-600" />
-                        </span>
-                      </div>
-                      <div className="text-center">
-                        <span className="text-lg font-semibold text-gray-600">
-                          Chưa có kết quả học tập
-                        </span>
-                        <p className="text-sm text-gray-400 mt-1">
-                          Không có dữ liệu để hiển thị cho mục này
-                        </p>
-                      </div>
-                    </div>
+                  >                    <EmptyTableState
+                      title="Chưa có kết quả học tập"
+                      description="Không có dữ liệu để hiển thị cho mục này"
+                    />
                   </td>
                 </tr>
               )}

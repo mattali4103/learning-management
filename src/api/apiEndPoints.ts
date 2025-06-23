@@ -24,13 +24,14 @@ export const PROFILE_SERVICE = {
 
 export const HOCPHAN_SERVICE = {
   CTDT_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/nganh/:id",
+  CDDT_HOC_PHAN_TU_CHON_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/list",
 };
 
 export const KHHT_SERVICE = {
   GET_HOCKY: KHHT_SERVICE_URL + "/api/khht/hocky/sinhvien/:maSo",
   CREATE: KHHT_SERVICE_URL + "/api/khht/creates",
   LIST: KHHT_SERVICE_URL + "/api/khht/list",
-  KHHT_SINHVIEN: KHHT_SERVICE_URL + "/api/khht/sinhvien/detail/:maSo",
+  KHHT_SINHVIEN: KHHT_SERVICE_URL + "/api/khht/sinhvien/detail/page", // phân trang: ?maSo=xxx&page=0&size=20
   KHHT_SINHVIEN_BY_LOAI_HP: KHHT_SERVICE_URL + "/api/khht/sinhvien/hocphan/by_loai_hp",
   CTDT_NOT_IN_KHHT: KHHT_SERVICE_URL + "/api/khht/sinhvien/hoc_phan_not_in_khht/:id/:khoaHoc",
   DELETE: KHHT_SERVICE_URL + "/api/khht/delete/:id",
@@ -43,4 +44,5 @@ export const KQHT_SERVICE = {
   GET_KETQUA: KQHT_SERVICE_URL + "/api/kqht/detail/page",  // phân trang: ?maSo=xxx&page=0&size=20
   GET_KETQUA_BY_HOCKY: KQHT_SERVICE_URL + "/api/kqht/detail",  // theo học kỳ: ?maSo=xxx&maHocKy=yyy
   GET_DIEM_TRUNG_BINH_BY_HOCKY: KQHT_SERVICE_URL + "/api/kqht/diem/trung_binh_hoc_ky/list",
+  GET_HOC_PHAN_CAI_THIEN: KQHT_SERVICE_URL + "/api/kqht/private/hoc-phan-cai-thien/:maSo"
 }
