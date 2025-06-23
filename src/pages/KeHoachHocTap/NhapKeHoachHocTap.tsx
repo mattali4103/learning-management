@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
+import { SortableHeader } from "../../components/table/SortableHeader";
 import type { HocPhan } from "../../types/HocPhan";
 import { HOCPHAN_SERVICE, KHHT_SERVICE, KQHT_SERVICE } from "../../api/apiEndPoints";
-import { ArrowUpDown, CirclePlus, Trash2 } from "lucide-react";
+import { CirclePlus, Trash2 } from "lucide-react";
 import Loading from "../../components/Loading";
 import Error from "../../components/Error";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
@@ -276,24 +277,13 @@ const NhapKeHoachHocTap: React.FC = () => {
       setFetchLoading(false);
     }
   };
-  console.log("hocphan", hocPhanCaiThien)
-  // Available học phần columns
+  console.log("hocphan", hocPhanCaiThien)  // Available học phần columns
   const availableColumns = useMemo<ColumnDef<HocPhan>[]>(
     () => [
       {
         accessorKey: "maHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Mã học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Mã học phần" />
         ),
         cell: ({ row }) => (
           <div className="text-center">{row.getValue("maHp")}</div>
@@ -302,17 +292,7 @@ const NhapKeHoachHocTap: React.FC = () => {
       {
         accessorKey: "tenHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tên học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tên học phần" />
         ),
         cell: ({ row }) => (
           <div className="text-left">{row.getValue("tenHp")}</div>
@@ -321,17 +301,7 @@ const NhapKeHoachHocTap: React.FC = () => {
       {
         accessorKey: "tinChi",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tín chỉ
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tín chỉ" />
         ),
         cell: ({ row }) => (
           <div className="text-center">{row.getValue("tinChi")}</div>
@@ -340,17 +310,7 @@ const NhapKeHoachHocTap: React.FC = () => {
       {
         accessorKey: "hocPhanTienQuyet",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tiên quyết
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tiên quyết" />
         ),
         cell: ({ row }) => (
           <div className="text-center">
@@ -380,17 +340,7 @@ const NhapKeHoachHocTap: React.FC = () => {
     {
       accessorKey: "maHp",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Mã học phần
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Mã học phần" />
       ),
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("maHp")}</div>
@@ -399,17 +349,7 @@ const NhapKeHoachHocTap: React.FC = () => {
     {
       accessorKey: "tenHp",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Tên học phần
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Tên học phần" />
       ),
       cell: ({ row }) => (
         <div className="text-left">{row.getValue("tenHp")}</div>
@@ -418,17 +358,7 @@ const NhapKeHoachHocTap: React.FC = () => {
     {
       accessorKey: "tinChi",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Tín chỉ
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Tín chỉ" />
       ),
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("tinChi")}</div>
@@ -437,17 +367,7 @@ const NhapKeHoachHocTap: React.FC = () => {
     {
       accessorKey: "hocPhanTienQuyet",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Tiên quyết
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Tiên quyết" />
       ),
       cell: ({ row }) => (
         <div className="text-center">
@@ -471,42 +391,20 @@ const NhapKeHoachHocTap: React.FC = () => {
         );
       },
     },
-  ];
-  // Columns cho học phần cải thiện
+  ];  // Columns cho học phần cải thiện
   const createHocPhanCaiThienColumns = (): ColumnDef<HocPhanCaiThien>[] => [
     {
       accessorKey: "maHp",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Mã học phần
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Mã học phần" />
       ),
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("maHp")}</div>
       ),
-    },
-    {
+    },    {
       accessorKey: "tenHp",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Tên học phần
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Tên học phần" />
       ),
       cell: ({ row }) => (
         <div className="text-left">{row.getValue("tenHp")}</div>
@@ -515,35 +413,15 @@ const NhapKeHoachHocTap: React.FC = () => {
     {
       accessorKey: "soTinChi",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Tín chỉ
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Tín chỉ" />
       ),
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("soTinChi")}</div>
       ),
-    },    {
+    },{
       accessorKey: "diemChu",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Điểm chữ
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Điểm chữ" />
       ),
       cell: ({ row }) => (
         <div className="text-center">
@@ -556,17 +434,7 @@ const NhapKeHoachHocTap: React.FC = () => {
     {
       accessorKey: "diemSo",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Điểm số
-          <button
-            onClick={() =>
-              column.toggleSorting(column.getIsSorted() === "asc")
-            }
-            className="ml-2"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Điểm số" />
       ),
       cell: ({ row }) => (
         <div className="text-center">
@@ -603,24 +471,13 @@ const NhapKeHoachHocTap: React.FC = () => {
       },
     },
   ];
-
   // Selected học phần columns
   const selectedColumns = useMemo<ColumnDef<KeHoachHocTap>[]>(
     () => [
       {
         accessorKey: "maHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Mã học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Mã học phần" />
         ),
         cell: ({ row }) => (
           <div className="text-center">{row.getValue("maHp")}</div>
@@ -629,17 +486,7 @@ const NhapKeHoachHocTap: React.FC = () => {
       {
         accessorKey: "tenHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tên học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tên học phần" />
         ),
         cell: ({ row }) => (
           <div className="text-left">{row.getValue("tenHp")}</div>
@@ -648,17 +495,7 @@ const NhapKeHoachHocTap: React.FC = () => {
       {
         accessorKey: "tinChi",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tín chỉ
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tín chỉ" />
         ),
         cell: ({ row }) => (
           <div className="text-center">{row.getValue("tinChi")}</div>

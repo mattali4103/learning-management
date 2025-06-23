@@ -69,7 +69,7 @@ export default function KHHTBarChart({ rawData, height = 400 }: KHHTBarChartProp
             }
 
             // Navigate to detail page with parameters
-            const url = `/khht/chitiet${params.toString() ? `?${params.toString()}` : ""}`;
+            const url = `/khht/detail${params.toString() ? `?${params.toString()}` : ""}`;
             navigate(url);
         }
     }; if (!chartData || chartData.length === 0) {

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
+import { SortableHeader } from "../../components/table/SortableHeader";
 import { KHHT_SERVICE } from "../../api/apiEndPoints";
 import Loading from "../../components/Loading";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
@@ -7,7 +8,6 @@ import { Outlet } from "react-router-dom";
 import KHHTBarChart from "../../components/chart/KHHTBarChart";
 import useAuth from "../../hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown } from "lucide-react";
 import type { HocKy } from "../../types/HocKy";
 
 // Sử dụng cấu trúc dữ liệu phẳng như trong KeHoachHocTapDetail
@@ -39,11 +39,10 @@ export const KeHoachHocTapPage = () => {
   const [error, setError] = useState<string | null>(null);
   const axiosPrivate = useAxiosPrivate();
   const maSo = auth.user?.maSo || "";
-
   // Pagination state
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(1);
-  const [pageSize, setPageSize] = useState<number>(10);
+  const pageSize = 10; // Fixed page size, không cho phép người dùng thay đổi
   const [totalElements, setTotalElements] = useState<number>(0);
   // Function fetch dữ liệu thống kê tín chỉ
   const fetchTinChiThongKe = useCallback(async () => {
@@ -68,23 +67,20 @@ export const KeHoachHocTapPage = () => {
 
   // Function fetch dữ liệu kế hoạch học tập
   const fetchKeHoachHocTap = useCallback(async () => {
-    try {
-      // Sử dụng server-side pagination
+    try {     
+       // Sử dụng server-side pagination
       const result = await axiosPrivate.get(KHHT_SERVICE.KHHT_SINHVIEN, {
         params: {
           maSo: maSo,
-          page: currentPage - 1, // API sử dụng 0-based page
-          size: pageSize,
+          page: currentPage, // Trang hiện tại (1-based index)
+          size: pageSize, // Sử dụng pageSize từ state
         }
       });
       console.log("API Response:", result.data);
 
       // Xử lý response có cấu trúc phân trang và flatten dữ liệu như KeHoachHocTapDetail
       if (result.data && result.data.data) {
-        console.log("Response Data:", result.data.data);
         const responseData = result.data.data; // data của API
-        console.log("keHoachHocTap:", responseData.data);
-
         // Flatten dữ liệu theo cấu trúc của KeHoachHocTapDetail
         const khhtData: KHHTData[] = responseData.data.map((item: any) => ({
           id: item.id,
@@ -101,11 +97,14 @@ export const KeHoachHocTapPage = () => {
             : item.hocKy?.namHoc
               ? `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}`
               : "",
-        }));
-
-        setKeHoachHocTap(khhtData);
+        }));          setKeHoachHocTap(khhtData);
         setTotalElements(responseData.totalElements || 0);
-        setTotalPages(responseData.totalPages || 0);
+        // Tính toán totalPages nếu API không trả về hoặc trả về 0
+        const calculatedTotalPages = responseData.totalPages || 
+          Math.ceil((responseData.totalElements || khhtData.length) / pageSize);
+        setTotalPages(Math.max(calculatedTotalPages, 1)); // Đảm bảo có ít nhất 1 trang
+      
+        
         return khhtData;
       } else {
         setKeHoachHocTap([]);
@@ -123,7 +122,6 @@ export const KeHoachHocTapPage = () => {
       return [];
     }
   }, [axiosPrivate, maSo, currentPage, pageSize]);
-
   // Định nghĩa columns cho bảng kế hoạch học tập (sử dụng cấu trúc phẳng như KeHoachHocTapDetail)
   const columns: ColumnDef<KHHTData>[] = [
     {
@@ -136,102 +134,46 @@ export const KeHoachHocTapPage = () => {
     {
       accessorKey: "maHp",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Mã học phần
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="ml-2 hover:text-white/80 transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Mã học phần" className="ml-2 hover:text-white/80 transition-colors" />
       ),
       cell: ({ row }) => <div>{row.getValue("maHp")}</div>,
     },
     {
       accessorKey: "tenHp",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Tên học phần
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="ml-2 hover:text-white/80 transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Tên học phần" className="ml-2 hover:text-white/80 transition-colors" />
       ),
     },
     {
       accessorKey: "tinChi",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Tín chỉ
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="ml-2 hover:text-white/80 transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Tín chỉ" className="ml-2 hover:text-white/80 transition-colors" />
       ),
     },
     {
       accessorKey: "loaiHp",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Loại học phần
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="ml-2 hover:text-white/80 transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Loại học phần" className="ml-2 hover:text-white/80 transition-colors" />
       ),
     },
     {
       id: "maHocKy",
       accessorKey: "tenHocKy",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Học kỳ
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="ml-2 hover:text-white/80 transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Học kỳ" className="ml-2 hover:text-white/80 transition-colors" />
       ),
     },
     {
       id: "namHocId",
       accessorKey: "namBdNamKt",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Năm học
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="ml-2 hover:text-white/80 transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Năm học" className="ml-2 hover:text-white/80 transition-colors" />
       ),
     },
     {
       accessorKey: "hocPhanTienQuyet",
       header: ({ column }) => (
-        <div className="flex items-center justify-center">
-          Học phần tiên quyết
-          <button
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-            className="ml-2 hover:text-white/80 transition-colors"
-          >
-            <ArrowUpDown className="h-4 w-4" />
-          </button>
-        </div>
+        <SortableHeader column={column} title="Học phần tiên quyết" className="ml-2 hover:text-white/80 transition-colors" />
       ),
     },
   ];
@@ -254,10 +196,8 @@ export const KeHoachHocTapPage = () => {
       } finally {
         setLoading(false);
       }
-    };
-
-    fetchData();
-  }, [maSo, currentPage, pageSize, fetchKeHoachHocTap, fetchTinChiThongKe]); // Updated dependency array
+    };    fetchData();
+  }, [maSo, currentPage, fetchKeHoachHocTap, fetchTinChiThongKe]); // Removed pageSize from dependency array
 
   if (loading) {
     return (
@@ -270,18 +210,11 @@ export const KeHoachHocTapPage = () => {
   if (error) {
     return <div className="text-center p-4 text-red-500">{error}</div>;
   }
-
   // Hàm xử lý thay đổi trang cho server pagination
   const handlePageChange = (newPage: number) => {
     if (newPage >= 1 && newPage <= totalPages) {
       setCurrentPage(newPage);
     }
-  };
-
-  // Hàm xử lý thay đổi kích thước trang
-  const handlePageSizeChange = (newSize: number) => {
-    setPageSize(newSize);
-    setCurrentPage(1); // Reset về trang đầu tiên
   };
 
   return (
@@ -300,8 +233,7 @@ export const KeHoachHocTapPage = () => {
       )}
 
       {/* Bảng kế hoạch học tập với server-side pagination */}
-      <div className="transition-all duration-300 hover:scale-[1.01]">
-        <KeHoachHocTapTable
+      <div className="transition-all duration-300 hover:scale-[1.01]">        <KeHoachHocTapTable
           name="Kế hoạch học tập"
           data={keHoachHocTap}
           columns={columns}
@@ -313,7 +245,6 @@ export const KeHoachHocTapPage = () => {
           pageSize={pageSize}
           totalElements={totalElements}
           onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
           emptyStateTitle="Chưa có kế hoạch học tập"
           emptyStateDescription="Hệ thống chưa có dữ liệu kế hoạch học tập của bạn"
         />

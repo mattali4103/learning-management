@@ -6,10 +6,8 @@ import {
   type ColumnDef,
   type SortingState,
 } from "@tanstack/react-table";
-import {
-  ArrowUpDown,
-} from "lucide-react";
 import { useMemo, useState } from "react";
+import { SortableHeader } from "./SortableHeader";
 import Loading from "../Loading";
 
 // Local interface for table data
@@ -30,15 +28,7 @@ const columns: ColumnDef<SemesterTableData>[] = [
   {
     accessorKey: "tenHocKy",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Học kỳ
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Học kỳ" className="ml-2 hover:text-white/80 transition-colors" />
     ),
     cell: ({ row }) => (
       <div className="text-center font-medium text-gray-900">
@@ -49,34 +39,17 @@ const columns: ColumnDef<SemesterTableData>[] = [
   {
     accessorKey: "namHoc",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Năm học
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Năm học" className="ml-2 hover:text-white/80 transition-colors" />
     ),
     cell: ({ row }) => (
       <div className="text-center text-gray-500">
         {row.getValue("namHoc")}
       </div>
     ),
-  },
-  {
+  },  {
     accessorKey: "diemTBHocKy",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Điểm TB Học kỳ
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Điểm TB Học kỳ" className="ml-2 hover:text-white/80 transition-colors" />
     ),
     cell: ({ row }) => {
       const diemTBHocKy = row.getValue("diemTBHocKy") as number;
@@ -96,18 +69,11 @@ const columns: ColumnDef<SemesterTableData>[] = [
         </div>
       );
     },
-  },  {
+  },
+  {
     accessorKey: "diemTBTichLuy",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Điểm TB Tích lũy
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Điểm TB Tích lũy" className="ml-2 hover:text-white/80 transition-colors" />
     ),
     cell: ({ row }) => {
       const diemTBTichLuy = row.getValue("diemTBTichLuy") as number;

@@ -3,11 +3,13 @@ import { useSearchParams } from "react-router-dom";
 import NavigationPanel from "../../components/navigation/NavigationPanel";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
 import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE } from "../../api/apiEndPoints";
 import useAuth from "../../hooks/useAuth";
 import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
+import { SortableHeader } from "../../components/table/SortableHeader";
+import DeleteModal from "../../components/modals/DeleteModal";
 import Loading from "../../components/Loading";
 import type { HocKy } from "../../types/HocKy";
 
@@ -22,52 +24,60 @@ const KeHoachHocTapDetail = () => {
   const { auth } = useAuth();
   const { maSo } = auth.user || {};
   // Fetch dữ liệu học kỳ từ API
-  const fetchHocKy = useCallback(async (maSo: string) => {
-    try {
-      setLoading(true);
-      const response = await axiosPrivate.get(
-        KHHT_SERVICE.GET_HOCKY.replace(":maSo", maSo),
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true,
-        }
-      );
-      
-      // Kiểm tra response code
-      if (response.status === 200 && response.data?.code === 200) {
-        const hocKyData = response.data.data;
-        setHocKyFromAPI(hocKyData);
-        localStorage.setItem("hocKy", JSON.stringify(hocKyData));
-        setError(null);
-      } else {
-        throw new Error(`API returned code: ${response.data?.code || response.status}`);
-      }
-    } catch (error) {
-      console.error("Error fetching hoc ky:", error);
-      setError("Không thể lấy thông tin học kỳ. Vui lòng thử lại.");
-      // Fallback to localStorage if API fails
+  const fetchHocKy = useCallback(
+    async (maSo: string) => {
       try {
-        const localData = localStorage.getItem("hocKy");
-        if (localData) {
-          setHocKyFromAPI(JSON.parse(localData));
-          setError(null); // Clear error if localStorage data is available
+        setLoading(true);
+        const response = await axiosPrivate.get(
+          KHHT_SERVICE.GET_HOCKY.replace(":maSo", maSo),
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        );
+
+        // Kiểm tra response code
+        if (response.status === 200 && response.data?.code === 200) {
+          const hocKyData = response.data.data;
+          setHocKyFromAPI(hocKyData);
+          localStorage.setItem("hocKy", JSON.stringify(hocKyData));
+          setError(null);
+        } else {
+          throw new Error(
+            `API returned code: ${response.data?.code || response.status}`
+          );
         }
-      } catch (localError) {
-        console.error("Lỗi khi parse dữ liệu học kỳ từ localStorage:", localError);
+      } catch (error) {
+        console.error("Error fetching hoc ky:", error);
+        setError("Không thể lấy thông tin học kỳ. Vui lòng thử lại.");
+        // Fallback to localStorage if API fails
+        try {
+          const localData = localStorage.getItem("hocKy");
+          if (localData) {
+            setHocKyFromAPI(JSON.parse(localData));
+            setError(null); // Clear error if localStorage data is available
+          }
+        } catch (localError) {
+          console.error(
+            "Lỗi khi parse dữ liệu học kỳ từ localStorage:",
+            localError
+          );
+        }
+      } finally {
+        setLoading(false);
       }
-    } finally {
-      setLoading(false);
-    }
-  }, [axiosPrivate]);
+    },
+    [axiosPrivate]
+  );
   // Lấy dữ liệu học kỳ từ API khi component mount
   useEffect(() => {
     if (maSo) {
       fetchHocKy(maSo);
     }
   }, [maSo, fetchHocKy]);
-  
+
   // Lấy dữ liệu học kỳ từ state
   const hocKyFromStorage: HocKy[] = useMemo(() => {
     return hocKyFromAPI;
@@ -88,8 +98,14 @@ const KeHoachHocTapDetail = () => {
   const namHocIdToName = useMemo(() => {
     const mapping: Record<number, string> = {};
     hocKyFromStorage.forEach((hk) => {
-      if (hk.namHoc && hk.namHoc.id && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        mapping[hk.namHoc.id] = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
+      if (
+        hk.namHoc &&
+        hk.namHoc.id &&
+        hk.namHoc.namBatDau &&
+        hk.namHoc.namKetThuc
+      ) {
+        mapping[hk.namHoc.id] =
+          `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
       }
     });
     return mapping;
@@ -99,7 +115,12 @@ const KeHoachHocTapDetail = () => {
   const namHocNameToId = useMemo(() => {
     const mapping: Record<string, number> = {};
     hocKyFromStorage.forEach((hk) => {
-      if (hk.namHoc && hk.namHoc.id && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
+      if (
+        hk.namHoc &&
+        hk.namHoc.id &&
+        hk.namHoc.namBatDau &&
+        hk.namHoc.namKetThuc
+      ) {
         const namHoc = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
         mapping[namHoc] = hk.namHoc.id;
       }
@@ -143,7 +164,13 @@ const KeHoachHocTapDetail = () => {
   const hocKyNameToId = useMemo(() => {
     const mapping: Record<string, Record<string, number>> = {};
     hocKyFromStorage.forEach((hk) => {
-      if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc && hk.maHocKy && hk.tenHocKy) {
+      if (
+        hk.namHoc &&
+        hk.namHoc.namBatDau &&
+        hk.namHoc.namKetThuc &&
+        hk.maHocKy &&
+        hk.tenHocKy
+      ) {
         const namHoc = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
         if (!mapping[namHoc]) {
           mapping[namHoc] = {};
@@ -188,19 +215,20 @@ const KeHoachHocTapDetail = () => {
     }
     newParams.delete("hocKyId"); // Xóa param học kỳ khi thay đổi năm học
     setSearchParams(newParams);
-  };  // Hàm để thay đổi học kỳ
+  }; // Hàm để thay đổi học kỳ
   const handleHocKyChange = (hocKy: string) => {
     setSelectedHocKy(hocKy);
     const newParams = new URLSearchParams(searchParams);
-    
+
     // Lấy ID học kỳ từ tên học kỳ và năm học hiện tại
     const hocKyId = hocKyNameToId[selectedNamHoc]?.[hocKy];
     if (hocKyId) {
       newParams.set("hocKyId", hocKyId.toString());
     }
-    
+
     setSearchParams(newParams);
-  };  return (
+  };
+  return (
     <div className="w-full space-y-4">
       {loading && <Loading />}
       {error && (
@@ -242,14 +270,70 @@ const ContentDisplay = ({
   const { maSo, khoaHoc } = auth.user || {};
   const axiosPrivate = useAxiosPrivate();
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);  const [nhomCoSoData, setNhomCoSoData] = useState<KeHoachHocTap[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [nhomCoSoData, setNhomCoSoData] = useState<KeHoachHocTap[]>([]);
   const [nhomDaiCuongData, setNhomDaiCuongData] = useState<KeHoachHocTap[]>([]);
-  const [nhomChuyenNganhData, setNhomChuyenNganhData] = useState<KeHoachHocTap[]>([]);    // Hàm xử lý khi click xóa (removed for simplification)
+  const [nhomChuyenNganhData, setNhomChuyenNganhData] = useState<
+    KeHoachHocTap[]
+  >([]);
+    // State cho delete modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [hocPhanToDelete, setHocPhanToDelete] = useState<KeHoachHocTap | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Hàm xử lý xóa học phần
+  const fetchDeleteHocPhan = useCallback(async (id: number) => {
+    try {
+      setIsDeleting(true);
+      const response = await axiosPrivate.delete(
+        KHHT_SERVICE.DELETE.replace(":id", id.toString()),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200 && response.data?.code === 200) {
+        setError(null);
+        // Reload trang sau khi xóa thành công
+        window.location.reload();
+      } else {
+        throw new Error(
+          `API returned code: ${response.data?.code || response.status}`
+        );
+      }
+    } catch (error) {
+      console.error("Error deleting hoc phan:", error);
+      setError("Không thể xóa học phần. Vui lòng thử lại.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [axiosPrivate]);
+
+  // Hàm mở modal xác nhận xóa
   const handleDeleteClick = useCallback((hocPhan: KeHoachHocTap) => {
-    console.log("Delete clicked for:", hocPhan);
-    // TODO: Implement delete functionality if needed
+    setHocPhanToDelete(hocPhan);
+    setIsDeleteModalOpen(true);
   }, []);
 
+  // Hàm xác nhận xóa
+  const handleConfirmDelete = useCallback(() => {
+    if (hocPhanToDelete && !isDeleting) {
+      fetchDeleteHocPhan(hocPhanToDelete.id);
+      setIsDeleteModalOpen(false);
+      setHocPhanToDelete(null);
+    }
+  }, [hocPhanToDelete, isDeleting, fetchDeleteHocPhan]);
+
+  // Hàm đóng modal
+  const handleCloseModal = useCallback(() => {
+    if (!isDeleting) {
+      setIsDeleteModalOpen(false);
+      setHocPhanToDelete(null);
+    }
+  }, [isDeleting]);
   const columns = useMemo<ColumnDef<KeHoachHocTap>[]>(
     () => [
       {
@@ -262,124 +346,55 @@ const ContentDisplay = ({
       {
         accessorKey: "maHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Học phần" />
         ),
         cell: ({ row }) => <div>{row.getValue("maHp")}</div>,
       },
       {
         accessorKey: "tenHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tên học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tên học phần" />
         ),
       },
       {
         accessorKey: "tinChi",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tín chỉ
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tín chỉ" />
         ),
       },
       {
         accessorKey: "loaiHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Loại học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Loại học phần" />
         ),
       },
       {
         id: "maHocKy",
         accessorKey: "tenHocKy",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Học kỳ
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Học kỳ" />
         ),
       },
       {
         id: "namHocId",
         accessorKey: "namBdNamKt",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Năm học
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2 text-gray-600 hover:text-gray-800"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader
+            column={column}
+            title="Năm học"
+            className="ml-2 text-gray-600 hover:text-gray-800"
+          />
         ),
-      },      {
+      },
+      {
         accessorKey: "hocPhanTienQuyet",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tiên quyết
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tiên quyết" />
         ),
       },
       {
         id: "actions",
-        header: () => (
-          <div className="text-center">
-            Thao tác
-          </div>
-        ),
+        header: () => <div className="text-center">Thao tác</div>,
         cell: ({ row }) => (
           <div className="flex justify-center">
             <button
@@ -395,7 +410,10 @@ const ContentDisplay = ({
       },
     ],
     [handleDeleteClick]
-  );useEffect(() => {    const fetchData = async (loaiHp: string) => {
+  );
+
+  useEffect(() => {
+    const fetchData = async (loaiHp: string) => {
       try {
         setLoading(true);
         const response = await axiosPrivate.post<any>(
@@ -406,7 +424,7 @@ const ContentDisplay = ({
             loaiHp: loaiHp,
           }
         );
-        
+
         // Kiểm tra response code
         if (response.status === 200 && response.data?.code === 200) {
           const hocPhanData: KeHoachHocTap[] = response.data.data.map(
@@ -422,10 +440,12 @@ const ContentDisplay = ({
               namHocId: item.namHoc.id,
               namBdNamKt: item.namHoc.namBatDau + "-" + item.namHoc.namKetThuc,
             })
-          ); 
+          );
           return hocPhanData || [];
         } else {
-          throw new Error(`API returned code: ${response.data?.code || response.status} - ${response.data?.message || 'Unknown error'}`);
+          throw new Error(
+            `API returned code: ${response.data?.code || response.status} - ${response.data?.message || "Unknown error"}`
+          );
         }
       } catch (error) {
         setError(error instanceof Error ? error.message : "Có lỗi xảy ra");
@@ -444,7 +464,7 @@ const ContentDisplay = ({
       if (coSoData) setNhomCoSoData(coSoData);
       if (chuyenNganhData) setNhomChuyenNganhData(chuyenNganhData);
     };
-    
+
     loadData();
   }, [axiosPrivate, maSo, khoaHoc]);
 
@@ -454,11 +474,15 @@ const ContentDisplay = ({
     let filteredData = [...data];
     // Lọc theo năm học nếu không phải "Tất cả"
     if (selectedNamHoc !== "Tất cả") {
-      filteredData = filteredData.filter(item => item.namBdNamKt === selectedNamHoc);
+      filteredData = filteredData.filter(
+        (item) => item.namBdNamKt === selectedNamHoc
+      );
     }
     // Lọc theo học kỳ nếu có chọn học kỳ cụ thể
     if (selectedHocKy) {
-      filteredData = filteredData.filter(item => item.tenHocKy === selectedHocKy);
+      filteredData = filteredData.filter(
+        (item) => item.tenHocKy === selectedHocKy
+      );
     }
     return filteredData;
   };
@@ -506,10 +530,16 @@ const ContentDisplay = ({
         </div>
       </div>
     );
-  };
-  return (
+  };    return (
     <div className="bg-white rounded-lg shadow-sm">
-      {renderContent()}
+      {renderContent()}      <DeleteModal
+        isOpen={isDeleteModalOpen}
+        onConfirm={handleConfirmDelete}
+        onClose={handleCloseModal}
+        title="Xác nhận xóa học phần"
+        message={`Bạn có chắc chắn muốn xóa học phần "${hocPhanToDelete?.tenHp}" không? Hành động này không thể hoàn tác.`}
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

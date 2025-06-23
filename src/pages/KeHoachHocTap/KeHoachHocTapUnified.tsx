@@ -4,11 +4,13 @@ import NavigationPanel from "../../components/navigation/NavigationPanel";
 import Loading from "../../components/Loading";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
 import { type ColumnDef } from "@tanstack/react-table";
-import { ArrowUpDown, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE } from "../../api/apiEndPoints";
 import useAuth from "../../hooks/useAuth";
 import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
+import { SortableHeader } from "../../components/table/SortableHeader";
+import DeleteModal from "../../components/modals/DeleteModal";
 import type { HocKy } from "../../types/HocKy";
 
 const KeHoachHocTapUnified = () => {
@@ -238,17 +240,69 @@ const UnifiedContentDisplay = ({
   selectedHocKy,
 }: UnifiedContentDisplayProps) => {
   const { auth } = useAuth();
-  const { maSo, khoaHoc } = auth.user || {};
-  const axiosPrivate = useAxiosPrivate();
+  const { maSo, khoaHoc } = auth.user || {};  const axiosPrivate = useAxiosPrivate();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [allData, setAllData] = useState<KeHoachHocTap[]>([]);
 
-  // Hàm xử lý khi click xóa
+  // State cho delete modal
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [hocPhanToDelete, setHocPhanToDelete] = useState<KeHoachHocTap | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Hàm xử lý xóa học phần
+  const fetchDeleteHocPhan = useCallback(async (id: number) => {
+    try {
+      setIsDeleting(true);
+      const response = await axiosPrivate.delete(
+        KHHT_SERVICE.DELETE.replace(":id", id.toString()),
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+          withCredentials: true,
+        }
+      );
+
+      if (response.status === 200 && response.data?.code === 200) {
+        setError(null);
+        // Reload trang sau khi xóa thành công
+        window.location.reload();
+      } else {
+        throw new Error(
+          `API returned code: ${response.data?.code || response.status}`
+        );
+      }
+    } catch (error) {
+      console.error("Error deleting hoc phan:", error);
+      setError("Không thể xóa học phần. Vui lòng thử lại.");
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [axiosPrivate]);
+
+  // Hàm mở modal xác nhận xóa
   const handleDeleteClick = useCallback((hocPhan: KeHoachHocTap) => {
-    console.log("Delete clicked for:", hocPhan);
-    // TODO: Implement delete functionality if needed
+    setHocPhanToDelete(hocPhan);
+    setIsDeleteModalOpen(true);
   }, []);
+
+  // Hàm xác nhận xóa
+  const handleConfirmDelete = useCallback(() => {
+    if (hocPhanToDelete && !isDeleting) {
+      fetchDeleteHocPhan(hocPhanToDelete.id);
+      setIsDeleteModalOpen(false);
+      setHocPhanToDelete(null);
+    }
+  }, [hocPhanToDelete, isDeleting, fetchDeleteHocPhan]);
+
+  // Hàm đóng modal
+  const handleCloseModal = useCallback(() => {
+    if (!isDeleting) {
+      setIsDeleteModalOpen(false);
+      setHocPhanToDelete(null);
+    }
+  }, [isDeleting]);
 
   const columns = useMemo<ColumnDef<KeHoachHocTap>[]>(
     () => [
@@ -258,70 +312,28 @@ const UnifiedContentDisplay = ({
           <div className="items-center justify-center hidden">STT</div>
         ),
         cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
-      },
-      {
+      },      {
         accessorKey: "maHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Học phần" />
         ),
         cell: ({ row }) => <div>{row.getValue("maHp")}</div>,
       },
       {
         accessorKey: "tenHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tên học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tên học phần" />
         ),
-      },
-      {
+      },      {
         accessorKey: "tinChi",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tín chỉ
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tín chỉ" />
         ),
       },
       {
         accessorKey: "loaiHp",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Loại học phần
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Loại học phần" />
         ),
         cell: ({ row }) => {
           const loaiHp = row.getValue("loaiHp") as string;
@@ -338,55 +350,24 @@ const UnifiedContentDisplay = ({
             </div>
           );
         },
-      },
-      {
+      },      {
         id: "maHocKy",
         accessorKey: "tenHocKy",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Học kỳ
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Học kỳ" />
         ),
       },
       {
         id: "namHocId",
         accessorKey: "namBdNamKt",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Năm học
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2 text-gray-600 hover:text-gray-800"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Năm học" className="ml-2 text-gray-600 hover:text-gray-800" />
         ),
       },
       {
         accessorKey: "hocPhanTienQuyet",
         header: ({ column }) => (
-          <div className="flex items-center justify-center">
-            Tiên quyết
-            <button
-              onClick={() =>
-                column.toggleSorting(column.getIsSorted() === "asc")
-              }
-              className="ml-2"
-            >
-              <ArrowUpDown className="h-4 w-4" />
-            </button>
-          </div>
+          <SortableHeader column={column} title="Tiên quyết" />
         ),
       },
       {
@@ -511,13 +492,21 @@ const UnifiedContentDisplay = ({
       </div>
     );
   }
-
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4">      <KeHoachHocTapTable
+    <div className="bg-white rounded-lg shadow-sm p-4">
+      <KeHoachHocTapTable
         name="Tất cả học phần trong kế hoạch học tập"
         data={filteredData}
         columns={columns}
         loading={loading}
+      />
+      <DeleteModal
+        isOpen={isDeleteModalOpen}
+        onConfirm={handleConfirmDelete}
+        onClose={handleCloseModal}
+        title="Xác nhận xóa học phần"
+        message={`Bạn có chắc chắn muốn xóa học phần "${hocPhanToDelete?.tenHp}" không? Hành động này không thể hoàn tác.`}
+        isLoading={isDeleting}
       />
     </div>
   );

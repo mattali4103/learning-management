@@ -1,47 +1,101 @@
 type DeleteModalProps = {
-    isOpen: boolean;
-    onConfirm: () => void;
-    onClose: () => void;
+  isOpen: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+  title?: string;
+  message?: string;
+  isLoading?: boolean;
 };
 
-const DeleteModal = ({ isOpen, onConfirm, onClose }: DeleteModalProps) => {
-    if (!isOpen) {
-        return null;
-    }
-    return (
-        <div
-            className="overflow-y-auto overflow-x-hidden fixed right-0 left-0 top-4 z-50 justify-center items-center md:inset-0 h-modal sm:h-full flex"
-            id="user-modal"
-            aria-modal="true"
-            role="dialog"
-            aria-hidden="true"
-        >
-            <div className="relative px-4 w-full max-w-2xl h-full md:h-auto">
-                {/* Modal content */}
-                <div className="relative bg-white rounded-2xl shadow-lg">
-                    {/* Modal header */}
-                    <div className="p-6 space-y-6">
-                        <div className="p-6 pt-0 text-center">
-                            <svg className="mx-auto mb-4 w-14 h-14 text-gray-500 dark:text-gray-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                            <h3 className="mb-5 text-lg font-normal text-gray-500 dark:text-gray-400">Bạn có chắc muốn xoá không?</h3>
-                            <button
-                                onClick={onConfirm}
-                                className="text-white bg-gradient-to-br from-red-400 to-red-600 font-medium rounded-lg text-sm px-5 py-2.5 mr-2 text-center inline-flex items-center shadow-md shadow-gray-300 hover:scale-[1.02] transition-transform">
-                                Đồng ý
-                            </button>                            <button
-                                onClick={onClose}
-                                type="button"
-                                className="text-gray-600 bg-white hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 rounded-lg border border-gray-200 text-sm font-medium px-5 py-2.5 hover:text-gray-900 focus:z-10 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-500 dark:hover:text-white dark:hover:bg-gray-600 dark:focus:ring-gray-600"
-                            >
-                                Hủy bỏ
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div className="bg-gray-400 opacity-70  fixed inset-0 z-[-1]"></div>
+const DeleteModal = ({
+  isOpen,
+  onConfirm,
+  onClose,
+  title = "Xác nhận xóa",
+  message = "Bạn có chắc chắn muốn xóa không? Hành động này không thể hoàn tác.",
+  isLoading = false,
+}: DeleteModalProps) => {  if (!isOpen) {
+    return null;
+  }  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-sm"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}
+      onClick={!isLoading ? onClose : undefined}
+    >
+      <div
+        className="relative w-full max-w-md bg-white rounded-2xl shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="p-6 text-center">
+          {/* Icon */}
+          <div className="mx-auto flex items-center justify-center w-12 h-12 mb-4 bg-red-100 rounded-full">
+            <svg
+              className="w-6 h-6 text-red-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+          </div>
+
+          {/* Title */}
+          <h3 className="mb-2 text-lg font-semibold text-gray-900">{title}</h3>
+
+          {/* Message */}
+          <p className="mb-6 text-sm text-gray-600">{message}</p>
+
+          {/* Buttons */}
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={onClose}
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              onClick={onConfirm}
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {isLoading ? (
+                <>
+                  <svg
+                    className="w-4 h-4 animate-spin"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                  Đang xóa...
+                </>
+              ) : (
+                "Xóa"
+              )}
+            </button>
+          </div>
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 export default DeleteModal;

@@ -31,7 +31,6 @@ interface KeHoachHocTapTableProps {
   pageSize?: number;
   totalElements?: number;
   onPageChange?: (page: number) => void;
-  onPageSizeChange?: (size: number) => void;
   // Empty state props
   emptyStateTitle?: string;
   emptyStateDescription?: string;
@@ -52,7 +51,6 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   pageSize = 10,
   totalElements = 0,
   onPageChange,
-  onPageSizeChange,
   // Empty state props
   emptyStateTitle,
   emptyStateDescription,
@@ -295,27 +293,20 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                     học phần
                   </span>
                 )}
-              </div>
-
-              {/* Page size selector for server pagination */}
-              {enableServerPagination && onPageSizeChange && (
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-700">Hiển thị:</span>
-                  <select
-                    value={pageSize}
-                    onChange={(e) => onPageSizeChange(Number(e.target.value))}
-                    className="border border-gray-300 rounded px-2 py-1 text-sm"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={20}>20</option>
-                    <option value={50}>50</option>
-                  </select>
-                  <span className="text-sm text-gray-700">mục/trang</span>
-                </div>
-              )}            {/* Phân trang chỉ hiển thị khi có hơn 1 trang*/}
-              {((enableServerPagination && totalPages > 1) || (!enableServerPagination && table.getPageCount() > 1)) && (
-                <div className="flex items-center space-x-2">
+              </div>              {/* Phân trang hiển thị khi bật server pagination hoặc có hơn 1 trang client-side */}
+              {(enableServerPagination || (!enableServerPagination && table.getPageCount() > 1)) && (
+                <div className="flex flex-col space-y-2">
+                  {/* Hiển thị thông tin trang */}
+                  {enableServerPagination && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-700">
+                        Trang {currentPage} / {totalPages} (Tổng: {totalElements} mục)
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Controls chuyển trang */}
+                  <div className="flex items-center space-x-2">
                   {enableServerPagination ? (
                     // Server-side pagination buttons
                     <>
@@ -553,12 +544,12 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                           ? "text-gray-400 cursor-not-allowed"
                           : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
                           }`}
-                        title="Trang cuối"
-                      >
+                        title="Trang cuối"                      >
                         <ChevronsRight className="h-4 w-4" />
                       </button>
                     </>
                   )}
+                  </div>
                 </div>
               )}
             </div>

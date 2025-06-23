@@ -30,7 +30,8 @@ function App() {
       <Route element={<Layout />}>
         {/* Private routes */}
         <Route element={<RequireAuth allowedRoles={[ROLES.SINHVIEN]} />}>
-          <Route path="/" element={<Dashboard />} />          <Route path="/khht" element={<KeHoachHocTap />}>
+          <Route path="/" element={<Dashboard />} />{" "}
+          <Route path="/khht" element={<KeHoachHocTap />}>
             <Route index element={<KeHoachHocTapPage />} />
             <Route path="chung" element={<KeHoachHocTapPage />} />
             <Route path="detail" element={<KeHoachHocTapUnified />} />

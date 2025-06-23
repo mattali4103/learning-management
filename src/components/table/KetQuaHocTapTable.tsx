@@ -8,7 +8,6 @@ import {
   type ColumnDef,
 } from "@tanstack/react-table";
 import {
-  ArrowUpDown,
   ArrowUp,
   Asterisk,
   ChevronLeft,
@@ -17,6 +16,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import React, { useMemo, useState, useEffect } from "react";
+import { SortableHeader } from "./SortableHeader";
 import type { HocKy } from "../../types/HocKy";
 import type { NamHoc } from "../../types/NamHoc";
 import Loading from "../Loading";
@@ -40,47 +40,20 @@ const columns: ColumnDef<KetQuaHocTapTableType>[] = [
   {
     accessorKey: "id",
     header: () => <span className="text-center hidden"></span>,
-  },
-  {
+  },  {
     accessorKey: "maHp",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Mã học phần
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Mã học phần" className="ml-2 hover:text-white/80 transition-colors" />
     ),
-  },
-  {
+  },  {
     accessorKey: "tenHp",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Tên học phần
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Tên học phần" className="ml-2 hover:text-white/80 transition-colors" />
     ),
-  },
-  {
+  },  {
     accessorKey: "dieuKien",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Điều kiện
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Điều kiện" className="ml-2 hover:text-white/80 transition-colors" />
     ),
     cell: ({ row }) => (
       <div className="flex items-center justify-center">
@@ -91,61 +64,27 @@ const columns: ColumnDef<KetQuaHocTapTableType>[] = [
         )}
       </div>
     ),
-  },
-  {
+  },  {
     accessorKey: "nhomHp",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Nhóm học phần
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Nhóm học phần" className="ml-2 hover:text-white/80 transition-colors" />
     ),
   },
   {
     accessorKey: "soTinChi",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Số tín chỉ
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Số tín chỉ" className="ml-2 hover:text-white/80 transition-colors" />
     ),
-  },
-  {
+  },  {
     accessorKey: "diemChu",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Điểm chữ
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Điểm chữ" className="ml-2 hover:text-white/80 transition-colors" />
     ),
   },
   {
     accessorKey: "diemSo",
     header: ({ column }) => (
-      <div className="flex items-center justify-center">
-        Điểm số
-        <button
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          className="ml-2 hover:text-white/80 transition-colors"
-        >
-          <ArrowUpDown className="h-4 w-4" />
-        </button>
-      </div>
+      <SortableHeader column={column} title="Điểm số" className="ml-2 hover:text-white/80 transition-colors" />
     ),
   },
 ];
@@ -304,14 +243,10 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
               {loading ? (
                 <tr>
                   <td
-                    colSpan={
-                      table
-                        .getHeaderGroups()[0]
-                        ?.headers.filter((header) => header.id !== "id")
-                        .length || columns.length
-                    }
+                    colSpan={table.getHeaderGroups()[0]?.headers.filter((header) => header.id !== "id").length || columns.length}
                     className="px-5 py-8 text-center text-gray-500 bg-gray-50 border-b-1 border-gray-200"
-                  >                    <div className="flex flex-col items-center justify-center space-y-3 py-4">
+                  >                    
+                  <div className="flex flex-col items-center justify-center space-y-3 py-4">
                       <Loading showOverlay={false} message="Đang tải dữ liệu..." />
                     </div>
                   </td>
@@ -349,7 +284,8 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
                         .length || columns.length
                     }
                     className="px-5 py-8 text-center text-gray-500 bg-gray-50 border-b-1 border-gray-200"
-                  >                    <EmptyTableState
+                  >                    
+                  <EmptyTableState
                       title="Chưa có kết quả học tập"
                       description="Không có dữ liệu để hiển thị cho mục này"
                     />
