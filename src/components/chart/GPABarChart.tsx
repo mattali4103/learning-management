@@ -93,6 +93,26 @@ export default function GPABarChart({ rawData, height = 400 }: GPABarChartProps)
       </div>
     );
   }
+
+  // Check if there are at least 2 semesters to show meaningful chart
+  if (rawData.length < 2) {
+    return (
+      <div className="flex items-center justify-center h-64 text-gray-500">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
+            <BarChart3 className="w-8 h-8 text-yellow-500" />
+          </div>
+          <p className="text-lg font-medium">Dữ liệu chưa đủ để hiển thị biểu đồ</p>
+          <p className="text-sm">
+            Cần có ít nhất 2 học kỳ đã học để hiển thị biểu đồ thống kê
+          </p>
+          <p className="text-xs text-gray-400 mt-2">
+            Hiện tại: {rawData.length} học kỳ
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <ResponsiveContainer width="100%" height={height}>
       <BarChart

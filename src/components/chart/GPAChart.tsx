@@ -52,9 +52,49 @@ const GPAChart = ({ data }: GPAChartProps) => {
       </div>
     );
   }
+
+  // Check if there are at least 2 semesters to show meaningful chart
+  if (data.length < 2) {
+    return (
+      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center">
+            <TrendingUp className="w-6 h-6 text-blue-600 mr-3" />
+            <h3 className="text-xl font-bold text-gray-800">
+              Điểm trung bình tích lũy qua các học kỳ
+            </h3>
+          </div>
+          <button
+            onClick={() => navigate("/kqht/chitiet")}
+            className="flex items-center px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors duration-200"
+          >
+            <ExternalLink className="w-4 h-4 mr-1" />
+            Chi tiết
+          </button>
+        </div>
+        <div className="h-[250px] flex items-center justify-center">
+          <div className="text-center text-gray-500">
+            <div className="w-16 h-16 mx-auto mb-4 bg-yellow-100 rounded-full flex items-center justify-center">
+              <TrendingUp className="w-8 h-8 text-yellow-500" />
+            </div>
+            <p className="text-lg font-medium">Dữ liệu chưa đủ để hiển thị biểu đồ</p>
+            <p className="text-sm">
+              Cần có ít nhất 2 học kỳ đã học để hiển thị biểu đồ thống kê
+            </p>
+            <p className="text-xs text-gray-400 mt-2">
+              Hiện tại: {data.length} học kỳ
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const handleChartClick = () => {
     navigate("/kqht/chitiet");
-  };  const handleDataPointClick = (data: any) => {
+  };
+
+  const handleDataPointClick = (data: any) => {
     if (!data?.activePayload?.[0]) {
       navigate('/kqht/chitiet');
       return;

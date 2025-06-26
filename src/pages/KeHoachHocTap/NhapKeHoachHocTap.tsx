@@ -3,7 +3,11 @@ import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
 import { SortableHeader } from "../../components/table/SortableHeader";
 import NhomHocPhanTuChonTable from "../../components/table/NhomHocPhanTuChonTable";
 import type { HocPhan } from "../../types/HocPhan";
-import { HOCPHAN_SERVICE, KHHT_SERVICE, KQHT_SERVICE } from "../../api/apiEndPoints";
+import {
+  HOCPHAN_SERVICE,
+  KHHT_SERVICE,
+  KQHT_SERVICE,
+} from "../../api/apiEndPoints";
 import { CirclePlus, Trash2 } from "lucide-react";
 import Loading from "../../components/Loading";
 import Error from "../../components/Error";
@@ -13,7 +17,6 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import useAuth from "../../hooks/useAuth";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { HocKy } from "../../types/HocKy";
-
 
 interface HocPhanCaiThien {
   id: number;
@@ -25,7 +28,7 @@ interface HocPhanCaiThien {
 }
 interface HocPhanTuChon {
   id: number;
-  tenNhom: string
+  tenNhom: string;
   tinChiYeuCau: number;
   hocPhanTuChonList: HocPhan[];
 }
@@ -33,7 +36,9 @@ interface HocPhanTuChon {
 const NhapKeHoachHocTap: React.FC = () => {
   const { auth } = useAuth();
   const [availableHocPhan, setAvailableHocPhan] = useState<HocPhan[]>([]);
-  const [NhomHocPhanTuChon, setNhomHocPhanTuChon] = useState<HocPhanTuChon[]>([]);
+  const [NhomHocPhanTuChon, setNhomHocPhanTuChon] = useState<HocPhanTuChon[]>(
+    []
+  );
   const [hocPhanCaiThien, setHocPhanCaiThien] = useState<HocPhanCaiThien[]>([]);
   const [selectedHocPhan, setSelectedHocPhan] = useState<KeHoachHocTap[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,21 +61,24 @@ const NhapKeHoachHocTap: React.FC = () => {
         },
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${auth.token}`,
+          Authorization: `Bearer ${auth.token}`,
         },
         withCredentials: true,
       });
       if (response.status === 200 && response.data?.code === 200) {
         setHocKyFromApi(response.data.data || []);
       } else {
-        setError(`API returned code: ${response.data?.code || response.status}`);
+        setError(
+          `API returned code: ${response.data?.code || response.status}`
+        );
       }
     } catch (err) {
       if (err && typeof err === "object" && "message" in err) {
         setError((err as { message: string }).message);
       } else {
         console.error(err);
-      }    } finally {
+      }
+    } finally {
       setIsLoading(false);
     }
   }, [axiosPrivate, maSo, auth.token]);
@@ -102,11 +110,9 @@ const NhapKeHoachHocTap: React.FC = () => {
     setIsLoading(true);
     try {
       const response = await axiosPrivate.get(
-        KHHT_SERVICE.CTDT_NOT_IN_KHHT.replace(":id", maSo).replace(
-          ":khoaHoc",
-          khoaHoc
-        )
-        .replace(":maNganh", maNganh)
+        KHHT_SERVICE.CTDT_NOT_IN_KHHT.replace(":id", maSo)
+          .replace(":khoaHoc", khoaHoc)
+          .replace(":maNganh", maNganh)
       );
       setAvailableHocPhan(response.data.data || []);
     } catch (err) {
@@ -132,16 +138,18 @@ const NhapKeHoachHocTap: React.FC = () => {
           withCredentials: true,
         }
       );
-      const filtedHocPhanCaiThien: HocPhanCaiThien[] = response.data.data.map((item: any) => {
-        return {
-          id: item.id,
-          maHp: item.hocPhan.maHp,
-          tenHp: item.hocPhan.tenHp,
-          diemChu: item.diemChu,
-          diemSo: item.diemSo,
-          soTinChi: item.hocPhan.tinChi,
-        } as HocPhanCaiThien;
-      })
+      const filtedHocPhanCaiThien: HocPhanCaiThien[] = response.data.data.map(
+        (item: any) => {
+          return {
+            id: item.id,
+            maHp: item.hocPhan.maHp,
+            tenHp: item.hocPhan.tenHp,
+            diemChu: item.diemChu,
+            diemSo: item.diemSo,
+            soTinChi: item.hocPhan.tinChi,
+          } as HocPhanCaiThien;
+        }
+      );
 
       setHocPhanCaiThien(filtedHocPhanCaiThien || []);
     } catch (err) {
@@ -151,8 +159,7 @@ const NhapKeHoachHocTap: React.FC = () => {
         console.error(err);
       }
     }
-  }
-    , [axiosPrivate, maSo]);  // Fetch học phần cải thiện khi component mount
+  }, [axiosPrivate, maSo]); // Fetch học phần cải thiện khi component mount
 
   // Fetch học phần tự chọn
   const fetchNhomHocPhanTuChon = useCallback(async () => {
@@ -162,7 +169,7 @@ const NhapKeHoachHocTap: React.FC = () => {
         {
           params: {
             khoaHoc: khoaHoc,
-            maNganh: "6" // Assuming 6 is the ID for the desired major
+            maNganh: "6", // Assuming 6 is the ID for the desired major
           },
           headers: {
             "Content-Type": "application/json",
@@ -178,14 +185,21 @@ const NhapKeHoachHocTap: React.FC = () => {
         console.error(err);
       }
     }
-  }, [axiosPrivate, khoaHoc]); useEffect(() => {
+  }, [axiosPrivate, khoaHoc]);
+  useEffect(() => {
     if (maSo) {
       fetchHocKy();
       fetchHocPhanCaiThien();
       fetchAvailableHocPhan();
       fetchNhomHocPhanTuChon();
     }
-  }, [maSo, fetchHocKy, fetchAvailableHocPhan, fetchNhomHocPhanTuChon, fetchHocPhanCaiThien]);
+  }, [
+    maSo,
+    fetchHocKy,
+    fetchAvailableHocPhan,
+    fetchNhomHocPhanTuChon,
+    fetchHocPhanCaiThien,
+  ]);
 
   // Filter available học phần (exclude selected ones)
   const filteredAvailableHocPhan = useMemo(() => {
@@ -193,42 +207,50 @@ const NhapKeHoachHocTap: React.FC = () => {
       (hocPhan) =>
         !selectedHocPhan?.some((selected) => selected.maHp === hocPhan.maHp)
     );
-  }, [availableHocPhan, selectedHocPhan]);  // Helper function để tính tổng tín chỉ đã chọn cho một nhóm
-  const getTinChiDaChonTrongNhom = useCallback((nhom: HocPhanTuChon) => {
-    return selectedHocPhan
-      .filter(selected =>
-        nhom.hocPhanTuChonList.some(hp => hp.maHp === selected.maHp)
-      )
-      .reduce((total, selected) => total + selected.tinChi, 0);
-  }, [selectedHocPhan]);  // Add học phần to selected list
-  const addHocPhan = useCallback((hocPhan: HocPhan, nhomId?: number) => {
-    // Nếu có nhomId, hiển thị cảnh báo nếu sẽ vượt quá
-    if (nhomId !== undefined) {
-      const nhom = NhomHocPhanTuChon.find(n => n.id === nhomId);
-      if (nhom) {
-        const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
-        const tinChiSauKhiThem = tinChiDaChon + hocPhan.tinChi;
+  }, [availableHocPhan, selectedHocPhan]); // Helper function để tính tổng tín chỉ đã chọn cho một nhóm
+  const getTinChiDaChonTrongNhom = useCallback(
+    (nhom: HocPhanTuChon) => {
+      return selectedHocPhan
+        .filter((selected) =>
+          nhom.hocPhanTuChonList.some((hp) => hp.maHp === selected.maHp)
+        )
+        .reduce((total, selected) => total + selected.tinChi, 0);
+    },
+    [selectedHocPhan]
+  ); // Add học phần to selected list
+  const addHocPhan = useCallback(
+    (hocPhan: HocPhan, nhomId?: number) => {
+      // Nếu có nhomId, hiển thị cảnh báo nếu sẽ vượt quá
+      if (nhomId !== undefined) {
+        const nhom = NhomHocPhanTuChon.find((n) => n.id === nhomId);
+        if (nhom) {
+          const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
+          const tinChiSauKhiThem = tinChiDaChon + hocPhan.tinChi;
 
-        // Hiển thị cảnh báo nếu sẽ vượt quá yêu cầu
-        if (tinChiSauKhiThem > nhom.tinChiYeuCau) {
-          setSuccess(`Đã thêm "${hocPhan.tenHp}". Lưu ý: Tổng tín chỉ nhóm sẽ là ${tinChiSauKhiThem}/${nhom.tinChiYeuCau} (vượt ${tinChiSauKhiThem - nhom.tinChiYeuCau} tín chỉ).`);
+          // Hiển thị cảnh báo nếu sẽ vượt quá yêu cầu
+          if (tinChiSauKhiThem > nhom.tinChiYeuCau) {
+            setSuccess(
+              `Đã thêm "${hocPhan.tenHp}". Lưu ý: Tổng tín chỉ nhóm sẽ là ${tinChiSauKhiThem}/${nhom.tinChiYeuCau} (vượt ${tinChiSauKhiThem - nhom.tinChiYeuCau} tín chỉ).`
+            );
+          }
         }
       }
-    }
 
-    setSelectedHocPhan((prev) => [
-      ...prev,
-      {
-        maHp: hocPhan.maHp,
-        tenHp: hocPhan.tenHp,
-        tinChi: hocPhan.tinChi,
-        loaiHp: hocPhan.loaiHp,
-        hocPhanTienQuyet: hocPhan.hocPhanTienQuyet,
-        maHocKy: 0,
-        namHocId: 0,
-      } as KeHoachHocTap,
-    ]);
-  }, [NhomHocPhanTuChon, getTinChiDaChonTrongNhom]);
+      setSelectedHocPhan((prev) => [
+        ...prev,
+        {
+          maHp: hocPhan.maHp,
+          tenHp: hocPhan.tenHp,
+          tinChi: hocPhan.tinChi,
+          loaiHp: hocPhan.loaiHp,
+          hocPhanTienQuyet: hocPhan.hocPhanTienQuyet,
+          maHocKy: 0,
+          namHocId: 0,
+        } as KeHoachHocTap,
+      ]);
+    },
+    [NhomHocPhanTuChon, getTinChiDaChonTrongNhom]
+  );
 
   // Remove học phần from selected list
   const removeHocPhan = useCallback((maHp: string) => {
@@ -317,7 +339,8 @@ const NhapKeHoachHocTap: React.FC = () => {
               <CirclePlus className="h-5 w-5" />
             </button>
           </div>
-        ),      },
+        ),
+      },
     ],
     [addHocPhan]
   );
@@ -332,7 +355,8 @@ const NhapKeHoachHocTap: React.FC = () => {
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("maHp")}</div>
       ),
-    },    {
+    },
+    {
       accessorKey: "tenHp",
       header: ({ column }) => (
         <SortableHeader column={column} title="Tên học phần" />
@@ -349,7 +373,8 @@ const NhapKeHoachHocTap: React.FC = () => {
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("soTinChi")}</div>
       ),
-    },{
+    },
+    {
       accessorKey: "diemChu",
       header: ({ column }) => (
         <SortableHeader column={column} title="Điểm chữ" />
@@ -506,7 +531,8 @@ const NhapKeHoachHocTap: React.FC = () => {
             </button>
           </div>
         ),
-      },],
+      },
+    ],
     [namHocList, hocKyList, removeHocPhan]
   );
 
@@ -524,7 +550,8 @@ const NhapKeHoachHocTap: React.FC = () => {
             data={filteredAvailableHocPhan}
             columns={availableColumns}
             initialExpanded={true}
-            loading={false}          />
+            loading={false}
+          />
           {/* Nhóm học phần tự chọn tables */}
           <NhomHocPhanTuChonTable
             nhomHocPhanTuChon={NhomHocPhanTuChon}
@@ -546,7 +573,11 @@ const NhapKeHoachHocTap: React.FC = () => {
                       Các học phần có điểm chưa đạt cần cải thiện
                       {hocPhanCaiThien.length > 0 && (
                         <span className="ml-2 text-orange-700">
-                          - Có <span className="font-medium">{hocPhanCaiThien.length}</span> môn có thể cải thiện
+                          - Có{" "}
+                          <span className="font-medium">
+                            {hocPhanCaiThien.length}
+                          </span>{" "}
+                          môn có thể cải thiện
                         </span>
                       )}
                     </p>
@@ -592,10 +623,11 @@ const NhapKeHoachHocTap: React.FC = () => {
                 <button
                   disabled={fetchLoading}
                   onClick={handleSaveKHHT}
-                  className={`px-6 py-2 rounded-xl text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${fetchLoading
-                    ? "cursor-not-allowed opacity-50 bg-gray-400"
-                    : "bg-green-500 hover:bg-green-600"
-                    }`}
+                  className={`px-6 py-2 rounded-xl text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${
+                    fetchLoading
+                      ? "cursor-not-allowed opacity-50 bg-gray-400"
+                      : "bg-green-500 hover:bg-green-600"
+                  }`}
                 >
                   {fetchLoading ? "Đang lưu..." : "Lưu kế hoạch học tập"}
                 </button>
