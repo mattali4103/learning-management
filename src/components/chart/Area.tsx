@@ -41,13 +41,10 @@ const CustomTooltip = ({
   return null;
 };
 
-
 type AreaChartData = {
   name: string | null;
   diem: number | 0;
 };
-
-
 
 interface AreaChartComponentProps {
   tableName: string;
@@ -57,23 +54,27 @@ export default function AreaChartComponent({
   tableName,
   data,
 }: AreaChartComponentProps) {
-  const navigate = useNavigate();  const handleClick = (data : any) => {
-      if(data && data.activePayload && data.activePayload.length > 0) {
-        const clickedData = data.activePayload[0].payload;
-        console.log("Clicked data:", clickedData);
-        
-        // Điều hướng với ID năm học và học kỳ nếu có
-        const navigationUrl = createKeHoachHocTapNavigationUrl(
-          clickedData.namHocId,
-          clickedData.hocKyId
-        );
-        navigate(navigationUrl);
-      }
+  const navigate = useNavigate();
+  const handleClick = (data: any) => {
+    if (data && data.activePayload && data.activePayload.length > 0) {
+      const clickedData = data.activePayload[0].payload;
+
+      // Điều hướng với ID năm học và học kỳ nếu có
+      const navigationUrl = createKeHoachHocTapNavigationUrl(
+        clickedData.namHocId,
+        clickedData.hocKyId
+      );
+      navigate(navigationUrl);
+    }
   };
 
   return (
     <ResponsiveContainer width="100%" height={120}>
-      <AreaChart onClick={handleClick} data={data} style={{ cursor: "pointer" }}>
+      <AreaChart
+        onClick={handleClick}
+        data={data}
+        style={{ cursor: "pointer" }}
+      >
         <CartesianGrid
           stroke="#e5e7eb"
           strokeDasharray="3 3"

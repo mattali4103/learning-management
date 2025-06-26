@@ -23,19 +23,20 @@ export const PROFILE_SERVICE = {
 }
 
 export const HOCPHAN_SERVICE = {
-  CTDT_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/nganh/:id",
+  CTDT_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/get/:khoaHoc/:maNganh",
   CDDT_HOC_PHAN_TU_CHON_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/list",
 };
 
 export const KHHT_SERVICE = {
+  GET_HOCKY_MAU: KHHT_SERVICE_URL + "/api/khht/mau/hocky", // lấy mẫu học kỳ - params
   GET_HOCKY: KHHT_SERVICE_URL + "/api/khht/hocky/sinhvien/:maSo",
   CREATE: KHHT_SERVICE_URL + "/api/khht/creates",
   LIST: KHHT_SERVICE_URL + "/api/khht/list",
   KHHT_SINHVIEN: KHHT_SERVICE_URL + "/api/khht/sinhvien/detail/page", // phân trang: ?maSo=xxx&page=0&size=20
   KHHT_SINHVIEN_BY_LOAI_HP: KHHT_SERVICE_URL + "/api/khht/sinhvien/hocphan/by_loai_hp",
-  CTDT_NOT_IN_KHHT: KHHT_SERVICE_URL + "/api/khht/sinhvien/hoc_phan_not_in_khht/:id/:khoaHoc",
+  CTDT_NOT_IN_KHHT: KHHT_SERVICE_URL + "/api/khht/sinhvien/hoc_phan_not_in_khht/:id/:khoaHoc/:maNganh",
   DELETE: KHHT_SERVICE_URL + "/api/khht/delete/:id",
-  COUNT_TINCHI_IN_KHHT: KHHT_SERVICE_URL + "/api/khht/sinhvien/tinchi/count/:khoaHoc/:maSo",
+  COUNT_TINCHI_IN_KHHT: KHHT_SERVICE_URL + "/api/khht/sinhvien/tinchi/count/:khoaHoc/:maNganh/:maSo",
   COUNT_TINCHI_GROUP_BY_HOCKY: KHHT_SERVICE_URL + "/api/khht/sinhvien/tinchi/count_by_hoc_ky/:maSo",
 };
 

@@ -5,7 +5,6 @@ interface RequireAuthProps {
 }
 const RequireAuth = ({allowedRoles}: RequireAuthProps) => {
     const {auth} = useAuth();
-    console.log('RequireAuth', auth);
     const location = useLocation();
     return(
         auth?.user?.roles?.split(',').some(role => allowedRoles.includes(role))

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
 import { SortableHeader } from "../../components/table/SortableHeader";
+import NhomHocPhanTuChonTable from "../../components/table/NhomHocPhanTuChonTable";
 import type { HocPhan } from "../../types/HocPhan";
 import { HOCPHAN_SERVICE, KHHT_SERVICE, KQHT_SERVICE } from "../../api/apiEndPoints";
 import { CirclePlus, Trash2 } from "lucide-react";
@@ -39,56 +40,40 @@ const NhapKeHoachHocTap: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [fetchLoading, setFetchLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  const [hocKyFromAPI] = useState<HocKy[]>([
-    {
-      maHocKy: 0,
-      tenHocKy: "Chọn học kỳ",
-      namHoc: {
-        id: 0,
-        namBatDau: "",
-        namKetThuc: "",
-      },
-      ngayBatDau: "",
-      ngayKetThuc: "",
-    },
-    {
-      maHocKy: 1,
-      tenHocKy: "Học kỳ 1",
-      namHoc: {
-        id: 1,
-        namBatDau: "2021",
-        namKetThuc: "2022",
-      },
-      ngayBatDau: "",
-      ngayKetThuc: "",
-    },
-    {
-      maHocKy: 2,
-      tenHocKy: "Học kỳ 2",
-      namHoc: {
-        id: 1,
-        namBatDau: "2021",
-        namKetThuc: "2022",
-      },
-      ngayBatDau: "",
-      ngayKetThuc: "",
-    },
-    {
-      maHocKy: 3,
-      tenHocKy: "Học kỳ 3",
-      namHoc: {
-        id: 1,
-        namBatDau: "2021",
-        namKetThuc: "2022",
-      },
-      ngayBatDau: "",
-      ngayKetThuc: "",
-    },
-  ]);
-
+  const [hocKyFromAPI, setHocKyFromApi] = useState<HocKy[]>([]);
   const axiosPrivate = useAxiosPrivate();
   const maSo = auth.user?.maSo || "";
   const khoaHoc = auth.user?.khoaHoc || "";
+  const maNganh = auth.user?.maNganh || ""; // Assuming maNganh is available in auth.user
+
+  // Fetch học kỳ data from API
+  const fetchHocKy = useCallback(async () => {
+    try {
+      const response = await axiosPrivate.get(KHHT_SERVICE.GET_HOCKY_MAU, {
+        params: {
+          khoaHoc: khoaHoc,
+          maNganh: "6", // Assuming 6 is the ID for the desired major
+        },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${auth.token}`,
+        },
+        withCredentials: true,
+      });
+      if (response.status === 200 && response.data?.code === 200) {
+        setHocKyFromApi(response.data.data || []);
+      } else {
+        setError(`API returned code: ${response.data?.code || response.status}`);
+      }
+    } catch (err) {
+      if (err && typeof err === "object" && "message" in err) {
+        setError((err as { message: string }).message);
+      } else {
+        console.error(err);
+      }    } finally {
+      setIsLoading(false);
+    }
+  }, [axiosPrivate, maSo, auth.token]);
 
   // Create academic year list from API data
   const namHocList = useMemo(() => {
@@ -121,6 +106,7 @@ const NhapKeHoachHocTap: React.FC = () => {
           ":khoaHoc",
           khoaHoc
         )
+        .replace(":maNganh", maNganh)
       );
       setAvailableHocPhan(response.data.data || []);
     } catch (err) {
@@ -132,7 +118,7 @@ const NhapKeHoachHocTap: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [axiosPrivate, maSo, khoaHoc]);
+  }, [axiosPrivate, maSo, khoaHoc, maNganh]);
 
   //Fetch học phần cải thiện
   const fetchHocPhanCaiThien = useCallback(async () => {
@@ -194,11 +180,12 @@ const NhapKeHoachHocTap: React.FC = () => {
     }
   }, [axiosPrivate, khoaHoc]); useEffect(() => {
     if (maSo) {
+      fetchHocKy();
       fetchHocPhanCaiThien();
       fetchAvailableHocPhan();
       fetchNhomHocPhanTuChon();
     }
-  }, [maSo, fetchAvailableHocPhan, fetchNhomHocPhanTuChon, fetchHocPhanCaiThien]);
+  }, [maSo, fetchHocKy, fetchAvailableHocPhan, fetchNhomHocPhanTuChon, fetchHocPhanCaiThien]);
 
   // Filter available học phần (exclude selected ones)
   const filteredAvailableHocPhan = useMemo(() => {
@@ -277,7 +264,6 @@ const NhapKeHoachHocTap: React.FC = () => {
       setFetchLoading(false);
     }
   };
-  console.log("hocphan", hocPhanCaiThien)  // Available học phần columns
   const availableColumns = useMemo<ColumnDef<HocPhan>[]>(
     () => [
       {
@@ -331,67 +317,12 @@ const NhapKeHoachHocTap: React.FC = () => {
               <CirclePlus className="h-5 w-5" />
             </button>
           </div>
-        ),
-      },
+        ),      },
     ],
     [addHocPhan]
-  );  // Columns cho học phần tự chọn
-  const createHocPhanTuChonColumns = (nhomId: number): ColumnDef<HocPhan>[] => [
-    {
-      accessorKey: "maHp",
-      header: ({ column }) => (
-        <SortableHeader column={column} title="Mã học phần" />
-      ),
-      cell: ({ row }) => (
-        <div className="text-center">{row.getValue("maHp")}</div>
-      ),
-    },
-    {
-      accessorKey: "tenHp",
-      header: ({ column }) => (
-        <SortableHeader column={column} title="Tên học phần" />
-      ),
-      cell: ({ row }) => (
-        <div className="text-left">{row.getValue("tenHp")}</div>
-      ),
-    },
-    {
-      accessorKey: "tinChi",
-      header: ({ column }) => (
-        <SortableHeader column={column} title="Tín chỉ" />
-      ),
-      cell: ({ row }) => (
-        <div className="text-center">{row.getValue("tinChi")}</div>
-      ),
-    },
-    {
-      accessorKey: "hocPhanTienQuyet",
-      header: ({ column }) => (
-        <SortableHeader column={column} title="Tiên quyết" />
-      ),
-      cell: ({ row }) => (
-        <div className="text-center">
-          {row.getValue("hocPhanTienQuyet") || "-"}
-        </div>
-      ),
-    },
-    {
-      accessorKey: "action",
-      header: "", cell: ({ row }) => {
-        return (
-          <div className="flex items-center justify-center">
-            <button
-              className="text-green-600 hover:text-green-700 p-2 rounded-lg transition-colors duration-200"
-              onClick={() => addHocPhan(row.original, nhomId)}
-              title="Thêm vào kế hoạch"
-            >
-              <CirclePlus className="h-5 w-5" />
-            </button>
-          </div>
-        );
-      },
-    },
-  ];  // Columns cho học phần cải thiện
+  );
+
+  // Columns cho học phần cải thiện
   const createHocPhanCaiThienColumns = (): ColumnDef<HocPhanCaiThien>[] => [
     {
       accessorKey: "maHp",
@@ -593,82 +524,14 @@ const NhapKeHoachHocTap: React.FC = () => {
             data={filteredAvailableHocPhan}
             columns={availableColumns}
             initialExpanded={true}
-            loading={false}
-          />
+            loading={false}          />
           {/* Nhóm học phần tự chọn tables */}
-          {NhomHocPhanTuChon.map((nhom, index) => {
-            // Tính tổng tín chỉ đã chọn trong nhóm này
-            const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
-            const isCompleted = tinChiDaChon >= nhom.tinChiYeuCau;
-            const isExceeded = tinChiDaChon > nhom.tinChiYeuCau;
-
-            return (
-              <div key={nhom.id} className="space-y-2">
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-purple-800 mb-1">
-                        {nhom.tenNhom || `Nhóm học phần tự chọn ${index + 1}`}
-                      </h3>
-                      <p className="text-purple-600 text-sm">
-                        Yêu cầu: <span className="font-medium">{nhom.tinChiYeuCau} tín chỉ</span>
-                        {tinChiDaChon > 0 && (
-                          <span className="ml-2 text-purple-700">
-                            - Đã chọn: <span className="font-medium">{tinChiDaChon} tín chỉ</span>
-                          </span>
-                        )}
-                      </p>
-                      {/* Hiển thị trạng thái chi tiết */}
-                      {tinChiDaChon > 0 && (
-                        <p className="text-sm mt-1">
-                          {tinChiDaChon < nhom.tinChiYeuCau && (
-                            <span className="text-orange-600 font-medium">
-                              ⚠️ Cần thêm {nhom.tinChiYeuCau - tinChiDaChon} tín chỉ để đạt yêu cầu
-                            </span>
-                          )}
-                          {tinChiDaChon === nhom.tinChiYeuCau && (
-                            <span className="text-green-600 font-medium">
-                              ✅ Đã đạt đủ yêu cầu tín chỉ
-                            </span>
-                          )}
-                          {tinChiDaChon > nhom.tinChiYeuCau && (
-                            <span className="text-blue-600 font-medium">
-                              ℹ️ Vượt {tinChiDaChon - nhom.tinChiYeuCau} tín chỉ so với yêu cầu
-                            </span>
-                          )}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-3">
-                      <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {nhom.hocPhanTuChonList.length} môn học
-                      </div>
-                      {isCompleted && !isExceeded && (
-                        <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                          ✓ Hoàn thành
-                        </div>
-                      )}
-                      {isExceeded && (
-                        <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                          + Vượt yêu cầu
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                <KeHoachHocTapTable
-                  name={nhom.tenNhom || `Học phần tự chọn - Nhóm ${index + 1}`}
-                  data={nhom.hocPhanTuChonList.filter(
-                    (hocPhan) =>
-                      !selectedHocPhan?.some((selected) => selected.maHp === hocPhan.maHp)
-                  )}
-                  columns={createHocPhanTuChonColumns(nhom.id)}
-                  initialExpanded={false}
-                  loading={false}
-                />
-              </div>
-            );
-          })}
+          <NhomHocPhanTuChonTable
+            nhomHocPhanTuChon={NhomHocPhanTuChon}
+            selectedHocPhan={selectedHocPhan}
+            onAddHocPhan={addHocPhan}
+            getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
+          />
 
           {/* Bảng học phần cải thiện */}
           {hocPhanCaiThien && hocPhanCaiThien.length > 0 && (

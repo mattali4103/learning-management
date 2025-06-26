@@ -347,14 +347,6 @@ const ContentDisplay = ({
 
         // Xử lý response từ API
         const responseData = response.data.data;
-        console.log("API Response structure:", {
-          responseData,
-          isArray: Array.isArray(responseData),
-          hasData: responseData?.data,
-          dataIsArray: Array.isArray(responseData?.data),
-          hasKetQuaList: responseData?.ketQuaHocTapList,
-          ketQuaListIsArray: Array.isArray(responseData?.ketQuaHocTapList),
-        });
 
         let data: any[] = [];
 

@@ -43,11 +43,11 @@ const CustomTooltip = ({
   }
   return null;
 };
-interface AreaChartData{
+interface AreaChartData {
   name: string | null;
   tinChiTichLuy: number | 0;
   tinChiCaiThien: number | 0;
-};
+}
 
 interface DiemChartProps {
   tableName: string;
@@ -55,11 +55,10 @@ interface DiemChartProps {
 }
 export const CustomAreaChartByDiem = ({ tableName, data }: DiemChartProps) => {
   const navigate = useNavigate();
-  console.log("Data for chart:", data);  const handleClick = (data: any) => {
+  const handleClick = (data: any) => {
     if (data && data.activePayload && data.activePayload.length > 0) {
       const clickedData = data.activePayload[0].payload;
-      console.log("Clicked data:", clickedData);
-      
+
       // Điều hướng với ID năm học và học kỳ nếu có
       const navigationUrl = createKeHoachHocTapNavigationUrl(
         clickedData.namHocId,
@@ -122,7 +121,8 @@ export const CustomAreaChartByDiem = ({ tableName, data }: DiemChartProps) => {
           strokeWidth={2}
         />
       </AreaChart>
-    </ResponsiveContainer>  );
+    </ResponsiveContainer>
+  );
 };
 
 export default CustomAreaChartByDiem;

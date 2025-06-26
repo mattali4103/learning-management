@@ -24,7 +24,6 @@ interface TinChiChartProps {
 
 const TinChiChart = ({ data }: TinChiChartProps) => {
   const navigate = useNavigate();
-  console.log("Data", data)
   
   // Show empty state if no data
   if (!data || data.length === 0) {

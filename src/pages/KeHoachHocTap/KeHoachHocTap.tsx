@@ -56,7 +56,9 @@ export const KeHoachHocTapPage = () => {
         setTinChiThongKe(thongKeData);
         return thongKeData;
       } else {
-        throw new Error(`API returned code: ${response.data?.code || response.status}`);
+        throw new Error(
+          `API returned code: ${response.data?.code || response.status}`
+        );
       }
     } catch (error) {
       console.error("Error fetching tin chi thong ke:", error);
@@ -67,45 +69,62 @@ export const KeHoachHocTapPage = () => {
 
   // Function fetch dữ liệu kế hoạch học tập
   const fetchKeHoachHocTap = useCallback(async () => {
-    try {     
-       // Sử dụng server-side pagination
+    try {
+      // Sử dụng server-side pagination
       const result = await axiosPrivate.get(KHHT_SERVICE.KHHT_SINHVIEN, {
         params: {
           maSo: maSo,
           page: currentPage, // Trang hiện tại (1-based index)
           size: pageSize, // Sử dụng pageSize từ state
-        }
+        },
       });
-      console.log("API Response:", result.data);
+
 
       // Xử lý response có cấu trúc phân trang và flatten dữ liệu như KeHoachHocTapDetail
       if (result.data && result.data.data) {
         const responseData = result.data.data; // data của API
-        // Flatten dữ liệu theo cấu trúc của KeHoachHocTapDetail
-        const khhtData: KHHTData[] = responseData.data.map((item: any) => ({
-          id: item.id,
-          maHp: item.hocPhan?.maHp || item.maHp || "",
-          tenHp: item.hocPhan?.tenHp || item.tenHp || "",
-          tinChi: item.hocPhan?.tinChi || item.tinChi || 0,
-          hocPhanTienQuyet: item.hocPhan?.hocPhanTienQuyet || item.hocPhanTienQuyet || "",
-          loaiHp: item.hocPhan?.loaiHp || item.loaiHocPhan || "",
-          maHocKy: item.hocKy?.maHocKy || item.hocKy?.id || 0,
-          tenHocKy: item.hocKy?.tenHocKy || "",
-          namHocId: item.namHoc?.id || item.hocKy?.namHoc?.id || 0,
-          namBdNamKt: item.namHoc
-            ? `${item.namHoc.namBatDau}-${item.namHoc.namKetThuc}`
-            : item.hocKy?.namHoc
-              ? `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}`
-              : "",
-        }));          setKeHoachHocTap(khhtData);
-        setTotalElements(responseData.totalElements || 0);
-        // Tính toán totalPages nếu API không trả về hoặc trả về 0
-        const calculatedTotalPages = responseData.totalPages || 
-          Math.ceil((responseData.totalElements || khhtData.length) / pageSize);
-        setTotalPages(Math.max(calculatedTotalPages, 1)); // Đảm bảo có ít nhất 1 trang
-      
+
         
-        return khhtData;
+        // Kiểm tra xem responseData.data có tồn tại không
+        const dataArray = responseData.data || responseData.content || responseData;
+
+        
+        if (Array.isArray(dataArray)) {
+          // Flatten dữ liệu theo cấu trúc của KeHoachHocTapDetail
+          const khhtData: KHHTData[] = dataArray.map((item: any) => ({
+            id: item.id,
+            maHp: item.hocPhan?.maHp || item.maHp || "",
+            tenHp: item.hocPhan?.tenHp || item.tenHp || "",
+            tinChi: item.hocPhan?.tinChi || item.tinChi || 0,
+            hocPhanTienQuyet:
+              item.hocPhan?.hocPhanTienQuyet || item.hocPhanTienQuyet || "",
+            loaiHp: item.hocPhan?.loaiHp || item.loaiHocPhan || "",
+            maHocKy: item.hocKy?.maHocKy || item.hocKy?.id || 0,
+            tenHocKy: item.hocKy?.tenHocKy || "",
+            namHocId: item.namHoc?.id || item.hocKy?.namHoc?.id || 0,
+            namBdNamKt: item.namHoc
+              ? `${item.namHoc.namBatDau}-${item.namHoc.namKetThuc}`
+              : item.hocKy?.namHoc
+                ? `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}`
+                : "",
+          }));
+
+          setKeHoachHocTap(khhtData);
+          setTotalElements(responseData.totalElements || 0);
+          // Tính toán totalPages nếu API không trả về hoặc trả về 0
+          const calculatedTotalPages =
+            responseData.totalPages ||
+            Math.ceil((responseData.totalElements || khhtData.length) / pageSize);
+          setTotalPages(Math.max(calculatedTotalPages, 1)); // Đảm bảo có ít nhất 1 trang
+
+          return khhtData;
+        } else {
+
+          setKeHoachHocTap([]);
+          setTotalElements(0);
+          setTotalPages(0);
+          return [];
+        }
       } else {
         setKeHoachHocTap([]);
         setTotalElements(0);
@@ -126,54 +145,80 @@ export const KeHoachHocTapPage = () => {
   const columns: ColumnDef<KHHTData>[] = [
     {
       accessorKey: "id",
-      header: () => (
-        <div className="text-center hidden">STT</div>
-      ),
+      header: () => <div className="text-center hidden">STT</div>,
       cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
     },
     {
       accessorKey: "maHp",
       header: ({ column }) => (
-        <SortableHeader column={column} title="Mã học phần" className="ml-2 hover:text-white/80 transition-colors" />
+        <SortableHeader
+          column={column}
+          title="Mã học phần"
+          className="ml-2 hover:text-white/80 transition-colors"
+        />
       ),
       cell: ({ row }) => <div>{row.getValue("maHp")}</div>,
     },
     {
       accessorKey: "tenHp",
       header: ({ column }) => (
-        <SortableHeader column={column} title="Tên học phần" className="ml-2 hover:text-white/80 transition-colors" />
+        <SortableHeader
+          column={column}
+          title="Tên học phần"
+          className="ml-2 hover:text-white/80 transition-colors"
+        />
       ),
     },
     {
       accessorKey: "tinChi",
       header: ({ column }) => (
-        <SortableHeader column={column} title="Tín chỉ" className="ml-2 hover:text-white/80 transition-colors" />
+        <SortableHeader
+          column={column}
+          title="Tín chỉ"
+          className="ml-2 hover:text-white/80 transition-colors"
+        />
       ),
     },
     {
       accessorKey: "loaiHp",
       header: ({ column }) => (
-        <SortableHeader column={column} title="Loại học phần" className="ml-2 hover:text-white/80 transition-colors" />
+        <SortableHeader
+          column={column}
+          title="Loại học phần"
+          className="ml-2 hover:text-white/80 transition-colors"
+        />
       ),
     },
     {
       id: "maHocKy",
       accessorKey: "tenHocKy",
       header: ({ column }) => (
-        <SortableHeader column={column} title="Học kỳ" className="ml-2 hover:text-white/80 transition-colors" />
+        <SortableHeader
+          column={column}
+          title="Học kỳ"
+          className="ml-2 hover:text-white/80 transition-colors"
+        />
       ),
     },
     {
       id: "namHocId",
       accessorKey: "namBdNamKt",
       header: ({ column }) => (
-        <SortableHeader column={column} title="Năm học" className="ml-2 hover:text-white/80 transition-colors" />
+        <SortableHeader
+          column={column}
+          title="Năm học"
+          className="ml-2 hover:text-white/80 transition-colors"
+        />
       ),
     },
     {
       accessorKey: "hocPhanTienQuyet",
       header: ({ column }) => (
-        <SortableHeader column={column} title="Học phần tiên quyết" className="ml-2 hover:text-white/80 transition-colors" />
+        <SortableHeader
+          column={column}
+          title="Học phần tiên quyết"
+          className="ml-2 hover:text-white/80 transition-colors"
+        />
       ),
     },
   ];
@@ -185,18 +230,17 @@ export const KeHoachHocTapPage = () => {
       setLoading(true);
       try {
         // Fetch cả hai loại dữ liệu song song
-        await Promise.all([
-          fetchKeHoachHocTap(),
-          fetchTinChiThongKe()
-        ]);
-
+        await Promise.all([fetchKeHoachHocTap(), fetchTinChiThongKe()]);
       } catch (error) {
         console.error("Error fetching data:", error);
-        setError(error instanceof Error ? `Lỗi: ${error.message}` : "Có lỗi xảy ra");
+        setError(
+          error instanceof Error ? `Lỗi: ${error.message}` : "Có lỗi xảy ra"
+        );
       } finally {
         setLoading(false);
       }
-    };    fetchData();
+    };
+    fetchData();
   }, [maSo, currentPage, fetchKeHoachHocTap, fetchTinChiThongKe]); // Removed pageSize from dependency array
 
   if (loading) {
@@ -225,15 +269,13 @@ export const KeHoachHocTapPage = () => {
           <p className="text-lg text-center font-bold uppercase mb-4">
             Số tín chỉ đăng ký và cải thiện theo học kỳ
           </p>
-          <KHHTBarChart
-            rawData={tinChiThongKe}
-            height={400}
-          />
+          <KHHTBarChart rawData={tinChiThongKe} height={400} />
         </div>
       )}
 
       {/* Bảng kế hoạch học tập với server-side pagination */}
-      <div className="transition-all duration-300 hover:scale-[1.01]">        <KeHoachHocTapTable
+      <div className="transition-all duration-300 hover:scale-[1.01]">
+        <KeHoachHocTapTable
           name="Kế hoạch học tập"
           data={keHoachHocTap}
           columns={columns}

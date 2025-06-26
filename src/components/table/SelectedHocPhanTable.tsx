@@ -99,16 +99,6 @@ const SelectedHocPhanTable = ({
       alert("Không có học phần nào được chọn.");
       return;
     }
-    // Prepare data for server
-    const dataToSend = selectedHocPhan.map((item) => ({
-      id: item.id,
-      maHp: item.maHp,
-      maHocKy: item.maHocKy,
-      namHocId: item.namHocId,
-    }));
-    console.log("Dữ liệu gửi về server:", dataToSend);
-    // TODO: Replace with actual API call, e.g., apiPost(KHHT_SERVICE.ADD_KHHT, dataToSend);
-    alert("Dữ liệu đã được chuẩn bị để gửi về server. Kiểm tra console để xem chi tiết.");
   };
 
   return (

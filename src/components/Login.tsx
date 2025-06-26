@@ -97,6 +97,7 @@ const Login: React.FC = () => {
             maSo: decodedToken?.sub,
             roles: decodedToken?.scope,
             khoaHoc: userInfo.khoaHoc,
+            maNganh: userInfo.maNganh,
           },
         });
         fetchHocKy(maSo);
@@ -154,8 +155,8 @@ const Login: React.FC = () => {
                   />
                 </div>
                 {loading ? (
-                  <div className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors">
-                    <LoadingButton loading={true} variant="primary">
+                  <div className="bg-blue-500` flex items-center justify-center text-white p-3 rounded-lg transition-colors">
+                    <LoadingButton loading={true} variant="primary" className="">
                       Đang đăng nhập...
                     </LoadingButton>
                   </div>
@@ -164,7 +165,7 @@ const Login: React.FC = () => {
                     type="submit"
                     className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
                   >
-                    Đăng Nhập
+                    Đăng Nhsập
                   </button>
                 )}
               </form>

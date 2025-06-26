@@ -24,6 +24,7 @@ const KeHoachHocTapUnified = () => {
   const { auth } = useAuth();
   const { maSo } = auth.user || {};
 
+
   // Fetch dữ liệu học kỳ từ API
   const fetchHocKy = useCallback(async (maSo: string) => {
     try {
@@ -240,7 +241,7 @@ const UnifiedContentDisplay = ({
   selectedHocKy,
 }: UnifiedContentDisplayProps) => {
   const { auth } = useAuth();
-  const { maSo, khoaHoc } = auth.user || {};  const axiosPrivate = useAxiosPrivate();
+  const { maSo, khoaHoc, maNganh} = auth.user || {};  const axiosPrivate = useAxiosPrivate();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [allData, setAllData] = useState<KeHoachHocTap[]>([]);
@@ -405,16 +406,19 @@ const UnifiedContentDisplay = ({
           axiosPrivate.post<any>(KHHT_SERVICE.KHHT_SINHVIEN_BY_LOAI_HP, {
             maSo: maSo,
             khoaHoc: khoaHoc,
+            maNganh: maNganh, 
             loaiHp: "Đại cương",
           }),
           axiosPrivate.post<any>(KHHT_SERVICE.KHHT_SINHVIEN_BY_LOAI_HP, {
             maSo: maSo,
             khoaHoc: khoaHoc,
+            maNganh: maNganh,
             loaiHp: "Cơ sở ngành",
           }),
           axiosPrivate.post<any>(KHHT_SERVICE.KHHT_SINHVIEN_BY_LOAI_HP, {
             maSo: maSo,
             khoaHoc: khoaHoc,
+            maNganh: maNganh,
             loaiHp: "Chuyên ngành",
           })
         ]);

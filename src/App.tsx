@@ -42,7 +42,7 @@ function App() {
             <Route path="chung" element={<KetQuaHocTap />} />
             <Route path="chitiet" element={<KetQuaHocTapDetail />} />
           </Route>
-        </Route>
+        </Route>  
         <Route
           element={
             <RequireAuth allowedRoles={[ROLES.GIANGVIEN, ROLES.ADMIN]} />

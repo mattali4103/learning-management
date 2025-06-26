@@ -70,7 +70,8 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   //   Chuyển đổi dữ liệu thành dạng phù hợp với bảng
   //   Sử dụng useMemo để tối ưu hóa hiệu suất
   //   Chỉ cập nhật khi dữ liệu thay đổi
-  const dataRow = useMemo(() => data, [data]); const table = useReactTable({
+  const dataRow = useMemo(() => data, [data]);
+  const table = useReactTable({
     data: dataRow,
     columns: columns,
     state: {
@@ -89,14 +90,14 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
     getFilteredRowModel: getFilteredRowModel(),
     ...(enableServerPagination
       ? {
-        // Server-side pagination setup
-        manualPagination: true,
-        pageCount: totalPages,
-      }
+          // Server-side pagination setup
+          manualPagination: true,
+          pageCount: totalPages,
+        }
       : {
-        // Client-side pagination setup
-        getPaginationRowModel: getPaginationRowModel(),
-      }),
+          // Client-side pagination setup
+          getPaginationRowModel: getPaginationRowModel(),
+        }),
     initialState: {
       pagination: {
         pageSize: enableServerPagination ? pageSize : 7,
@@ -106,7 +107,6 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   return (
     <div className="overflow-x-auto rounded-lg shadow-xl bg-gray-200 transition-all duration-200 hover:shadow-2xl">
       <div className="text-center flex bg-gradient-to-r from-blue-400 to-blue-500 py-3 text-lg text-white relative">
-        {" "}
         <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
           <input
             type="text"
@@ -115,7 +115,7 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
             placeholder="Tìm kiếm học phần..."
             className="border-none px-3 py-1.5 rounded-lg bg-white/90 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white text-sm placeholder-gray-500 transition-all duration-200 w-48"
           />
-        </div>{" "}
+        </div>
         <div className="flex-1 flex justify-center items-center">
           <h3 className="font-bold uppercase tracking-wide">{name}</h3>
           {data.length > 0 && (
@@ -156,18 +156,20 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
             title={isExpanded ? "Ẩn bảng" : "Hiện bảng"}
           >
             <ArrowUp
-              className={`w-5 h-5 text-white transition-all duration-300 group-hover:scale-110 ${isExpanded ? "rotate-180" : "rotate-0"
-                }`}
+              className={`w-5 h-5 text-white transition-all duration-300 group-hover:scale-110 ${
+                isExpanded ? "rotate-180" : "rotate-0"
+              }`}
             />
           </button>
         </div>
       </div>
 
       <div
-        className={`transition-all duration-400 ease-in-out overflow-hidden ${isExpanded
-          ? "max-h-[2000px] opacity-100 transform translate-y-0"
-          : "max-h-0 opacity-0 transform -translate-y-2"
-          }`}
+        className={`transition-all duration-400 ease-in-out overflow-hidden ${
+          isExpanded
+            ? "max-h-[2000px] opacity-100 transform translate-y-0"
+            : "max-h-0 opacity-0 transform -translate-y-2"
+        }`}
       >
         <div
           className={`transition-all duration-200 ${isExpanded ? "delay-100" : ""}`}
@@ -179,15 +181,16 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className={`px-2 py-3 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600 ${header.id === "id" ? "hidden" : ""
-                        }`}
+                      className={`px-2 py-3 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600 ${
+                        header.id === "id" ? "hidden" : ""
+                      }`}
                     >
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
                     </th>
                   ))}
                 </tr>
@@ -205,21 +208,26 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                     }
                     className="px-5 py-8 text-center text-gray-500 bg-gray-50 border-b-1 border-gray-200"
                   >
-                    <Loading showOverlay={false} message="Đang tải dữ liệu..." />
+                    <Loading
+                      showOverlay={false}
+                      message="Đang tải dữ liệu..."
+                    />
                   </td>
                 </tr>
               ) : table.getRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map((row) => (
                   <tr
                     key={row.id}
-                    className={`hover:bg-gray-200 bg-gray-50 ${row.id === "id" ? "hidden" : ""
-                      }`}
+                    className={`hover:bg-gray-200 bg-gray-50 ${
+                      row.id === "id" ? "hidden" : ""
+                    }`}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className={`px-5 py-1.5 border-b-1 border-gray-200 text-center border-x-gray-300 border-x-1 ${cell.column.id === "id" ? "hidden" : ""
-                          }`}
+                        className={`px-5 py-1.5 border-b-1 border-gray-200 text-center border-x-gray-300 border-x-1 ${
+                          cell.column.id === "id" ? "hidden" : ""
+                        }`}
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -228,7 +236,8 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       </td>
                     ))}
                   </tr>
-                ))) : (
+                ))
+              ) : (
                 <tr>
                   <td
                     colSpan={
@@ -244,69 +253,76 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       description={emptyStateDescription}
                       icon={emptyStateIcon}
                       showWarningBadge={showEmptyStateWarningBadge}
-                    />
+                    />{" "}
                   </td>
                 </tr>
-              )}{" "}
+              )}
             </tbody>
           </table>
-        </div>{" "}        {/* Pagination Controls */}{" "}
+        </div>
+
+        {/* Pagination Controls */}
         {((enableServerPagination && totalPages > 1) ||
-          (!enableServerPagination && (table.getPageCount() > 1 || table.getFilteredRowModel().rows.length > 7))) && (
-            <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-t border-gray-200">
-              <div className="flex items-center text-sm text-gray-700">
-                {enableServerPagination ? (
-                  // Server-side pagination info
-                  <span>
-                    Hiển thị{" "}
-                    <span className="font-medium">
-                      {(currentPage - 1) * pageSize + 1}
-                    </span>{" "}
-                    đến{" "}
-                    <span className="font-medium">
-                      {Math.min(currentPage * pageSize, totalElements)}
-                    </span>{" "}
-                    trong tổng số{" "}
-                    <span className="font-medium">{totalElements}</span> học phần
-                  </span>
-                ) : (
-                  // Client-side pagination info
-                  <span>
-                    Hiển thị{" "}
-                    <span className="font-medium">
-                      {table.getState().pagination.pageIndex *
-                        table.getState().pagination.pageSize +
-                        1}
-                    </span>{" "}
-                    đến{" "}
-                    <span className="font-medium">
-                      {Math.min(
-                        (table.getState().pagination.pageIndex + 1) *
+          (!enableServerPagination &&
+            (table.getPageCount() > 1 ||
+              table.getFilteredRowModel().rows.length > 7))) && (
+          <div className="flex items-center justify-between px-4 py-3 bg-gray-100 border-t border-gray-200">
+            <div className="flex items-center text-sm text-gray-700">
+              {enableServerPagination ? (
+                // Server-side pagination info
+                <span>
+                  Hiển thị{" "}
+                  <span className="font-medium">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>{" "}
+                  đến{" "}
+                  <span className="font-medium">
+                    {Math.min(currentPage * pageSize, totalElements)}
+                  </span>{" "}
+                  trong tổng số{" "}
+                  <span className="font-medium">{totalElements}</span> học phần
+                </span>
+              ) : (
+                // Client-side pagination info
+                <span>
+                  Hiển thị{" "}
+                  <span className="font-medium">
+                    {table.getState().pagination.pageIndex *
+                      table.getState().pagination.pageSize +
+                      1}
+                  </span>{" "}
+                  đến{" "}
+                  <span className="font-medium">
+                    {Math.min(
+                      (table.getState().pagination.pageIndex + 1) *
                         table.getState().pagination.pageSize,
-                        table.getFilteredRowModel().rows.length
-                      )}
-                    </span>{" "}
-                    trong tổng số{" "}
-                    <span className="font-medium">
-                      {table.getFilteredRowModel().rows.length}
-                    </span>{" "}
-                    học phần
-                  </span>
+                      table.getFilteredRowModel().rows.length
+                    )}
+                  </span>{" "}
+                  trong tổng số{" "}
+                  <span className="font-medium">
+                    {table.getFilteredRowModel().rows.length}
+                  </span>{" "}
+                  học phần
+                </span>
+              )}
+            </div>
+            {/* Phân trang hiển thị khi bật server pagination hoặc có hơn 1 trang client-side */}
+            {(enableServerPagination ||
+              (!enableServerPagination && table.getPageCount() > 1)) && (
+              <div className="flex flex-col space-y-2">
+                {/* Hiển thị thông tin trang */}
+                {enableServerPagination && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-700">
+                      Trang {currentPage} / {totalPages} (Tổng: {totalElements}{" "}
+                      mục)
+                    </span>
+                  </div>
                 )}
-              </div>              {/* Phân trang hiển thị khi bật server pagination hoặc có hơn 1 trang client-side */}
-              {(enableServerPagination || (!enableServerPagination && table.getPageCount() > 1)) && (
-                <div className="flex flex-col space-y-2">
-                  {/* Hiển thị thông tin trang */}
-                  {enableServerPagination && (
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-700">
-                        Trang {currentPage} / {totalPages} (Tổng: {totalElements} mục)
-                      </span>
-                    </div>
-                  )}
-                  
-                  {/* Controls chuyển trang */}
-                  <div className="flex items-center space-x-2">
+
+                {/* Controls chuyển trang */}
+                <div className="flex items-center space-x-2">
                   {enableServerPagination ? (
                     // Server-side pagination buttons
                     <>
@@ -314,10 +330,11 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       <button
                         onClick={() => onPageChange && onPageChange(1)}
                         disabled={currentPage <= 1}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${currentPage <= 1
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          currentPage <= 1
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
                         title="Trang đầu"
                       >
                         <ChevronsLeft className="h-4 w-4" />
@@ -325,12 +342,15 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
 
                       {/* Previous page button */}
                       <button
-                        onClick={() => onPageChange && onPageChange(currentPage - 1)}
+                        onClick={() =>
+                          onPageChange && onPageChange(currentPage - 1)
+                        }
                         disabled={currentPage <= 1}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${currentPage <= 1
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          currentPage <= 1
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
                         title="Trang trước"
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -390,11 +410,14 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                             return (
                               <button
                                 key={page}
-                                onClick={() => onPageChange && onPageChange(page)}
-                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive
-                                  ? "bg-blue-500 text-white"
-                                  : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                                  }`}
+                                onClick={() =>
+                                  onPageChange && onPageChange(page)
+                                }
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                                  isActive
+                                    ? "bg-blue-500 text-white"
+                                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                                }`}
                               >
                                 {page}
                               </button>
@@ -405,12 +428,15 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
 
                       {/* Next page button */}
                       <button
-                        onClick={() => onPageChange && onPageChange(currentPage + 1)}
+                        onClick={() =>
+                          onPageChange && onPageChange(currentPage + 1)
+                        }
                         disabled={currentPage >= totalPages}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${currentPage >= totalPages
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          currentPage >= totalPages
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
                         title="Trang tiếp"
                       >
                         <ChevronRight className="h-4 w-4" />
@@ -420,10 +446,11 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       <button
                         onClick={() => onPageChange && onPageChange(totalPages)}
                         disabled={currentPage >= totalPages}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${currentPage >= totalPages
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          currentPage >= totalPages
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
                         title="Trang cuối"
                       >
                         <ChevronsRight className="h-4 w-4" />
@@ -436,10 +463,11 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       <button
                         onClick={() => table.setPageIndex(0)}
                         disabled={!table.getCanPreviousPage()}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${!table.getCanPreviousPage()
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          !table.getCanPreviousPage()
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
                         title="Trang đầu"
                       >
                         <ChevronsLeft className="h-4 w-4" />
@@ -449,10 +477,11 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       <button
                         onClick={() => table.previousPage()}
                         disabled={!table.getCanPreviousPage()}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${!table.getCanPreviousPage()
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          !table.getCanPreviousPage()
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
                         title="Trang trước"
                       >
                         <ChevronLeft className="h-4 w-4" />
@@ -461,7 +490,8 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       {/* Page numbers */}
                       <div className="flex items-center space-x-1">
                         {(() => {
-                          const currentPageIndex = table.getState().pagination.pageIndex;
+                          const currentPageIndex =
+                            table.getState().pagination.pageIndex;
                           const totalPages = table.getPageCount();
                           const pages = [];
 
@@ -472,7 +502,10 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
 
                           // Show pages around current page
                           const start = Math.max(1, currentPageIndex - 1);
-                          const end = Math.min(totalPages - 2, currentPageIndex + 1);
+                          const end = Math.min(
+                            totalPages - 2,
+                            currentPageIndex + 1
+                          );
 
                           // Add ellipsis if needed
                           if (start > 1) {
@@ -512,10 +545,11 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                               <button
                                 key={page}
                                 onClick={() => table.setPageIndex(page)}
-                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${isActive
-                                  ? "bg-blue-500 text-white"
-                                  : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                                  }`}
+                                className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                                  isActive
+                                    ? "bg-blue-500 text-white"
+                                    : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                                }`}
                               >
                                 {page + 1}
                               </button>
@@ -528,32 +562,37 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                       <button
                         onClick={() => table.nextPage()}
                         disabled={!table.getCanNextPage()}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${!table.getCanNextPage()
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          !table.getCanNextPage()
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
                         title="Trang tiếp"
                       >
                         <ChevronRight className="h-4 w-4" />
                       </button>
                       {/* Last page button */}
                       <button
-                        onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+                        onClick={() =>
+                          table.setPageIndex(table.getPageCount() - 1)
+                        }
                         disabled={!table.getCanNextPage()}
-                        className={`p-2 rounded-lg transition-colors duration-200 ${!table.getCanNextPage()
-                          ? "text-gray-400 cursor-not-allowed"
-                          : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
-                          }`}
-                        title="Trang cuối"                      >
+                        className={`p-2 rounded-lg transition-colors duration-200 ${
+                          !table.getCanNextPage()
+                            ? "text-gray-400 cursor-not-allowed"
+                            : "text-gray-600 hover:text-blue-600 hover:bg-blue-50"
+                        }`}
+                        title="Trang cuối"
+                      >
                         <ChevronsRight className="h-4 w-4" />
                       </button>
                     </>
                   )}
-                  </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
