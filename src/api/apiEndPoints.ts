@@ -28,8 +28,10 @@ export const HOCPHAN_SERVICE = {
 };
 
 export const KHHT_SERVICE = {
+  GET_HOCPHAN_BY_GOIY: KHHT_SERVICE_URL + "/api/khht/sinhvien/goi_y", // lấy danh sách học phần gợi ý - posts
   GET_HOCKY_MAU: KHHT_SERVICE_URL + "/api/khht/mau/hocky", // lấy mẫu học kỳ - params
   GET_HOCKY: KHHT_SERVICE_URL + "/api/khht/hocky/sinhvien/:maSo",
+  GET_MAHP_IN_KHHT: KHHT_SERVICE_URL + "/api/khht/sinhvien/hoc_phan_in_ke_hoach_by_ma_so/:maSo", // lấy mã học phần trong kế hoạch học tập
   CREATE: KHHT_SERVICE_URL + "/api/khht/creates",
   LIST: KHHT_SERVICE_URL + "/api/khht/list",
   KHHT_SINHVIEN: KHHT_SERVICE_URL + "/api/khht/sinhvien/detail/page", // phân trang: ?maSo=xxx&page=0&size=20

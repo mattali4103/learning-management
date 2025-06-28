@@ -189,7 +189,7 @@ const Dashboard = () => {
     fetchThongKeTinChi();
     fetchTinChiTichLuy();
     fetchDiemTrungBinh();
-  }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc]); // Tính toán thống kê từ dữ liệu thực
+  }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc, auth.user?.maNganh]); // Tính toán thống kê từ dữ liệu thực
   const statistics = useMemo(() => {
     const { tongSoTinChi, soTinChiTichLuy, soTinChiCaiThien } = thongKeTinChi;
     const tinChiConLai = Math.max(0, tongSoTinChi - soTinChiTichLuy);
@@ -200,6 +200,24 @@ const Dashboard = () => {
         ? diemTrungBinhHocKy[diemTrungBinhHocKy.length - 1].diemTrungBinhTichLuy
         : 0;
 
+    // Tính tín chỉ trung bình mỗi học kỳ
+    const tinChiTrungBinhMoiHocKy =
+      tinChiTichLuy.length > 0
+        ? (() => {
+            // Tính tín chỉ của từng học kỳ riêng lẻ từ dữ liệu tích lũy
+            let totalTinChiRiengLe = 0;
+            for (let i = 0; i < tinChiTichLuy.length; i++) {
+              const tinChiHocKy =
+                i === 0
+                  ? tinChiTichLuy[i].soTinChiDangKy
+                  : tinChiTichLuy[i].soTinChiDangKy -
+                    tinChiTichLuy[i - 1].soTinChiDangKy;
+              totalTinChiRiengLe += tinChiHocKy;
+            }
+            return totalTinChiRiengLe / tinChiTichLuy.length;
+          })()
+        : 0;
+
     return {
       tongSoTinChi,
       soTinChiTichLuy,
@@ -207,8 +225,9 @@ const Dashboard = () => {
       soTinChiCaiThien,
       tinChiCanCaiThien: 0,
       diemTBTichLuy: latestGPA,
+      tinChiTrungBinhMoiHocKy,
     };
-  }, [thongKeTinChi, diemTrungBinhHocKy]);
+  }, [thongKeTinChi, diemTrungBinhHocKy, tinChiTichLuy]);
   // Lấy thời gian hiện tại để chào hỏi
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -277,7 +296,7 @@ const Dashboard = () => {
           {/* Tín chỉ tích lũy */}
           <CreditProgressCard
             currentCredits={statistics.soTinChiTichLuy}
-            totalCredits={statistics.tongSoTinChi}
+            totalCredits={156}
           />
 
           {/* Điểm trung bình tích lũy */}
@@ -286,7 +305,7 @@ const Dashboard = () => {
           {/* Trạng thái tiến độ */}
           <StatusCard
             currentCredits={statistics.soTinChiTichLuy}
-            totalCredits={statistics.tongSoTinChi}
+            currentSemester={tinChiTichLuy.length}
           />
         </div>
         {/* Additional Stats */}
@@ -302,34 +321,15 @@ const Dashboard = () => {
           <div className="text-center p-4 bg-green-50 rounded-lg">
             <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-green-600">
-              {(() => {
-                if (tinChiTichLuy.length === 0) return 0;
-
-                // Tính tín chỉ của từng học kỳ riêng lẻ từ dữ liệu tích lũy
-                let totalTinChiRiengLe = 0;
-                for (let i = 0; i < tinChiTichLuy.length; i++) {
-                  const tinChiHocKy =
-                    i === 0
-                      ? tinChiTichLuy[i].soTinChiDangKy
-                      : tinChiTichLuy[i].soTinChiDangKy -
-                        tinChiTichLuy[i - 1].soTinChiDangKy;
-                  totalTinChiRiengLe += tinChiHocKy;
-                }
-
-                return (totalTinChiRiengLe / tinChiTichLuy.length).toFixed(1);
-              })()}
+              {statistics.tinChiTrungBinhMoiHocKy.toFixed(1)}
             </p>
-            <p className="text-sm text-gray-600">Tín chỉ TB/học kỳ</p>
+            <p className="text-sm text-gray-600">Tín chỉ/học kỳ</p>
           </div>
 
           <div className="text-center p-4 bg-indigo-50 rounded-lg">
             <GraduationCap className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-indigo-600">
-              {(
-                (statistics.soTinChiTichLuy / statistics.tongSoTinChi) *
-                100
-              ).toFixed(1)}
-              %
+              {((statistics.soTinChiTichLuy / 156) * 100).toFixed(1)}%
             </p>
             <p className="text-sm text-gray-600">Tiến độ tổng thể</p>
           </div>
@@ -403,7 +403,7 @@ const Dashboard = () => {
                     const namHocId = item.hocKy?.namHoc?.id || null;
 
                     return {
-                      name: `${item.hocKy?.tenHocKy || `Học Kỳ ${index + 1}`}`,
+                      name: `Học kỳ ${index + 1}`,
                       tinChiTichLuy: item.soTinChiDangKy || 0,
                       tinChiCaiThien: item.soTinChiCaiThien || 0,
                       hocKyId,
@@ -422,7 +422,7 @@ const Dashboard = () => {
                     const namHocId = item.hocKy?.namHoc?.id || null;
 
                     return {
-                      name: `${item.hocKy?.tenHocKy || `Học Kỳ ${index + 1}`}`,
+                      name: `Học kỳ ${index + 1}`,
                       diem: Number(item.diemTrungBinhTichLuy) || 0,
                       hocKyId,
                       namHocId,

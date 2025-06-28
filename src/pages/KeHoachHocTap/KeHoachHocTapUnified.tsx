@@ -509,11 +509,6 @@ const UnifiedContentDisplay = () => {
     }
     return filtered;
   }, [allData, searchParams]);
-  console.log("All Data:", allData);
-  console.log("Filtered Data:", filteredData);
-  console.log("daiCuongResponse:", allData.filter(item => item.loaiHp === "Đại cương"));
-  console.log("coSoResponse:", allData.filter(item => item.loaiHp === "Cơ sở ngành"));
-  console.log("chuyenNganhResponse:", allData.filter(item => item.loaiHp === "Chuyên ngành"));
   
   if (loading) {
     return (

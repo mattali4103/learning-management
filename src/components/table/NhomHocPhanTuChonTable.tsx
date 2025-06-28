@@ -17,6 +17,11 @@ interface NhomHocPhanTuChonTableProps {
   selectedHocPhan: KeHoachHocTap[];
   onAddHocPhan: (hocPhan: HocPhan, nhomId?: number) => void;
   getTinChiDaChonTrongNhom: (nhom: HocPhanTuChon) => number;
+  getTinChiDaThemTrongNhom: (nhom: HocPhanTuChon) => number;
+  getChuyenNganhCompletionStatus: (
+    nhomList: HocPhanTuChon[]
+  ) => Map<number, boolean>;
+  isHocPhanAlreadyAdded: (maHp: string) => boolean;
 }
 
 const NhomHocPhanTuChonTable: React.FC<NhomHocPhanTuChonTableProps> = ({
@@ -24,6 +29,9 @@ const NhomHocPhanTuChonTable: React.FC<NhomHocPhanTuChonTableProps> = ({
   selectedHocPhan,
   onAddHocPhan,
   getTinChiDaChonTrongNhom,
+  getTinChiDaThemTrongNhom,
+  getChuyenNganhCompletionStatus,
+  isHocPhanAlreadyAdded,
 }) => {
   // Columns cho học phần tự chọn
   const createHocPhanTuChonColumns = (nhomId: number): ColumnDef<HocPhan>[] => [
@@ -69,6 +77,32 @@ const NhomHocPhanTuChonTable: React.FC<NhomHocPhanTuChonTableProps> = ({
       accessorKey: "action",
       header: "",
       cell: ({ row }) => {
+        const hocPhan = row.original;
+        const isAlreadyAdded = isHocPhanAlreadyAdded(hocPhan.maHp);
+        const isCurrentlySelected = selectedHocPhan?.some(
+          (selected) => selected.maHp === hocPhan.maHp
+        );
+
+        if (isCurrentlySelected) {
+          return (
+            <div className="flex items-center justify-center">
+              <span className="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                Đã chọn
+              </span>
+            </div>
+          );
+        }
+
+        if (isAlreadyAdded) {
+          return (
+            <div className="flex items-center justify-center">
+              <span className="inline-block px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs font-medium">
+                Đã thêm
+              </span>
+            </div>
+          );
+        }
+
         return (
           <div className="flex items-center justify-center">
             <button
@@ -89,8 +123,34 @@ const NhomHocPhanTuChonTable: React.FC<NhomHocPhanTuChonTableProps> = ({
       {nhomHocPhanTuChon.map((nhom, index) => {
         // Tính tổng tín chỉ đã chọn trong nhóm này
         const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
-        const isCompleted = tinChiDaChon >= nhom.tinChiYeuCau;
-        const isExceeded = tinChiDaChon > nhom.tinChiYeuCau;
+
+        // Tính tổng tín chỉ đã thêm vào kế hoạch trong nhóm này
+        const tinChiDaThem = getTinChiDaThemTrongNhom(nhom);
+
+        // Tính tổng tín chỉ (đã thêm + đang chọn)
+        const tongTinChi = tinChiDaThem + tinChiDaChon;
+
+        // Tính trạng thái hoàn thành cho nhóm chuyên ngành có đánh số
+        const chuyenNganhCompletionStatus =
+          getChuyenNganhCompletionStatus(nhomHocPhanTuChon);
+        const isCompletedByGroup =
+          chuyenNganhCompletionStatus.get(nhom.id) || false;
+
+        // Kiểm tra hoàn thành: theo logic mới (tổng tín chỉ >= yêu cầu) HOẶC theo logic nhóm chuyên ngành
+        const isCompleted =
+          tongTinChi >= nhom.tinChiYeuCau || isCompletedByGroup;
+        const isExceeded = tongTinChi > nhom.tinChiYeuCau;
+
+        // Sắp xếp dữ liệu: học phần đã thêm ở đầu, sau đó là chưa thêm
+        const sortedHocPhanList = [...nhom.hocPhanTuChonList].sort((a, b) => {
+          const aIsAdded = isHocPhanAlreadyAdded(a.maHp);
+          const bIsAdded = isHocPhanAlreadyAdded(b.maHp);
+
+          // Đã thêm lên đầu (true = 1, false = 0, sort desc)
+          if (aIsAdded && !bIsAdded) return -1;
+          if (!aIsAdded && bIsAdded) return 1;
+          return 0;
+        });
 
         return (
           <div key={nhom.id} className="space-y-2">
@@ -101,29 +161,54 @@ const NhomHocPhanTuChonTable: React.FC<NhomHocPhanTuChonTableProps> = ({
                     {nhom.tenNhom || `Nhóm học phần tự chọn ${index + 1}`}
                   </h3>
                   <p className="text-purple-600 text-sm">
-                    Yêu cầu: <span className="font-medium">{nhom.tinChiYeuCau} tín chỉ</span>
+                    Yêu cầu:{" "}
+                    <span className="font-medium">
+                      {nhom.tinChiYeuCau} tín chỉ
+                    </span>
+                    {tinChiDaThem > 0 && (
+                      <span className="ml-2 text-green-700">
+                        - Đã thêm:{" "}
+                        <span className="font-medium">
+                          {tinChiDaThem} tín chỉ
+                        </span>
+                      </span>
+                    )}
                     {tinChiDaChon > 0 && (
-                      <span className="ml-2 text-purple-700">
-                        - Đã chọn: <span className="font-medium">{tinChiDaChon} tín chỉ</span>
+                      <span className="ml-2 text-blue-700">
+                        - Đang chọn:{" "}
+                        <span className="font-medium">
+                          {tinChiDaChon} tín chỉ
+                        </span>
                       </span>
                     )}
                   </p>
                   {/* Hiển thị trạng thái chi tiết */}
-                  {tinChiDaChon > 0 && (
+                  {(tongTinChi > 0 || isCompletedByGroup) && (
                     <p className="text-sm mt-1">
-                      {tinChiDaChon < nhom.tinChiYeuCau && (
-                        <span className="text-orange-600 font-medium">
-                          ⚠️ Cần thêm {nhom.tinChiYeuCau - tinChiDaChon} tín chỉ để đạt yêu cầu
-                        </span>
-                      )}
-                      {tinChiDaChon === nhom.tinChiYeuCau && (
+                      {/* Hiển thị trạng thái hoàn thành do nhóm chuyên ngành */}
+                      {isCompletedByGroup && tongTinChi < nhom.tinChiYeuCau && (
                         <span className="text-green-600 font-medium">
-                          ✅ Đã đạt đủ yêu cầu tín chỉ
+                          ✅ Hoàn thành do chuyên ngành liên quan đã đạt yêu cầu
                         </span>
                       )}
-                      {tinChiDaChon > nhom.tinChiYeuCau && (
+                      {/* Trạng thái bình thường */}
+                      {!isCompletedByGroup &&
+                        tongTinChi < nhom.tinChiYeuCau && (
+                          <span className="text-orange-600 font-medium">
+                            ⚠️ Cần thêm {nhom.tinChiYeuCau - tongTinChi} tín chỉ
+                            để đạt yêu cầu
+                          </span>
+                        )}
+                      {tongTinChi >= nhom.tinChiYeuCau && (
+                        <span className="text-green-600 font-medium">
+                          ✅ Đã đạt đủ yêu cầu tín chỉ ({tongTinChi}/
+                          {nhom.tinChiYeuCau})
+                        </span>
+                      )}
+                      {tongTinChi > nhom.tinChiYeuCau && (
                         <span className="text-blue-600 font-medium">
-                          ℹ️ Vượt {tinChiDaChon - nhom.tinChiYeuCau} tín chỉ so với yêu cầu
+                          ℹ️ Vượt {tongTinChi - nhom.tinChiYeuCau} tín chỉ so
+                          với yêu cầu
                         </span>
                       )}
                     </p>
@@ -133,9 +218,16 @@ const NhomHocPhanTuChonTable: React.FC<NhomHocPhanTuChonTableProps> = ({
                   <div className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">
                     {nhom.hocPhanTuChonList.length} môn học
                   </div>
+                  {tinChiDaThem > 0 && (
+                    <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
+                      Đã thêm: {tinChiDaThem} TC
+                    </div>
+                  )}
                   {isCompleted && !isExceeded && (
                     <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                      ✓ Hoàn thành
+                      {isCompletedByGroup && tongTinChi < nhom.tinChiYeuCau
+                        ? "✓ Hoàn thành (nhóm liên quan)"
+                        : "✓ Hoàn thành"}
                     </div>
                   )}
                   {isExceeded && (
@@ -148,13 +240,16 @@ const NhomHocPhanTuChonTable: React.FC<NhomHocPhanTuChonTableProps> = ({
             </div>
             <KeHoachHocTapTable
               name={nhom.tenNhom || `Học phần tự chọn - Nhóm ${index + 1}`}
-              data={nhom.hocPhanTuChonList.filter(
+              data={sortedHocPhanList.filter(
                 (hocPhan) =>
-                  !selectedHocPhan?.some((selected) => selected.maHp === hocPhan.maHp)
+                  !selectedHocPhan?.some(
+                    (selected) => selected.maHp === hocPhan.maHp
+                  )
               )}
               columns={createHocPhanTuChonColumns(nhom.id)}
               initialExpanded={false}
               loading={false}
+              emptyStateTitle="Bạn đã hoàn thành nhóm học phần này"
             />
           </div>
         );
