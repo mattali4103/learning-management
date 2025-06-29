@@ -13,6 +13,14 @@ import KeHoachHocTap, {
 } from "./pages/KeHoachHocTap/KeHoachHocTap";
 import NhapKeHoachHocTap from "./pages/KeHoachHocTap/NhapKeHoachHocTap";
 import KeHoachHocTapUnified from "./pages/KeHoachHocTap/KeHoachHocTapUnified";
+import AdminDashboard from "./pages/Admin/AdminDashboard";
+import CurriculumManagement from "./pages/Admin/CurriculumManagement";
+import ReportsAndStatistics from "./pages/Admin/ReportsAndStatistics";
+import DanhSachLopHoc from "./pages/Admin/DanhSachLopHoc";
+import ThongTinLopHoc from "./pages/Admin/ThongTinLopHoc";
+import ThongTinSinhVien from "./pages/Admin/ThongTinSinhVien";
+import KeHoachHocTapMau from "./pages/Admin/KeHoachHocTapMau";
+import KeHoachHocTapMauDetail from "./pages/Admin/KeHoachHocTapMauDetail";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -47,7 +55,17 @@ function App() {
           element={
             <RequireAuth allowedRoles={[ROLES.GIANGVIEN, ROLES.ADMIN]} />
           }
-        ></Route>
+        >
+          {/* Routes for GIANGVIEN and ADMIN */}
+          <Route path="/giangvien" element={<AdminDashboard />} />
+          <Route path="/giangvien/lop" element={<DanhSachLopHoc />} />
+          <Route path="/giangvien/lop/:maLop" element={<ThongTinLopHoc />} />
+          <Route path="/giangvien/lop/:maLop/student/:maSo" element={<ThongTinSinhVien />} />
+          <Route path="/giangvien/curriculum" element={<CurriculumManagement />} />
+          <Route path="/giangvien/reports" element={<ReportsAndStatistics />} />
+          <Route path="/giangvien/study-plans" element={<KeHoachHocTapMau />} />
+          <Route path="/giangvien/study-plans/:maNganh/:khoaHoc" element={<KeHoachHocTapMauDetail />} />
+        </Route>
       </Route>
     </Routes>
   );

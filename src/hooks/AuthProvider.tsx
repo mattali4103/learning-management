@@ -7,6 +7,7 @@ export interface AuthState {
     roles: string;
     khoaHoc: string;
     maNganh: string; 
+    maKhoa: string;
   };
   token?: string;
 }
@@ -38,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           roles: decoded.scope,
           khoaHoc: parsed.user?.khoaHoc || "",
           maNganh: parsed.user?.maNganh || "",
+          maKhoa: parsed.user?.maKhoa || "",
         },
       };
     } catch (error) {

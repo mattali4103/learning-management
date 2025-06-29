@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import Header from "./Header";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import ErrorMesssageModal from "./modals/ErrorMessageModal";
 import {
   KHHT_SERVICE,
@@ -13,8 +13,8 @@ import useAuth from "../hooks/useAuth";
 import LoadingButton from "./LoadingButton";
 const Login: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
+  // const location = useLocation();
+  // const from = location.state?.from?.pathname || "/";
   const { setAuth } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
   const [maSo, setMaSo] = useState<string>("");
@@ -39,18 +39,23 @@ const Login: React.FC = () => {
     }
   };
 
-  const handleFetchUserInfo = async (maSo: string, token: string) => {
+  const handleFetchUserInfo = async (
+    maSo: string,
+    scope: string,
+    token: string
+  ) => {
+    let url = PROFILE_SERVICE.GET_MY_PROFILE;
+    if (scope === "GIANGVIEN") {
+      url = PROFILE_SERVICE.GET_GIANGVIEN_PROFILE;
+    }
     try {
-      const response = await axios.get(
-        PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", maSo),
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          withCredentials: true,
-        }
-      );
+      const response = await axios.get(url.replace(":maSo", maSo), {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        withCredentials: true,
+      });
       return response.data.data;
     } catch (error) {
       console.error("Error fetching user info:", error);
@@ -84,8 +89,10 @@ const Login: React.FC = () => {
 
         const userInfo = await handleFetchUserInfo(
           decodedToken.sub,
+          decodedToken.scope,
           response.data.token
         );
+        console.log("User Info:", userInfo);
         if (!userInfo) {
           setError("Không thể lấy thông tin người dùng. Vui lòng thử lại.");
           return;
@@ -98,12 +105,17 @@ const Login: React.FC = () => {
             roles: decodedToken?.scope,
             khoaHoc: userInfo.khoaHoc,
             maNganh: userInfo.maNganh,
+            maKhoa: userInfo.maKhoa,
           },
         });
         fetchHocKy(maSo);
         setMaSo("");
         setPassword("");
-        navigate(from, { replace: true });
+        if (decodedToken.scope === "GIANGVIEN") {
+          navigate("/giangvien");
+        } else {
+          navigate("/");
+        }
       }
     } catch (err) {
       if (axios.isAxiosError(err)) {
@@ -156,7 +168,11 @@ const Login: React.FC = () => {
                 </div>
                 {loading ? (
                   <div className="bg-blue-500` flex items-center justify-center text-white p-3 rounded-lg transition-colors">
-                    <LoadingButton loading={true} variant="primary" className="">
+                    <LoadingButton
+                      loading={true}
+                      variant="primary"
+                      className=""
+                    >
                       Đang đăng nhập...
                     </LoadingButton>
                   </div>
@@ -165,7 +181,7 @@ const Login: React.FC = () => {
                     type="submit"
                     className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors"
                   >
-                    Đăng Nhsập
+                    Đăng Nhập
                   </button>
                 )}
               </form>

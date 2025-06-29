@@ -1,17 +1,18 @@
 import { useEffect, useState, useMemo } from "react";
-import useAuth from "../hooks/useAuth";
-import useAxiosPrivate from "../hooks/useAxiosPrivate";
+import { useParams, useNavigate } from "react-router-dom";
+import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import {
   KHHT_SERVICE,
   PROFILE_SERVICE,
   KQHT_SERVICE,
-} from "../api/apiEndPoints";
-import Loading from "../components/Loading";
-import TinChiChart from "../components/chart/TinChiChart";
-import GPAChart from "../components/chart/GPAChart";
-import CreditProgressCard from "../components/progress/CreditProgressCard";
-import GPAProgressCard from "../components/progress/GPAProgressCard";
-import StatusCard from "../components/progress/StatusCard";
+} from "../../api/apiEndPoints";
+import Loading from "../../components/Loading";
+import TinChiChart from "../../components/chart/TinChiChart";
+import GPAChart from "../../components/chart/GPAChart";
+import CreditProgressCard from "../../components/progress/CreditProgressCard";
+import GPAProgressCard from "../../components/progress/GPAProgressCard";
+import StatusCard from "../../components/progress/StatusCard";
+import PageHeader from "../../components/PageHeader";
 import {
   User,
   Calendar,
@@ -20,6 +21,7 @@ import {
   GraduationCap,
   Clock,
   Target,
+  ArrowLeft,
 } from "lucide-react";
 
 interface UserInfo {
@@ -31,11 +33,13 @@ interface UserInfo {
   khoaHoc: string;
   tenNganh: string;
 }
+
 interface ThongKeTinChiByHocKy {
   hocKy: any;
   soTinChiCaiThien: number;
   soTinChiDangKy: number;
 }
+
 interface ThongKeTinChi {
   tongSoTinChi: number;
   soTinChiTichLuy: number;
@@ -57,144 +61,105 @@ interface DiemTrungBinhHocKy {
   diemTrungBinh: number;
   diemTrungBinhTichLuy: number;
 }
-const Dashboard = () => {
-  // Get user info from auth context
-  const { auth } = useAuth();
-  // Custom hook to handle private axios requests
+
+const ThongTinSinhVien = () => {
+  const { maSo, maLop } = useParams<{ maSo: string; maLop?: string }>();
+  const navigate = useNavigate();
   const axiosPrivate = useAxiosPrivate();
-  // State to manage user information and loading/error states
+  
   const [error, setError] = useState<string | null>(null);
-  // State to hold user information
-  const [userInfo, setUserInfo] = useState<UserInfo | null>(null); // State to hold the list of tin chi tich luy by the user
-  const [tinChiTichLuy, setTinChiTichLuy] = useState<ThongKeTinChiByHocKy[]>(
-    []
-  );
+  const [loading, setLoading] = useState<boolean>(true);
+  const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+  const [tinChiTichLuy, setTinChiTichLuy] = useState<ThongKeTinChiByHocKy[]>([]);
   const [thongKeTinChi, setThongKeTinChi] = useState<ThongKeTinChi>({
     tongSoTinChi: 0,
     soTinChiTichLuy: 0,
     soTinChiCaiThien: 0,
   });
-  // State to hold the GPA data by semester
-  const [diemTrungBinhHocKy, setDiemTrungBinhHocKy] = useState<
-    DiemTrungBinhHocKy[]
-  >([]);
+  const [diemTrungBinhHocKy, setDiemTrungBinhHocKy] = useState<DiemTrungBinhHocKy[]>([]);
 
-  // Fetch user information when the component mounts
+  // Fetch student information
   useEffect(() => {
-    const fetchThongKeTinChi = async () => {
-      try {
-        const response = await axiosPrivate.get<any>(
-          KHHT_SERVICE.COUNT_TINCHI_IN_KHHT.replace(
-            ":khoaHoc",
-            auth.user?.khoaHoc || ""
-          )
-            .replace(":maNganh", auth.user?.maNganh || "")
-            .replace(":maSo", auth.user?.maSo || ""),
-          {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
-          }
-        );
+    if (!maSo) return;
 
-        // Check response code
-        if (response.status === 200 && response.data?.code === 200) {
-          setThongKeTinChi(response.data.data);
-        } else {
-          console.warn(
-            "API returned non-200 code for thong ke tin chi:",
-            response.data?.code
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching thong ke tin chi:", error);
-        // Don't show error to user for non-critical data
-      } finally {
-        setLoading(false);
-      }
-    };
-    const fetchUserInfo = async () => {
+    const fetchStudentData = async () => {
       try {
         setLoading(true);
-        const response = await axiosPrivate.get(
-          PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", auth.user?.maSo || "")
+        setError(null);
+
+        // Fetch user profile
+        const profileResponse = await axiosPrivate.get(
+          PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", maSo)
         );
 
-        // Check response code
-        if (response.status === 200 && response.data?.code === 200) {
-          setUserInfo(response.data.data);
+        if (profileResponse.status === 200 && profileResponse.data?.code === 200) {
+          setUserInfo(profileResponse.data.data);
+          
+          // Use student's data for subsequent API calls
+          const studentData = profileResponse.data.data;
+          
+          // Fetch credit statistics
+          try {
+            const creditResponse = await axiosPrivate.get(
+              KHHT_SERVICE.COUNT_TINCHI_IN_KHHT
+                .replace(":khoaHoc", studentData.khoaHoc || "")
+                .replace(":maNganh", studentData.maNganh || "")
+                .replace(":maSo", maSo)
+            );
+
+            if (creditResponse.status === 200 && creditResponse.data?.code === 200) {
+              setThongKeTinChi(creditResponse.data.data);
+            }
+          } catch (error) {
+            console.warn("Could not fetch credit statistics:", error);
+          }
+
+          // Fetch credit accumulation by semester
+          try {
+            const tinChiResponse = await axiosPrivate.get(
+              KHHT_SERVICE.COUNT_TINCHI_GROUP_BY_HOCKY.replace(":maSo", maSo)
+            );
+
+            if (tinChiResponse.status === 200 && tinChiResponse.data?.code === 200) {
+              setTinChiTichLuy(tinChiResponse.data.data);
+            }
+          } catch (error) {
+            console.warn("Could not fetch credit accumulation:", error);
+          }
+
+          // Fetch GPA by semester
+          try {
+            const gpaResponse = await axiosPrivate.post(
+              KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY,
+              { maSo: maSo }
+            );
+
+            if (gpaResponse.status === 200 && gpaResponse.data?.code === 200) {
+              setDiemTrungBinhHocKy(gpaResponse.data.data);
+            }
+          } catch (error) {
+            console.warn("Could not fetch GPA data:", error);
+          }
         } else {
-          throw new Error(
-            `API returned code: ${response.data?.code || response.status}`
-          );
+          throw new Error(`API returned code: ${profileResponse.data?.code || profileResponse.status}`);
         }
       } catch (error) {
-        setError("Không thể lấy thông tin người dùng. Vui lòng thử lại.");
-        console.error("Error fetching user info:", error);
+        setError("Không thể lấy thông tin sinh viên. Vui lòng thử lại.");
+        console.error("Error fetching student data:", error);
       } finally {
         setLoading(false);
       }
     };
-    const fetchTinChiTichLuy = async () => {
-      try {
-        const response = await axiosPrivate.get<any>(
-          KHHT_SERVICE.COUNT_TINCHI_GROUP_BY_HOCKY.replace(
-            ":maSo",
-            auth.user?.maSo || ""
-          ),
-          {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
-          }
-        ); // Check response code
-        if (response.status === 200 && response.data?.code === 200) {
-          setTinChiTichLuy(response.data.data);
-        } else {
-          console.warn(
-            "API returned non-200 code for tin chi tich luy:",
-            response.data?.code
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching tin chi tich luy:", error);
-        // Don't show error for non-critical data
-      }
-    };
 
-    const fetchDiemTrungBinh = async () => {
-      try {
-        const response = await axiosPrivate.post<any>(
-          KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY,
-          {
-            maSo: auth.user?.maSo || "",
-          },
-          {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
-          }
-        ); // Check response code
-        if (response.status === 200 && response.data?.code === 200) {
-          setDiemTrungBinhHocKy(response.data.data);
-        } else {
-          console.warn(
-            "API returned non-200 code for GPA data:",
-            response.data?.code
-          );
-        }
-      } catch (error) {
-        console.error("Error fetching diem trung binh:", error);
-        // Don't show error for GPA data as it's not critical
-      }
-    };
-    fetchUserInfo();
-    fetchThongKeTinChi();
-    fetchTinChiTichLuy();
-    fetchDiemTrungBinh();
-  }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc]); // Tính toán thống kê từ dữ liệu thực
+    fetchStudentData();
+  }, [axiosPrivate, maSo]);
+
+  // Calculate statistics from actual data
   const statistics = useMemo(() => {
     const { tongSoTinChi, soTinChiTichLuy, soTinChiCaiThien } = thongKeTinChi;
     const tinChiConLai = Math.max(0, tongSoTinChi - soTinChiTichLuy);
 
-    // Tính điểm TB tích lũy từ dữ liệu GPA cuối cùng
+    // Calculate cumulative GPA from latest GPA data
     const latestGPA =
       diemTrungBinhHocKy.length > 0
         ? diemTrungBinhHocKy[diemTrungBinhHocKy.length - 1].diemTrungBinhTichLuy
@@ -209,70 +174,72 @@ const Dashboard = () => {
       diemTBTichLuy: latestGPA,
     };
   }, [thongKeTinChi, diemTrungBinhHocKy]);
-  // Lấy thời gian hiện tại để chào hỏi
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour >= 0 && hour < 12) return "Chào buổi sáng";
-    if (hour <= 18 && hour >= 12) return "Chào buổi chiều";
-    return "Chào buổi tối";
+
+  // Navigation handlers
+  const handleBack = () => {
+    if (maLop) {
+      navigate(`/giangvien/lop/${maLop}`);
+    } else {
+      navigate("/giangvien/lop");
+    }
   };
 
-  // State to manage loading state
-  const [loading, setLoading] = useState<boolean>(true);
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <Loading
-            showOverlay={false}
-            message="Đang tải thông tin dashboard..."
-          />
+          <Loading showOverlay={false} message="Đang tải thông tin sinh viên..." />
         </div>
       </div>
     );
   }
-  // If there's an error, display it
+
   if (error) {
     return (
-      <div className="p-4">
-        <p className="text-red-500">{error}</p>
-      </div>
-    );
-  }
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
-      {/* Welcome Header */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-              <GraduationCap className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-800">
-                {getGreeting()}, {userInfo?.hoTen?.split(" ").pop()}!
-              </h1>
-              <p className="text-gray-600 flex items-center mt-1">
-                <User className="w-4 h-4 mr-2" />
-                {userInfo?.maSo} - {userInfo?.tenNganh}
-              </p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-sm text-gray-500 flex items-center justify-end">
-              <Clock className="w-4 h-4 mr-1" />
-              {new Date().toLocaleDateString("vi-VN")}
-            </p>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="text-center">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Lỗi</h2>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={handleBack}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Quay lại
+            </button>
           </div>
         </div>
       </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
+      {/* Header with Back Button */}
+      <PageHeader
+        title={`Hồ sơ sinh viên: ${userInfo?.hoTen}`}
+        description={`${userInfo?.maSo} - ${userInfo?.tenNganh}${maLop ? ` - Lớp ${maLop}` : ''}`}
+        icon={GraduationCap}
+        iconColor="from-blue-500 to-indigo-600"
+        descriptionIcon={User}
+        backButton={
+          <button
+            onClick={handleBack}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-600" />
+          </button>
+        }
+      />
+
       {/* Progress Section with Circular Progress Bars */}
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
         <div className="flex items-center mb-6">
           <Target className="w-6 h-6 text-indigo-600 mr-3" />
           <h2 className="text-xl font-bold text-gray-800">Tiến độ học tập</h2>
         </div>
-        {/* Main Progress Grid */}{" "}
+
+        {/* Main Progress Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           {/* Tín chỉ tích lũy */}
           <CreditProgressCard
@@ -289,6 +256,7 @@ const Dashboard = () => {
             totalCredits={statistics.tongSoTinChi}
           />
         </div>
+
         {/* Additional Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200">
           <div className="text-center p-4 bg-blue-50 rounded-lg">
@@ -305,7 +273,6 @@ const Dashboard = () => {
               {(() => {
                 if (tinChiTichLuy.length === 0) return 0;
 
-                // Tính tín chỉ của từng học kỳ riêng lẻ từ dữ liệu tích lũy
                 let totalTinChiRiengLe = 0;
                 for (let i = 0; i < tinChiTichLuy.length; i++) {
                   const tinChiHocKy =
@@ -325,11 +292,7 @@ const Dashboard = () => {
           <div className="text-center p-4 bg-indigo-50 rounded-lg">
             <GraduationCap className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-indigo-600">
-              {(
-                (statistics.soTinChiTichLuy / 156) *
-                100
-              ).toFixed(1)}
-              %
+              {((statistics.soTinChiTichLuy / 156) * 100).toFixed(1)}%
             </p>
             <p className="text-sm text-gray-600">Tiến độ tổng thể</p>
           </div>
@@ -342,9 +305,7 @@ const Dashboard = () => {
         <div className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <div className="flex items-center mb-6">
             <User className="w-6 h-6 text-blue-600 mr-3" />
-            <h2 className="text-xl font-bold text-gray-800">
-              Thông tin sinh viên
-            </h2>
+            <h2 className="text-xl font-bold text-gray-800">Thông tin sinh viên</h2>
           </div>
 
           <div className="space-y-4">
@@ -390,10 +351,10 @@ const Dashboard = () => {
               );
             })}
           </div>
-        </div>{" "}
+        </div>
+
         {/* Charts Section */}
         <div className="lg:col-span-2 space-y-6">
-          {" "}
           {/* Tin Chi Chart */}
           <TinChiChart
             data={
@@ -433,6 +394,7 @@ const Dashboard = () => {
           />
         </div>
       </div>
+
       {/* Quick Actions Footer */}
       <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
         <div className="flex flex-wrap items-center justify-between gap-4">
@@ -447,4 +409,5 @@ const Dashboard = () => {
     </div>
   );
 };
-export default Dashboard;
+
+export default ThongTinSinhVien;
