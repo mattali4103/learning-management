@@ -196,7 +196,7 @@ const DanhSachLopHoc = () => {
                   <div className="space-y-2 text-sm text-gray-600 mb-4">
                     <div className="flex items-center">
                       <Users className="w-4 h-4 mr-2" />
-                      <span>Sĩ số: {lopItem.danhSachSinhVien?.length || 0}/{lopItem.siSo}</span>
+                      <span>Sĩ số: {lopItem.siSoCon || 0}/{lopItem.siSo}</span>
                     </div>  
                     <div className="flex items-center">
                       <GraduationCap className="w-4 h-4 mr-2" />

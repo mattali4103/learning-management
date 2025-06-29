@@ -116,7 +116,7 @@ const KeHoachHocTapMau = () => {
 
   // Handler functions
   const handleCreateTemplate = () => {
-    setShowCreateModal(true);
+    navigate('/giangvien/study-plans/create');
   };
 
   const handleViewTemplate = (template: KeHoachHocTapMauData) => {
@@ -217,10 +217,12 @@ const KeHoachHocTapMau = () => {
                           </div>
                           <div>
                             <h3 className="font-bold text-gray-800 text-lg leading-tight">
-                              {template.nganh.tenNganh}
+                              {danhSachNganh.find(
+                                (nganh) => nganh.maNganh === template.nganh.maNganh
+                              )?.tenNganh || "Kế hoạch học tập"}
                             </h3>
                             <p className="text-xs text-gray-500 font-medium">
-                              {template.nganh.maNganh}
+                              Mã ngành: {template.nganh.maNganh}
                             </p>
                           </div>
                         </div>

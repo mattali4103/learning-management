@@ -39,18 +39,24 @@ interface Khoa {
 }
 
 const KeHoachHocTapMauDetail: React.FC = () => {
-  const { maNganh, khoaHoc } = useParams<{ maNganh: string; khoaHoc: string }>();
+  const { maNganh, khoaHoc } = useParams<{
+    maNganh: string;
+    khoaHoc: string;
+  }>();
   const navigate = useNavigate();
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
-  
+
   // States - simplified
-  const [templateDetails, setTemplateDetails] = useState<KeHoachHocTapDetail[]>([]);
+  const [templateDetails, setTemplateDetails] = useState<KeHoachHocTapDetail[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tenNganh, setTenNganh] = useState<string>("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedHocPhan, setSelectedHocPhan] = useState<KeHoachHocTapDetail | null>(null);
+  const [selectedHocPhan, setSelectedHocPhan] =
+    useState<KeHoachHocTapDetail | null>(null);
 
   const maKhoa = auth.user?.maKhoa || "";
 
@@ -64,16 +70,16 @@ const KeHoachHocTapMauDetail: React.FC = () => {
 
     setLoading(true);
     setError(null);
-    
+
     try {
       // First, get the nganh info
       const khoaResponse = await axiosPrivate.get(
         PROFILE_SERVICE.GET_KHOA.replace(":maKhoa", maKhoa)
       );
-      
+
       if (khoaResponse.data.code === 200 && khoaResponse.data.data) {
         const khoaData = khoaResponse.data.data as Khoa;
-        
+
         if (!khoaData || !khoaData.dsnganh) {
           setError("Không tìm thấy thông tin khoa hoặc ngành");
           setLoading(false);
@@ -83,7 +89,7 @@ const KeHoachHocTapMauDetail: React.FC = () => {
         const nganh = khoaData.dsnganh?.find(
           (n) => n.maNganh.toString() === maNganh
         );
-        
+
         if (!nganh) {
           setError("Không tìm thấy thông tin ngành");
           setLoading(false);
@@ -103,7 +109,10 @@ const KeHoachHocTapMauDetail: React.FC = () => {
           }
         );
 
-        if (templateResponse.data.data && Array.isArray(templateResponse.data.data)) {
+        if (
+          templateResponse.data.data &&
+          Array.isArray(templateResponse.data.data)
+        ) {
           setTemplateDetails(templateResponse.data.data);
         } else {
           setError("Không tìm thấy dữ liệu kế hoạch học tập mẫu");
@@ -124,7 +133,7 @@ const KeHoachHocTapMauDetail: React.FC = () => {
   }, [fetchTemplateDetails]);
 
   const handleBack = () => {
-    navigate('/giangvien/study-plans');
+    navigate("/giangvien/study-plans");
   };
 
   // Handler functions for actions
@@ -152,7 +161,7 @@ const KeHoachHocTapMauDetail: React.FC = () => {
       setTemplateDetails(updatedDetails);
       setShowDeleteModal(false);
       setSelectedHocPhan(null);
-      
+
       // TODO: Gọi API để xóa trên server
       console.log("Đã xóa học phần:", selectedHocPhan.hocPhan.tenHp);
     }
@@ -170,8 +179,8 @@ const KeHoachHocTapMauDetail: React.FC = () => {
         id: "stt",
         header: "STT",
         cell: ({ row }) => (
-          <div className="w-12 text-center">
-            <span className="inline-flex items-center justify-center w-8 h-8 text-sm font-medium text-gray-600 bg-gray-100 rounded-full">
+          <div className="text-center">
+            <span className="text-sm font-medium text-gray-600">
               {row.index + 1}
             </span>
           </div>
@@ -183,7 +192,7 @@ const KeHoachHocTapMauDetail: React.FC = () => {
         accessorKey: "hocPhan.maHp",
         header: "Mã học phần",
         cell: ({ getValue }) => (
-          <div className="font-mono text-sm bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg border border-blue-200">
+          <div className="font-mono text-sm text-blue-700 px-3 py-1.5">
             {getValue() as string}
           </div>
         ),
@@ -208,7 +217,7 @@ const KeHoachHocTapMauDetail: React.FC = () => {
         header: "Tín chỉ",
         cell: ({ getValue }) => (
           <div className="text-center">
-            <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-emerald-700 bg-emerald-100 rounded-full border-2 border-emerald-200">
+            <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-emerald-700 ">
               {getValue() as number}
             </span>
           </div>
@@ -227,26 +236,6 @@ const KeHoachHocTapMauDetail: React.FC = () => {
           </div>
         ),
         size: 120,
-      },
-      {
-        id: "hocPhanCaiThien",
-        accessorKey: "hocPhanCaiThien",
-        header: "Cải thiện",
-        cell: ({ getValue }) => {
-          const isCaiThien = getValue() as boolean;
-          return (
-            <div className="text-center">
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                isCaiThien 
-                  ? 'bg-amber-100 text-amber-800 border border-amber-200' 
-                  : 'bg-gray-100 text-gray-600 border border-gray-200'
-              }`}>
-                {isCaiThien ? 'Có' : 'Không'}
-              </span>
-            </div>
-          );
-        },
-        size: 100,
       },
       {
         id: "actions",
@@ -292,16 +281,19 @@ const KeHoachHocTapMauDetail: React.FC = () => {
       0
     );
     const totalSubjects = templateDetails.length;
-    
+
     // Group by semester
-    const semesterGroups = templateDetails.reduce((acc, detail) => {
-      const semesterKey = detail.hocKy.tenHocKy;
-      if (!acc[semesterKey]) {
-        acc[semesterKey] = [];
-      }
-      acc[semesterKey].push(detail);
-      return acc;
-    }, {} as Record<string, KeHoachHocTapDetail[]>);
+    const semesterGroups = templateDetails.reduce(
+      (acc, detail) => {
+        const semesterKey = detail.hocKy.tenHocKy;
+        if (!acc[semesterKey]) {
+          acc[semesterKey] = [];
+        }
+        acc[semesterKey].push(detail);
+        return acc;
+      },
+      {} as Record<string, KeHoachHocTapDetail[]>
+    );
 
     return {
       totalCredits,
@@ -366,13 +358,22 @@ const KeHoachHocTapMauDetail: React.FC = () => {
           </button>
         }
         actions={
-          <button
-            onClick={handleAddHocPhan}
-            className="flex items-center px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Thêm học phần
-          </button>
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => navigate(`/giangvien/study-plans/edit/${maNganh}/${khoaHoc}`)}
+              className="flex items-center px-4 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Chỉnh sửa
+            </button>
+            <button
+              onClick={handleAddHocPhan}
+              className="flex items-center px-4 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Thêm học phần
+            </button>
+          </div>
         }
       />
 
@@ -419,16 +420,6 @@ const KeHoachHocTapMauDetail: React.FC = () => {
                 {templateDetails.length} học phần đã được lên kế hoạch
               </p>
             </div>
-            <div className="hidden md:flex items-center space-x-4 text-sm text-gray-500">
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
-                Bắt buộc
-              </div>
-              <div className="flex items-center">
-                <div className="w-3 h-3 bg-amber-500 rounded-full mr-2"></div>
-                Cải thiện
-              </div>
-            </div>
           </div>
         </div>
 
@@ -449,7 +440,8 @@ const KeHoachHocTapMauDetail: React.FC = () => {
               Chưa có học phần nào
             </h3>
             <p className="text-gray-500 mb-8 max-w-md mx-auto leading-relaxed">
-              Kế hoạch học tập mẫu này chưa có học phần nào được thêm vào. Hãy thêm học phần đầu tiên.
+              Kế hoạch học tập mẫu này chưa có học phần nào được thêm vào. Hãy
+              thêm học phần đầu tiên.
             </p>
             <button
               onClick={handleAddHocPhan}

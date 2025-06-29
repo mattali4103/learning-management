@@ -64,7 +64,7 @@ const ThongTinLopHoc = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const studentsPerPage = 10;
+  const studentsPerPage = 8;
   // Get statistics for a specific student
   const getStudentStatistics = (maSo: string) => {
     return (

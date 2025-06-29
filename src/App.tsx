@@ -21,6 +21,7 @@ import ThongTinLopHoc from "./pages/Admin/ThongTinLopHoc";
 import ThongTinSinhVien from "./pages/Admin/ThongTinSinhVien";
 import KeHoachHocTapMau from "./pages/Admin/KeHoachHocTapMau";
 import KeHoachHocTapMauDetail from "./pages/Admin/KeHoachHocTapMauDetail";
+import ThemKHHTMau from "./pages/Admin/ThemKHHTMau";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -64,6 +65,8 @@ function App() {
           <Route path="/giangvien/curriculum" element={<CurriculumManagement />} />
           <Route path="/giangvien/reports" element={<ReportsAndStatistics />} />
           <Route path="/giangvien/study-plans" element={<KeHoachHocTapMau />} />
+          <Route path="/giangvien/study-plans/create" element={<ThemKHHTMau />} />
+          <Route path="/giangvien/study-plans/edit/:maNganh/:khoaHoc" element={<ThemKHHTMau />} />
           <Route path="/giangvien/study-plans/:maNganh/:khoaHoc" element={<KeHoachHocTapMauDetail />} />
         </Route>
       </Route>

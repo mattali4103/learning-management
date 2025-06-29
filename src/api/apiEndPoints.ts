@@ -28,12 +28,14 @@ export const PROFILE_SERVICE = {
 };
 
 export const HOCPHAN_SERVICE = {
+  CTDT_BY_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/get_by_ma_nganh/:maNganh", //PathVariable, hocphanlist = null
   GET_ALL_HOCKY: HOCPHAN_SERVICE_URL + "/api/hocky/list",
   CTDT_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/get/:khoaHoc/:maNganh",
   CDDT_HOC_PHAN_TU_CHON_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/list",
 };
 
 export const KHHT_SERVICE = {
+  KHHT_MAU_CREATES: KHHT_SERVICE_URL + "/api/khht/mau/creates", // tạo mẫu kế hoạch học tập - posts
   KHHT_MAU_BY_NGANH: KHHT_SERVICE_URL + "/api/khht/mau/group_by_khoa_hoc", // lấy khht mẫu group by khoa dựa theo mã ngành params
   KHHT_MAU_BY_KHOAHOC_MA_NGANH: KHHT_SERVICE_URL + "/api/khht/mau/by_ma_nganh", // lấy mẫu kế hoạch học tập theo mã ngành params
   GET_HOCPHAN_BY_GOIY: KHHT_SERVICE_URL + "/api/khht/sinhvien/goi_y", // lấy danh sách học phần gợi ý - posts
