@@ -35,6 +35,7 @@ export const HOCPHAN_SERVICE = {
 };
 
 export const KHHT_SERVICE = {
+  KHHT_MAU_IMPORT: KHHT_SERVICE_URL + "/api/khht/mau/import", // import file excel
   KHHT_MAU_CREATES: KHHT_SERVICE_URL + "/api/khht/mau/creates", // tạo mẫu kế hoạch học tập - posts
   KHHT_MAU_BY_NGANH: KHHT_SERVICE_URL + "/api/khht/mau/group_by_khoa_hoc", // lấy khht mẫu group by khoa dựa theo mã ngành params
   KHHT_MAU_BY_KHOAHOC_MA_NGANH: KHHT_SERVICE_URL + "/api/khht/mau/by_ma_nganh", // lấy mẫu kế hoạch học tập theo mã ngành params
