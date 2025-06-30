@@ -31,10 +31,13 @@ export const HOCPHAN_SERVICE = {
   CTDT_BY_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/get_by_ma_nganh/:maNganh", //PathVariable, hocphanlist = null
   GET_ALL_HOCKY: HOCPHAN_SERVICE_URL + "/api/hocky/list",
   CTDT_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/get/:khoaHoc/:maNganh",
-  CDDT_HOC_PHAN_TU_CHON_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/list",
+  CTDT_HOC_PHAN_TU_CHON_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/list",
 };
 
 export const KHHT_SERVICE = {
+  KHHT_MAU_UPDATE: KHHT_SERVICE_URL + "/api/khht/mau/updates",  // PUTmapping 
+  KHHT_MAU_DELETE : KHHT_SERVICE_URL + "/api/khht/mau/delete", // Xoá một khht // Requestbody DELETEMAPPING
+  KHHT_MAU_DELETE_BY_KHOAHOC: KHHT_SERVICE_URL + "/api/khht/mau/delete/by_khoa_hoc_and_ma_nganh", // Requestbody DELETEMAPPING
   KHHT_MAU_IMPORT: KHHT_SERVICE_URL + "/api/khht/mau/import", // import file excel
   KHHT_MAU_CREATES: KHHT_SERVICE_URL + "/api/khht/mau/creates", // tạo mẫu kế hoạch học tập - posts
   KHHT_MAU_BY_NGANH: KHHT_SERVICE_URL + "/api/khht/mau/group_by_khoa_hoc", // lấy khht mẫu group by khoa dựa theo mã ngành params

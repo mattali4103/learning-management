@@ -5,13 +5,16 @@ import {
   Calendar,
   GraduationCap,
   FileText,
+  Trash2,
   ChevronRight,
 } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE, PROFILE_SERVICE } from "../../api/apiEndPoints";
 import useAuth from "../../hooks/useAuth";
+import DeleteModal from "../../components/modals/DeleteModal";
 import PageHeader from "../../components/PageHeader";
 import StatisticsCard from "../../components/StatisticsCard";
+import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
 
 interface Nganh {
   maNganh: string;
@@ -36,9 +39,13 @@ const KeHoachHocTapMau = () => {
 
   // States
   const [loading, setLoading] = useState(true);
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [message, setMessage] = useState<string>("");
   const [danhSachNganh, setDanhSachNganh] = useState<Nganh[]>([]);
-  const [templateList, setTemplateList] = useState<KeHoachHocTapMauData[]>([]);
+  const [keHoachHocTapList, setKeHoachHocTapList] = useState<KeHoachHocTapMauData[]>([]);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [templateToDelete, setTemplateToDelete] =
+    useState<KeHoachHocTapMauData | null>(null);
   const maKhoa = auth.user?.maKhoa || "";
 
   // Fetch functions
@@ -74,10 +81,9 @@ const KeHoachHocTapMau = () => {
           // Silent error handling - could add proper error notification here
         }
       }
-
-      setTemplateList(allTemplates);
+      setKeHoachHocTapList(allTemplates);
     } catch {
-      // Silent error handling - could add proper error notification here
+      // Silent error handling - consider adding proper error notification
     } finally {
       setLoading(false);
     }
@@ -116,12 +122,59 @@ const KeHoachHocTapMau = () => {
 
   // Handler functions
   const handleCreateTemplate = () => {
-    navigate('/giangvien/study-plans/create');
+    navigate("/giangvien/study-plans/create");
+  };
+
+  const openDeleteModal = (
+    event: React.MouseEvent,
+    template: KeHoachHocTapMauData
+  ) => {
+    event.stopPropagation(); // Prevent navigating to the template detail
+    setTemplateToDelete(template);
+    setShowDeleteModal(true);
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setTemplateToDelete(null);
+  };
+
+  const handleDeleteTemplate = async () => {
+    if (!templateToDelete) return;
+
+    try {
+      const response = await axiosPrivate.delete(
+        KHHT_SERVICE.KHHT_MAU_DELETE_BY_KHOAHOC,
+        {
+          data: {
+            maNganh: templateToDelete.nganh.maNganh,
+            khoaHoc: templateToDelete.khoaHoc,
+          },
+        }
+      );
+      if (response.data.code === 200) {
+        setShowSuccessModal(true);
+        setMessage(response.data.message);
+      }
+    } catch (error) {
+      console.error("Error deleting template:", error);
+      // Handle error, e.g., show an error message to the user
+    } finally {
+      closeDeleteModal();
+    }
+  };
+
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
+    setMessage("")
+    fetchTemplateList();
+    navigate("/giangvien/study-plans");
   };
 
   const handleViewTemplate = (template: KeHoachHocTapMauData) => {
-    // Navigate to detail page with URL parameters
-    navigate(`/giangvien/study-plans/${template.nganh.maNganh}/${template.khoaHoc}`);
+    navigate(
+      `/giangvien/study-plans/${template.nganh.maNganh}/${template.khoaHoc}`
+    );
   };
 
   if (loading) {
@@ -162,11 +215,11 @@ const KeHoachHocTapMau = () => {
       <div className="grid grid-cols-1 gap-6">
         <StatisticsCard
           title="Tổng kế hoạch học tập mẫu"
-          value={templateList.length}
+          value={keHoachHocTapList.length}
           subtitle={
-            templateList.length === 0
+            keHoachHocTapList.length === 0
               ? "Chưa có kế hoạch nào"
-              : `${templateList.length} kế hoạch có sẵn`
+              : `${keHoachHocTapList.length} kế hoạch có sẵn`
           }
           icon={FileText}
           colorScheme="blue"
@@ -177,7 +230,7 @@ const KeHoachHocTapMau = () => {
 
       {/* Templates List */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
-        {templateList.length === 0 ? (
+        {keHoachHocTapList.length === 0 ? (
           <div className="p-16 text-center bg-gradient-to-br from-gray-50 to-blue-50">
             <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full mx-auto mb-6 flex items-center justify-center">
               <FileText className="w-12 h-12 text-blue-600" />
@@ -186,7 +239,8 @@ const KeHoachHocTapMau = () => {
               Chưa có kế hoạch học tập mẫu
             </h3>
             <p className="text-gray-500 mb-8 max-w-md mx-auto leading-relaxed">
-              Tạo kế hoạch học tập mẫu đầu tiên để hướng dẫn sinh viên trong việc học tập
+              Tạo kế hoạch học tập mẫu đầu tiên để hướng dẫn sinh viên trong
+              việc học tập
             </p>
             <button
               onClick={handleCreateTemplate}
@@ -199,11 +253,11 @@ const KeHoachHocTapMau = () => {
         ) : (
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {templateList.map((template, index) => (
+              {keHoachHocTapList.map((khht, index) => (
                 <div
-                  key={`${template.nganh.maNganh}-${template.khoaHoc}-${index}`}
+                  key={`${khht.nganh.maNganh}-${khht.khoaHoc}-${index}`}
                   className="group relative bg-gradient-to-br from-white to-gray-50 rounded-xl p-6 border border-gray-200 hover:border-blue-300 hover:shadow-lg transition-all duration-200 cursor-pointer overflow-hidden"
-                  onClick={() => handleViewTemplate(template)}
+                  onClick={() => handleViewTemplate(khht)}
                 >
                   {/* Background decoration */}
                   <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full -translate-y-8 translate-x-8 opacity-60 group-hover:opacity-80 transition-opacity"></div>
@@ -218,11 +272,12 @@ const KeHoachHocTapMau = () => {
                           <div>
                             <h3 className="font-bold text-gray-800 text-lg leading-tight">
                               {danhSachNganh.find(
-                                (nganh) => nganh.maNganh === template.nganh.maNganh
+                                (nganh) =>
+                                  nganh.maNganh === khht.nganh.maNganh
                               )?.tenNganh || "Kế hoạch học tập"}
                             </h3>
                             <p className="text-xs text-gray-500 font-medium">
-                              Mã ngành: {template.nganh.maNganh}
+                              Mã ngành: {khht.nganh.maNganh}
                             </p>
                           </div>
                         </div>
@@ -230,7 +285,7 @@ const KeHoachHocTapMau = () => {
                         <div className="flex items-center gap-2 mb-4">
                           <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border border-blue-200">
                             <Calendar className="w-3 h-3 mr-1" />
-                            Khóa {template.khoaHoc}
+                            Khóa {khht.khoaHoc}
                           </span>
                         </div>
 
@@ -244,6 +299,14 @@ const KeHoachHocTapMau = () => {
 
                   {/* Hover overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-indigo-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 rounded-xl"></div>
+
+                  {/* Delete button - initially hidden */}
+                  <button
+                    onClick={(event) => openDeleteModal(event, khht)}
+                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -251,28 +314,22 @@ const KeHoachHocTapMau = () => {
         )}
       </div>
 
-      {/* Create Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Tạo kế hoạch học tập mẫu
-            </h3>
-            <p className="text-gray-600 mb-6">
-              Tính năng tạo kế hoạch học tập mẫu đang được phát triển. Vui lòng
-              quay lại sau.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Đóng
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
+      <SuccessMessageModal
+        isOpen={showSuccessModal}
+        onClose={handleCloseSuccessModal}
+        message={message}
+      />
+
+      <DeleteModal
+        isOpen={showDeleteModal}
+        onClose={closeDeleteModal}
+        onConfirm={() => {
+          handleDeleteTemplate();
+          setShowSuccessModal(true); // Show success after confirmation and closing delete modal
+        }}
+        isLoading={false} // You'll likely have a state for delete loading
+      />
     </div>
   );
 };

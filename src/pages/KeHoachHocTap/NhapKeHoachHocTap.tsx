@@ -212,7 +212,7 @@ const NhapKeHoachHocTap: React.FC = () => {
   const fetchNhomHocPhanTuChon = useCallback(async () => {
     try {
       const response = await axiosPrivate.get(
-        HOCPHAN_SERVICE.CDDT_HOC_PHAN_TU_CHON_LIST,
+        HOCPHAN_SERVICE.CTDT_HOC_PHAN_TU_CHON_LIST,
         {
           params: {
             khoaHoc: khoaHoc,

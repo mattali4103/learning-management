@@ -27,34 +27,22 @@ import {
   PROFILE_SERVICE,
 } from "../../api/apiEndPoints";
 import useAuth from "../../hooks/useAuth";
+
 import type { HocPhan } from "../../types/HocPhan";
 import type { HocKy } from "../../types/HocKy";
-interface Nganh {
-  maNganh: string | number;
-  tenNganh: string;
-}
-
-
-interface KeHoachHocTapDetail {
-  id: string;
-  hocPhan: HocPhan;
-  hocKy: HocKy | null;
-  namHoc?: number;
-  hocPhanCaiThien: boolean;
-}
+import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
+import type { Nganh } from "../../types/Nganh";
+import type { KeHoachHocTapDetail } from "../../types/KeHoachHocTapMau";
+import type { Khoa } from "../../types/Khoa";
 
 interface KHHTMauCreatePayload {
   khoaHoc: string;
-  maNganh: number;
+  maNganh: string;
   maHocKy: number;
   maHocPhan: string;
 }
 
-interface Khoa {
-  maKhoa: string;
-  tenKhoa: string;
-  dsnganh: Nganh[];
-}
+
 
 const ThemKHHTMau = () => {
   const navigate = useNavigate();
@@ -87,11 +75,9 @@ const ThemKHHTMau = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importNganh, setImportNganh] = useState("");
   const [importKhoaHoc, setImportKhoaHoc] = useState("");
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [importFile, setImportFile] = useState<File | null>(null);
   const [importError, setImportError] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
-
-
 
   // Academic years data - created from danhSachHocKy (similar to NhapKeHoachHocTap.tsx)
   const availableNamHoc = useMemo(() => {
@@ -231,20 +217,32 @@ const ThemKHHTMau = () => {
         .filter((item) => item.hocKy !== null) // Filter out items without semester
         .map((item) => ({
           khoaHoc: selectedKhoaHoc,
-          maNganh: parseInt(selectedNganh),
+          maNganh: selectedNganh,
           maHocKy: item.hocKy!.maHocKy,
           maHocPhan: item.hocPhan.maHp,
         }));
 
       console.log("Saving payload:", payload);
 
-      const response = await axiosPrivate.post(
-        KHHT_SERVICE.KHHT_MAU_CREATES,
-        payload
-      );
+      let response;
+      if (isEditMode) {
+        response = await axiosPrivate.put(
+          KHHT_SERVICE.KHHT_MAU_UPDATE,
+          payload
+        );
+      } else {
+        response = await axiosPrivate.post(
+          KHHT_SERVICE.KHHT_MAU_CREATES,
+          payload
+        );
+      }
 
       if (response.data.code === 200) {
-        alert("Lưu kế hoạch học tập mẫu thành công!");
+        alert(
+          isEditMode
+            ? "Cập nhật kế hoạch học tập mẫu thành công!"
+            : "Lưu kế hoạch học tập mẫu thành công!"
+        );
         navigate("/giangvien/study-plans");
       } else {
         setError(
@@ -270,9 +268,44 @@ const ThemKHHTMau = () => {
     setShowImportModal(true);
     setImportNganh("");
     setImportKhoaHoc("");
+    // Fetch khoa hoc khi mo modal
+    fetchImportKhoaHoc(""); // Truyền một giá trị rỗng ban đầu
     setImportFile(null);
     setImportError("");
   };
+  const fetchImportKhoaHoc = useCallback(
+    async (maNganh: string) => {
+      if (!maNganh) {
+        // Reset khoa hoc options neu maNganh khong co
+        setKhoaHocOptions([]);
+        return;
+      }
+
+      try {
+        const response = await axiosPrivate.get<any>(
+          HOCPHAN_SERVICE.CTDT_BY_NGANH.replace(":maNganh", maNganh)
+        );
+        if (response.data.code === 200 && response.data.data) {
+          const khoaHocList = response.data.data.map(
+            (item: any) => item.khoaHoc
+          );
+          setKhoaHocOptions(khoaHocList);
+          console.log("Filtered Khoa Hoc for Import:", khoaHocList);
+        }
+      } catch (error) {
+        console.error("Error fetching khoa hoc for import:", error);
+        setKhoaHocOptions([]);
+      }
+    },
+    [axiosPrivate]
+  );
+  useEffect(() => {
+    if (showImportModal) {
+      // Chỉ fetch khi modal đang mở
+      fetchImportKhoaHoc(importNganh);
+    }
+  }, [importNganh, fetchImportKhoaHoc, showImportModal]);
+
 
   const handleCloseImportModal = () => {
     setShowImportModal(false);
@@ -294,6 +327,7 @@ const ThemKHHTMau = () => {
         KHHT_SERVICE.KHHT_MAU_IMPORT,
         formData,
         {
+          // withCredentials: true,
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -301,9 +335,15 @@ const ThemKHHTMau = () => {
       );
 
       if (response.data.code === 200) {
-        alert("Import thành công!");
+        setShowSuccessModal(true);
         handleCloseImportModal();
-        // Có thể làm mới dữ liệu hoặc điều hướng đến trang khác sau khi import
+        // Reset import form
+        setImportNganh("");
+        setImportKhoaHoc("");
+        setImportFile(null);
+        setImportError("");
+        // TODO: Refresh data or navigate
+        // navigate(0);
       } else {
         setImportError(
           "Import không thành công: " +
@@ -319,6 +359,10 @@ const ThemKHHTMau = () => {
             "Lỗi không xác định")
       );
     }
+  };
+
+  const handleCloseSuccessModal = () => {
+    setShowSuccessModal(false);
   };
 
   useEffect(() => {
@@ -345,10 +389,42 @@ const ThemKHHTMau = () => {
     }
   }, [selectedNganh, selectedKhoaHoc, fetchChuongTrinhDaoTao]);
 
-  // Filtered học phần
-  const filteredHocPhans = useMemo(() => {
-    let filtered = availableHocPhans;
+  // Khi ở chế độ chỉnh sửa, tự động load các học phần đã có vào form, bao gồm cả năm học và học kỳ đã nhập trước đó
+  useEffect(() => {
+    const fetchExistingPlan = async () => {
+      if (isEditMode && selectedNganh && selectedKhoaHoc) {
+        try {
+          const response = await axiosPrivate.get(
+            KHHT_SERVICE.KHHT_MAU_BY_KHOAHOC_MA_NGANH,
+            {
+              params: {
+                khoaHoc: selectedKhoaHoc,
+                maNganh: selectedNganh,
+              },
+            }
+          );
+          if (response.data && Array.isArray(response.data.data)) {
+            // Đảm bảo mỗi học phần có trường namHoc và hocKy đúng
+            setSelectedHocPhans(response.data.data.map((item : any) => ({
+              ...item,
+              namHoc: item.hocKy?.namHoc?.id || undefined,
+              hocKy: item.hocKy || null,
+            })));
+          }
+        } catch (err) {
+          console.error("Lỗi khi tải kế hoạch học tập mẫu để chỉnh sửa", err);
+        }
+      }
+    };
+    fetchExistingPlan();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode, selectedNganh, selectedKhoaHoc]);
 
+  // Filtered học phần: chỉ hiển thị các học phần chưa được thêm vào kế hoạch học tập mẫu
+  const filteredHocPhans = useMemo(() => {
+    let filtered = availableHocPhans.filter(
+      (hp) => !selectedHocPhans.some((item) => item.hocPhan.maHp === hp.maHp)
+    );
     if (searchTerm) {
       filtered = filtered.filter(
         (hp) =>
@@ -356,9 +432,8 @@ const ThemKHHTMau = () => {
           hp.maHp.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-
     return filtered;
-  }, [availableHocPhans, searchTerm]);
+  }, [availableHocPhans, searchTerm, selectedHocPhans]);
 
   // Statistics
   const statistics = useMemo(() => {
@@ -638,13 +713,15 @@ const ThemKHHTMau = () => {
         actions={
           <div className="flex items-center space-x-3">
             {/* Import from Excel button */}
-            <button
-              onClick={handleOpenImportModal}
-              className="flex items-center px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-lg"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Import từ Excel
-            </button>
+            {!isEditMode && (
+              <button
+                onClick={handleOpenImportModal}
+                className="flex items-center px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-lg"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Import từ Excel
+              </button>
+            )}
             <button
               onClick={handleSave}
               disabled={saving || selectedHocPhans.length === 0}
@@ -892,8 +969,8 @@ const ThemKHHTMau = () => {
 
       {/* Import Modal */}
       {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/25 backdrop-blur-sm transition-opacity duration-300">
-          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg relative transform transition-all duration-300 scale-95 opacity-0 animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm transition-opacity duration-300">
+          <div className="bg-white rounded-2xl shadow-xl p-8 w-full max-w-lg relative transform transition-all duration-300 scale-95 animate-scale-in">
             <button
               className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
               onClick={handleCloseImportModal}
@@ -955,32 +1032,7 @@ const ThemKHHTMau = () => {
                   File Excel
                 </label>
                 <div
-                  onDragEnter={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsDragging(true);
-                  }}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsDragging(false);
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setIsDragging(false);
-                    if (
-                      e.dataTransfer.files &&
-                      e.dataTransfer.files.length > 0
-                    ) {
-                      setImportFile(e.dataTransfer.files[0]);
-                    }
-                  }}
-                  className={`flex flex-col justify-center items-center w-full h-48 px-6 py-4 border-2 border-dashed rounded-lg transition-colors ${isDragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-gray-400"}`}
+                  className="mt-2"
                 >
                   {importFile ? (
                     <div className="text-center">
@@ -1016,7 +1068,7 @@ const ThemKHHTMau = () => {
                             Nhấn để tải lên
                           </span>{" "}
                           hoặc kéo thả
-                        </p>
+                        </p> 
                         <p className="text-xs text-gray-500 mt-1">
                           Hỗ trợ file .xlsx, .xls
                         </p>
@@ -1051,13 +1103,20 @@ const ThemKHHTMau = () => {
                 onClick={handleImport}
                 disabled={!importFile || !importNganh || !importKhoaHoc}
                 className="px-6 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
+                >
                 Import
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <SuccessMessageModal
+        isOpen={showSuccessModal}
+        onClose={handleCloseSuccessModal}
+        message="Import kế hoạch học tập thành công!"
+      />
+
     </div>
   );
 };

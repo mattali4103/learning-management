@@ -10,3 +10,4 @@ export interface KeHoachHocTap {
   namHocId: number;
   namBdNamKt: string;
 }
+

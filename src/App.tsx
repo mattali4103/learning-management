@@ -19,9 +19,10 @@ import ReportsAndStatistics from "./pages/Admin/ReportsAndStatistics";
 import DanhSachLopHoc from "./pages/Admin/DanhSachLopHoc";
 import ThongTinLopHoc from "./pages/Admin/ThongTinLopHoc";
 import ThongTinSinhVien from "./pages/Admin/ThongTinSinhVien";
-import KeHoachHocTapMau from "./pages/Admin/KeHoachHocTapMau";
-import KeHoachHocTapMauDetail from "./pages/Admin/KeHoachHocTapMauDetail";
-import ThemKHHTMau from "./pages/Admin/ThemKHHTMau";
+import KeHoachHocTapMau from "./pages/KeHoachHocTapMau/KeHoachHocTapMau";
+import KeHoachHocTapMauDetail from "./pages/KeHoachHocTapMau/KeHoachHocTapMauDetail";
+import ThemKHHTMau from "./pages/KeHoachHocTapMau/ThemKHHTMau";
+import ChinhSuaKHHTMau from "./pages/KeHoachHocTapMau/ChinhSuaKHHTMau";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -66,7 +67,8 @@ function App() {
           <Route path="/giangvien/reports" element={<ReportsAndStatistics />} />
           <Route path="/giangvien/study-plans" element={<KeHoachHocTapMau />} />
           <Route path="/giangvien/study-plans/create" element={<ThemKHHTMau />} />
-          <Route path="/giangvien/study-plans/edit/:maNganh/:khoaHoc" element={<ThemKHHTMau />} />
+          <Route path="/giangvien/study-plans/add/:maNganh/:khoaHoc" element={<ChinhSuaKHHTMau />} />
+          <Route path="/giangvien/study-plans/edit/:maNganh/:khoaHoc" element={<ChinhSuaKHHTMau />} />
           <Route path="/giangvien/study-plans/:maNganh/:khoaHoc" element={<KeHoachHocTapMauDetail />} />
         </Route>
       </Route>
