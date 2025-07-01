@@ -271,6 +271,7 @@ const KeHoachHocTapMauDetail = () => {
           </div>
         ),
         size: 80,
+        enableSorting: false,
       },
       {
         id: "maHp",
@@ -282,6 +283,8 @@ const KeHoachHocTapMauDetail = () => {
           </div>
         ),
         size: 140,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
       },
       {
         id: "tenHp",
@@ -295,6 +298,8 @@ const KeHoachHocTapMauDetail = () => {
           </div>
         ),
         size: 300,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
       },
       {
         id: "soTinChi",
@@ -308,6 +313,8 @@ const KeHoachHocTapMauDetail = () => {
           </div>
         ),
         size: 100,
+        enableSorting: true,
+        sortingFn: "basic",
       },
       {
         id: "namHoc",
@@ -327,6 +334,14 @@ const KeHoachHocTapMauDetail = () => {
           );
         },
         size: 120,
+        enableSorting: true,
+        sortingFn: (rowA, rowB, columnId) => {
+          const a = rowA.getValue(columnId) as { namBatDau: string; namKetThuc: string };
+          const b = rowB.getValue(columnId) as { namBatDau: string; namKetThuc: string };
+          const yearA = parseInt(a.namBatDau);
+          const yearB = parseInt(b.namBatDau);
+          return yearA - yearB;
+        },
       },
       {
         id: "hocKy",
@@ -340,6 +355,8 @@ const KeHoachHocTapMauDetail = () => {
           </div>
         ),
         size: 120,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
       },
       {
         id: "actions",
@@ -359,9 +376,69 @@ const KeHoachHocTapMauDetail = () => {
           );
         },
         size: 100,
+        enableSorting: false,
       },
     ],
     [handleDeleteDetail]
+  );
+
+  // Columns for elective courses table with sorting
+  const electiveColumns = useMemo<ColumnDef<any>[]>(
+    () => [
+      {
+        id: "stt",
+        header: "STT",
+        cell: ({ row }) => (
+          <div className="text-center">{row.index + 1}</div>
+        ),
+        size: 80,
+        enableSorting: false,
+      },
+      {
+        id: "maHp",
+        accessorKey: "maHp",
+        header: "Mã học phần",
+        cell: ({ getValue }) => (
+          <div className="font-mono text-sm text-blue-700 px-3 py-1.5">
+            {getValue() as string}
+          </div>
+        ),
+        size: 140,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
+      {
+        id: "tenHp",
+        accessorKey: "tenHp",
+        header: "Tên học phần",
+        cell: ({ getValue }) => (
+          <div className="text-center">
+            <div className="font-semibold text-gray-900 text-sm leading-tight">
+              {getValue() as string}
+            </div>
+          </div>
+        ),
+        size: 300,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
+      {
+        id: "tinChi",
+        accessorKey: "tinChi",
+        header: "Tín chỉ",
+        cell: ({ getValue }) => (
+          <div className="text-center">
+            <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-emerald-700 ">
+              {getValue() as number}
+            </span>
+          </div>
+        ),
+        size: 100,
+        enableSorting: true,
+        sortingFn: "basic",
+      },
+    ],
+    []
   );
 
   // Calculate statistics from template details
@@ -459,7 +536,7 @@ const KeHoachHocTapMauDetail = () => {
           <div className="flex flex-wrap items-center gap-2 md:gap-3">
             <button
               onClick={() =>
-                navigate(`/giangvien/study-plans/edit/${maNganh}/${khoaHoc}`)
+                navigate(`/giangvien/study-plans/add/${maNganh}/${khoaHoc}`)
               }
               className="flex items-center px-5 py-2.5 bg-emerald-600 text-white font-semibold rounded-xl shadow-md hover:bg-emerald-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:ring-offset-2"
             >
@@ -618,53 +695,7 @@ const KeHoachHocTapMauDetail = () => {
                         ...hp,
                         stt: idx + 1,
                       }))}
-                      columns={[
-                        {
-                          id: "stt",
-                          header: "STT",
-                          cell: ({ row }) => (
-                            <div className="text-center">{row.index + 1}</div>
-                          ),
-                          size: 80,
-                        },
-                        {
-                          id: "maHp",
-                          accessorKey: "maHp",
-                          header: "Mã học phần",
-                          cell: ({ getValue }) => (
-                            <div className="font-mono text-sm text-blue-700 px-3 py-1.5">
-                              {getValue() as string}
-                            </div>
-                          ),
-                          size: 140,
-                        },
-                        {
-                          id: "tenHp",
-                          accessorKey: "tenHp",
-                          header: "Tên học phần",
-                          cell: ({ getValue }) => (
-                            <div className="text-center">
-                              <div className="font-semibold text-gray-900 text-sm leading-tight">
-                                {getValue() as string}
-                              </div>
-                            </div>
-                          ),
-                          size: 300,
-                        },
-                        {
-                          id: "tinChi",
-                          accessorKey: "tinChi",
-                          header: "Tín chỉ",
-                          cell: ({ getValue }) => (
-                            <div className="text-center">
-                              <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-emerald-700 ">
-                                {getValue() as number}
-                              </span>
-                            </div>
-                          ),
-                          size: 100,
-                        },
-                      ]}
+                      columns={electiveColumns}
                     />
                   </div>
                 </div>
