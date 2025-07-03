@@ -1,6 +1,6 @@
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -182,18 +182,13 @@ const GPAChart = ({ data }: GPAChartProps) => {
       </div>
       <div className="h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
+          <LineChart
             data={data}
             margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
             onClick={handleDataPointClick}
             className="cursor-pointer"
           >
-            <defs>
-              <linearGradient id="colorGPA" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
+
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
             <XAxis
               dataKey="name"
@@ -209,15 +204,21 @@ const GPAChart = ({ data }: GPAChartProps) => {
               tickFormatter={(value) => value.toFixed(1)}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Area
+            <Line
               type="monotone"
               dataKey="diem"
               stroke="#3b82f6"
               strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorGPA)"
+              dot={{ r: 4, fill: "#3b82f6", stroke: "white", strokeWidth: 1 }}
+              label={{
+                position: 'top',
+                fill: '#3b82f6',
+                fontSize: 12,
+                formatter: (value: any) => `${value.toFixed(2)}`,
+                offset: 10
+              }}
             />
-          </AreaChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>
 

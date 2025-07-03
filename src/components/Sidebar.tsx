@@ -35,7 +35,7 @@ export default function Sidebar() {
   const sidebarItems: SidebarItem[] = [
     // Dashboard chung cho tất cả role nhưng route khác nhau
     { 
-      name: "Dashboard", 
+      name: "Trang chủ", 
       icon: LayoutDashboard, 
       to: isGiangVienOrAdmin ? "/giangvien" : "/" 
     },
@@ -48,9 +48,9 @@ export default function Sidebar() {
             icon: BookOpen,
             to: "/khht",
             children: [
-              { name: "Tổng quan", to: "/khht/chung" },
-              { name: "Xem chi tiết", to: "/khht/detail" },
-              { name: "Nhập kế hoạch", to: "/khht/add" },
+              { name: "Tổng quan KHHT", to: "/khht/chung" },
+              { name: "Xem KHHT đã nhập", to: "/khht/detail" },
+              { name: "Thêm KHHT", to: "/khht/add" },
             ],
           },
           {
@@ -59,7 +59,7 @@ export default function Sidebar() {
             to: "/kqht",
             children: [
               { name: "Tổng quan", to: "/kqht/chung" },
-              { name: "Xem chi tiết", to: "/kqht/chitiet" },
+              { name: "Xem bảng điểm", to: "/kqht/chitiet" },
             ],
           },
         ]

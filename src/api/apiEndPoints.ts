@@ -1,9 +1,16 @@
-export const USER_SERIVCE_URL = "http://localhost:8088";
-export const KHHT_SERVICE_URL = "http://localhost:8087";
-export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
-export const PROFILE_SERVICE_URL = "http://localhost:8083";
-export const KQHT_SERVICE_URL = "http://localhost:8089";
+// const BASE_URL = "http://localhost"; // Base URL for the API
+const BASE_URL = "http://localhost"; // Base URL for the API
+// export const USER_SERIVCE_URL = "http://localhost:8088";
+// export const KHHT_SERVICE_URL = "http://localhost:8087";
+// export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
+// export const PROFILE_SERVICE_URL = "http://localhost:8083";
+// export const KQHT_SERVICE_URL = "http://localhost:8089";
 // const PATH = "http://172.30.121.19:8088"
+export const USER_SERIVCE_URL = BASE_URL + ":8088";
+export const KHHT_SERVICE_URL = BASE_URL + ":8087";
+export const HOCPHAN_SERVICE_URL = BASE_URL + ":8086";
+export const PROFILE_SERVICE_URL = BASE_URL + ":8083";
+export const KQHT_SERVICE_URL = BASE_URL + ":8089";
 export const USER_SERVICE = {
   LOGIN: USER_SERIVCE_URL + "/api/auth/login",
   REGISTER: USER_SERIVCE_URL + "/api/auth/register",
@@ -36,9 +43,10 @@ export const HOCPHAN_SERVICE = {
 };
 
 export const KHHT_SERVICE = {
-  KHHT_MAU_UPDATE: KHHT_SERVICE_URL + "/api/khht/mau/updates",  // PUTmapping 
-  KHHT_MAU_DELETE : KHHT_SERVICE_URL + "/api/khht/mau/delete", // Xoá một khht // Requestbody DELETEMAPPING
-  KHHT_MAU_DELETE_BY_KHOAHOC: KHHT_SERVICE_URL + "/api/khht/mau/delete/by_khoa_hoc_and_ma_nganh", // Requestbody DELETEMAPPING
+  KHHT_MAU_UPDATE: KHHT_SERVICE_URL + "/api/khht/mau/updates", // PUTmapping
+  KHHT_MAU_DELETE: KHHT_SERVICE_URL + "/api/khht/mau/delete", // Xoá một khht // Requestbody DELETEMAPPING
+  KHHT_MAU_DELETE_BY_KHOAHOC:
+    KHHT_SERVICE_URL + "/api/khht/mau/delete/by_khoa_hoc_and_ma_nganh", // Requestbody DELETEMAPPING
   KHHT_MAU_IMPORT: KHHT_SERVICE_URL + "/api/khht/mau/import", // import file excel
   KHHT_MAU_CREATES: KHHT_SERVICE_URL + "/api/khht/mau/creates", // tạo mẫu kế hoạch học tập - posts
   KHHT_MAU_BY_NGANH: KHHT_SERVICE_URL + "/api/khht/mau/group_by_khoa_hoc", // lấy khht mẫu group by khoa dựa theo mã ngành params

@@ -10,8 +10,7 @@ import Loading from "../components/Loading";
 import TinChiChart from "../components/chart/TinChiChart";
 import GPAChart from "../components/chart/GPAChart";
 import CreditProgressCard from "../components/progress/CreditProgressCard";
-import GPAProgressCard from "../components/progress/GPAProgressCard";
-import StatusCard from "../components/progress/StatusCard";
+import MiniGPABarChartCompact from "../components/chart/MiniGPABarChartCompact";
 import {
   User,
   Calendar,
@@ -189,7 +188,7 @@ const Dashboard = () => {
     fetchThongKeTinChi();
     fetchTinChiTichLuy();
     fetchDiemTrungBinh();
-  }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc]); // Tính toán thống kê từ dữ liệu thực
+  }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc, auth.user?.maNganh]); // Tính toán thống kê từ dữ liệu thực
   const statistics = useMemo(() => {
     const { tongSoTinChi, soTinChiTichLuy, soTinChiCaiThien } = thongKeTinChi;
     const tinChiConLai = Math.max(0, tongSoTinChi - soTinChiTichLuy);
@@ -280,13 +279,38 @@ const Dashboard = () => {
             totalCredits={156}
           />
 
-          {/* Điểm trung bình tích lũy */}
-          <GPAProgressCard currentGPA={statistics.diemTBTichLuy} maxGPA={4.0} />
+          {/* Điểm trung bình tích lũy qua các học kỳ */}
+          <MiniGPABarChartCompact
+            rawData={
+              diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
+                ? diemTrungBinhHocKy.map(item => ({
+                    diemTrungBinh: item.diemTrungBinh,
+                    diemTrungBinhTichLuy: item.diemTrungBinhTichLuy,
+                    soTinChi: 0,
+                    hocKy: item.hocKy
+                  }))
+                : []
+            }
+            title="Điểm TB tích lũy"
+            showCumulativeGPA={true}
+            height={100}
+          />
 
-          {/* Trạng thái tiến độ */}
-          <StatusCard
-            currentCredits={statistics.soTinChiTichLuy}
-            totalCredits={statistics.tongSoTinChi}
+          {/* Điểm trung bình theo từng học kỳ */}
+          <MiniGPABarChartCompact
+            rawData={
+              diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
+                ? diemTrungBinhHocKy.map(item => ({
+                    diemTrungBinh: item.diemTrungBinh,
+                    diemTrungBinhTichLuy: item.diemTrungBinhTichLuy,
+                    soTinChi: 0,
+                    hocKy: item.hocKy
+                  }))
+                : []
+            }
+            title="Điểm TB theo học kỳ"
+            showCumulativeGPA={false}
+            height={100}
           />
         </div>
         {/* Additional Stats */}
@@ -394,7 +418,7 @@ const Dashboard = () => {
         {/* Charts Section */}
         <div className="lg:col-span-2 space-y-6">
           {" "}
-          {/* Tin Chi Chart */}
+          {/* Tin Chi Line Chart */}
           <TinChiChart
             data={
               tinChiTichLuy && tinChiTichLuy.length > 0
@@ -413,24 +437,28 @@ const Dashboard = () => {
                 : []
             }
           />
-          {/* GPA Chart */}
-          <GPAChart
-            data={
-              diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
-                ? diemTrungBinhHocKy.map((item, index) => {
-                    const hocKyId = item.hocKy?.maHocKy || null;
-                    const namHocId = item.hocKy?.namHoc?.id || null;
-
-                    return {
-                      name: `Học kỳ ${index + 1}`,
-                      diem: Number(item.diemTrungBinhTichLuy) || 0,
-                      hocKyId,
-                      namHocId,
-                    };
-                  })
-                : []
-            }
-          />
+          {/* GPA Line Chart */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+            <div className="flex items-center mb-4">
+              <div className="w-6 h-6 text-blue-600 mr-3">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M3 3v18h18v-2H5V3H3z"/>
+                  <path d="M7 17h2V9H7v8zm4 0h2V7h-2v10zm4 0h2v-4h-2v4z"/>
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-800">
+                So sánh điểm trung bình qua các học kỳ
+              </h3>
+            </div>
+            <GPAChart
+              data={diemTrungBinhHocKy.map((item, index) => ({
+                name: `Học kỳ ${index + 1}`,
+                diem: item.diemTrungBinhTichLuy,
+                hocKyId: item.hocKy?.maHocKy || null,
+                namHocId: item.hocKy?.namHoc?.id || null,
+              }))}
+            />
+          </div>
         </div>
       </div>
       {/* Quick Actions Footer */}

@@ -35,6 +35,9 @@ const GRADE_COLORS: { [key: string]: string } = {
   "D+": "#F97316", // Orange - Below Average
   D: "#FB923C", // Light Orange - Poor
   F: "#EF4444", // Red - Failing
+  W: "#6B7280", // Gray - Withdrawn
+  M: "#F59E0B", // Amber - Missing
+  I: "#D97706", // Dark Amber - Incomplete
   "Non-graded": "#9CA3AF", // Gray - No grade
 };
 
@@ -77,9 +80,12 @@ export default function GradeDistributionPieChart({ rawData }: GradeDistribution
         "D+",
         "D",
         "F",
+        "W",
+        "M",
+        "I",
         "Non-graded",
       ];
-      return gradeOrder.indexOf(a.name) - gradeOrder.indexOf(b.name);
+      return gradeOrder.indexOf(b.name) - gradeOrder.indexOf(a.name);
     });
   }, [rawData]);
 
@@ -128,6 +134,8 @@ export default function GradeDistributionPieChart({ rawData }: GradeDistribution
             cx="50%"
             cy="50%"
             outerRadius={120}
+            startAngle={90}
+            endAngle={90 + 360}
             label={({ name, value, percent }) => 
               `${name}: ${value} (${(percent * 100).toFixed(1)}%)`
             }

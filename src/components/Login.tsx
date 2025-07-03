@@ -118,17 +118,12 @@ const Login: React.FC = () => {
         }
       }
     } catch (err) {
-      if (axios.isAxiosError(err)) {
-        if (err.response) {
-          setError(err.response.data.message || "Đăng nhập không thành công.");
-        } else if (err.request) {
-          setError("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
-        } else {
-          setError("Đã xảy ra lỗi. Vui lòng thử lại sau.");
-        }
-      } else {
-        setError("Đã xảy ra lỗi. Vui lòng thử lại sau.");
-      }
+      console.log(err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Đăng nhập không thành công. Vui lòng thử lại."
+      );
     } finally {
       setLoading(false);
     }

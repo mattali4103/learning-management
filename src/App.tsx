@@ -14,7 +14,8 @@ import KeHoachHocTap, {
 import NhapKeHoachHocTap from "./pages/KeHoachHocTap/NhapKeHoachHocTap";
 import KeHoachHocTapUnified from "./pages/KeHoachHocTap/KeHoachHocTapUnified";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
-import CurriculumManagement from "./pages/Admin/CurriculumManagement";
+import ChuongTrinhDaoTao from "./pages/ChuongTrinhDaoTao/ChuongTrinhDaoTao";
+import CTDTDetail from "./pages/ChuongTrinhDaoTao/CTDTDetail";
 import ReportsAndStatistics from "./pages/Admin/ReportsAndStatistics";
 import DanhSachLopHoc from "./pages/Admin/DanhSachLopHoc";
 import ThongTinLopHoc from "./pages/Admin/ThongTinLopHoc";
@@ -63,7 +64,8 @@ function App() {
           <Route path="/giangvien/lop" element={<DanhSachLopHoc />} />
           <Route path="/giangvien/lop/:maLop" element={<ThongTinLopHoc />} />
           <Route path="/giangvien/lop/:maLop/student/:maSo" element={<ThongTinSinhVien />} />
-          <Route path="/giangvien/curriculum" element={<CurriculumManagement />} />
+          <Route path="/giangvien/curriculum" element={<ChuongTrinhDaoTao />} />
+          <Route path="/chuongtrinhdaotao/detail/:maNganh/:khoaHoc" element={<CTDTDetail />} />
           <Route path="/giangvien/reports" element={<ReportsAndStatistics />} />
           <Route path="/giangvien/study-plans" element={<KeHoachHocTapMau />} />
           <Route path="/giangvien/study-plans/create" element={<ThemKHHTMau />} />

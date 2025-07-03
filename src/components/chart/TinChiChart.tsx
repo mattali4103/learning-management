@@ -1,6 +1,6 @@
 import {
-  AreaChart,
-  Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -166,34 +166,13 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
         </button>
       </div>{" "}      <div className="h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart
+          <LineChart
             data={data}
             margin={chartMargin}
             onClick={handleDataPointClick}
             className="cursor-pointer"
           >
-            <defs>
-              <linearGradient
-                id="colorTinChiTichLuy"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
-              </linearGradient>
-              <linearGradient
-                id="colorTinChiCaiThien"
-                x1="0"
-                y1="0"
-                x2="0"
-                y2="1"
-              >
-                <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1} />
-              </linearGradient>
-            </defs>
+
             <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />            <XAxis
               dataKey="name"
               axisLine={false}
@@ -210,25 +189,37 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
               tick={{ fontSize: 12, fill: "#64748b" }}
               domain={['dataMin - 1', 'dataMax + 1']}
             />
-            <Tooltip content={<CustomTooltip />} />            <Area
+            <Tooltip content={<CustomTooltip />} />            <Line
               type="monotone"
               dataKey="tinChiTichLuy"
               stroke="#10b981"
               strokeWidth={2}
-              fillOpacity={1}
-              fill="url(#colorTinChiTichLuy)"
+              dot={{ r: 4, fill: "#10b981", stroke: "white", strokeWidth: 1 }}
+              label={{
+                position: 'top',
+                fill: '#10b981',
+                fontSize: 12,
+                formatter: (value: any) => `${value}`,
+                offset: 10
+              }}
             />
             {hasImprovementData && (
-              <Area
+              <Line
                 type="monotone"
                 dataKey="tinChiCaiThien"
                 stroke="#8b5cf6"
                 strokeWidth={2}
-                fillOpacity={1}
-                fill="url(#colorTinChiCaiThien)"
+                dot={{ r: 4, fill: "#8b5cf6", stroke: "white", strokeWidth: 1 }}
+                label={{
+                  position: 'bottom',
+                  fill: '#8b5cf6',
+                  fontSize: 12,
+                  formatter: (value: any) => `${value}`,
+                  offset: 10
+                }}
               />
             )}
-          </AreaChart>
+          </LineChart>
         </ResponsiveContainer>
       </div>      <div className="mt-4 flex items-center justify-between text-sm">
         <div className="flex items-center space-x-4">
