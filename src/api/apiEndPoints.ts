@@ -14,6 +14,7 @@ export const USER_SERVICE = {
   LOGOUT: USER_SERIVCE_URL + "/api/auth/logout",
 };
 export const PROFILE_SERVICE = {
+  THONGKE_LOP: PROFILE_SERVICE_URL + "/api/profile/lop/thongke", // Params, by maNganh
   GET_KHOA: PROFILE_SERVICE_URL + "/api/profile/khoa/id/:maKhoa", // Return Object
   GET_GIANGVIEN_PROFILE:
     PROFILE_SERVICE_URL + "/api/profile/giangvien/me/:maSo",
