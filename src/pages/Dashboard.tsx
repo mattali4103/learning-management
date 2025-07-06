@@ -10,7 +10,7 @@ import Loading from "../components/Loading";
 import TinChiChart from "../components/chart/TinChiChart";
 import GPAChart from "../components/chart/GPAChart";
 import CreditProgressCard from "../components/progress/CreditProgressCard";
-import MiniGPABarChartCompact from "../components/chart/MiniGPABarChartCompact";
+import MiniDualGPAChart from "../components/chart/MiniDualGPAChart";
 import {
   User,
   Calendar,
@@ -172,6 +172,7 @@ const Dashboard = () => {
           }
         ); // Check response code
         if (response.status === 200 && response.data?.code === 200) {
+          console.log(response.data.data);
           setDiemTrungBinhHocKy(response.data.data);
         } else {
           console.warn(
@@ -239,9 +240,9 @@ const Dashboard = () => {
     );
   }
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 lg:p-6 space-y-6">
       {/* Welcome Header */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+      <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 border border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
@@ -265,57 +266,49 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-      {/* Progress Section with Circular Progress Bars */}
+      {/* Progress Section */}
       <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
         <div className="flex items-center mb-6">
           <Target className="w-6 h-6 text-indigo-600 mr-3" />
           <h2 className="text-xl font-bold text-gray-800">Tiến độ học tập</h2>
         </div>
-        {/* Main Progress Grid */}{" "}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+        {/* Main Progress Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Tín chỉ tích lũy */}
-          <CreditProgressCard
-            currentCredits={statistics.soTinChiTichLuy}
-            totalCredits={156}
-          />
+          <div className="lg:col-span-1 justify-center items-center content-center">
+            <CreditProgressCard
+              currentCredits={statistics.soTinChiTichLuy}
+              totalCredits={156}
+            />
+          </div>
 
-          {/* Điểm trung bình tích lũy qua các học kỳ */}
-          <MiniGPABarChartCompact
-            rawData={
-              diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
-                ? diemTrungBinhHocKy.map(item => ({
-                    diemTrungBinh: item.diemTrungBinh,
-                    diemTrungBinhTichLuy: item.diemTrungBinhTichLuy,
-                    soTinChi: 0,
-                    hocKy: item.hocKy
-                  }))
-                : []
-            }
-            title="Điểm TB tích lũy"
-            showCumulativeGPA={true}
-            height={100}
-          />
-
-          {/* Điểm trung bình theo từng học kỳ */}
-          <MiniGPABarChartCompact
-            rawData={
-              diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
-                ? diemTrungBinhHocKy.map(item => ({
-                    diemTrungBinh: item.diemTrungBinh,
-                    diemTrungBinhTichLuy: item.diemTrungBinhTichLuy,
-                    soTinChi: 0,
-                    hocKy: item.hocKy
-                  }))
-                : []
-            }
-            title="Điểm TB theo học kỳ"
-            showCumulativeGPA={false}
-            height={100}
-          />
+          {/* Biểu đồ cột đôi cho điểm trung bình */}
+          <div className="lg:col-span-2">
+            {(() => {
+              const mappedData =
+                diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
+                  ? diemTrungBinhHocKy.map((item) => ({
+                      diemTrungBinh: item.diemTrungBinh,
+                      diemTrungBinhTichLuy: item.diemTrungBinhTichLuy,
+                      soTinChi: 0,
+                      hocKy: item.hocKy,
+                    }))
+                  : [];
+              return (
+                <MiniDualGPAChart
+                  rawData={mappedData}
+                  title="Điểm TB học kỳ & tích lũy"
+                  height={160}
+                />
+              );
+            })()}
+          </div>
         </div>
+
         {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-gray-200">
-          <div className="text-center p-4 bg-blue-50 rounded-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
+          <div className="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
             <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-blue-600">
               {tinChiTichLuy.length}
@@ -323,7 +316,7 @@ const Dashboard = () => {
             <p className="text-sm text-gray-600">Học kỳ đã hoàn thành</p>
           </div>
 
-          <div className="text-center p-4 bg-green-50 rounded-lg">
+          <div className="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
             <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-green-600">
               {(() => {
@@ -346,31 +339,26 @@ const Dashboard = () => {
             <p className="text-sm text-gray-600">Tín chỉ TB/học kỳ</p>
           </div>
 
-          <div className="text-center p-4 bg-indigo-50 rounded-lg">
+          <div className="text-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors sm:col-span-2 lg:col-span-1">
             <GraduationCap className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-indigo-600">
-              {(
-                (statistics.soTinChiTichLuy / 156) *
-                100
-              ).toFixed(1)}
-              %
+              {((statistics.soTinChiTichLuy / 156) * 100).toFixed(1)}%
             </p>
             <p className="text-sm text-gray-600">Tiến độ tổng thể</p>
           </div>
         </div>
       </div>
 
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Student Info Section */}
-        <div className="lg:col-span-1 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+      {/* Main Content Grid - Student Info & Charts */}
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Student Info Section - Left Side */}
+        <div className="xl:col-span-1 bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <div className="flex items-center mb-6">
             <User className="w-6 h-6 text-blue-600 mr-3" />
             <h2 className="text-xl font-bold text-gray-800">
               Thông tin sinh viên
             </h2>
           </div>
-
           <div className="space-y-4">
             {[
               {
@@ -414,42 +402,34 @@ const Dashboard = () => {
               );
             })}
           </div>
-        </div>{" "}
-        {/* Charts Section */}
-        <div className="lg:col-span-2 space-y-6">
-          {" "}
-          {/* Tin Chi Line Chart */}
-          <TinChiChart
-            data={
-              tinChiTichLuy && tinChiTichLuy.length > 0
-                ? tinChiTichLuy.map((item, index) => {
-                    const hocKyId = item.hocKy?.maHocKy || null;
-                    const namHocId = item.hocKy?.namHoc?.id || null;
+        </div>
 
-                    return {
-                      name: `Học kỳ ${index + 1}`,
-                      tinChiTichLuy: item.soTinChiDangKy || 0,
-                      tinChiCaiThien: item.soTinChiCaiThien || 0,
-                      hocKyId,
-                      namHocId,
-                    };
-                  })
-                : []
-            }
-          />
+        {/* Charts Section - Right Side */}
+        <div className="xl:col-span-2 space-y-6">
+          {/* Tin Chi Line Chart */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
+            <TinChiChart
+              data={
+                tinChiTichLuy && tinChiTichLuy.length > 0
+                  ? tinChiTichLuy.map((item, index) => {
+                      const hocKyId = item.hocKy?.maHocKy || null;
+                      const namHocId = item.hocKy?.namHoc?.id || null;
+
+                      return {
+                        name: `Học kỳ ${index + 1}`,
+                        tinChiTichLuy: item.soTinChiDangKy || 0,
+                        tinChiCaiThien: item.soTinChiCaiThien || 0,
+                        hocKyId,
+                        namHocId,
+                      };
+                    })
+                  : []
+              }
+            />
+          </div>
+
           {/* GPA Line Chart */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-            <div className="flex items-center mb-4">
-              <div className="w-6 h-6 text-blue-600 mr-3">
-                <svg viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M3 3v18h18v-2H5V3H3z"/>
-                  <path d="M7 17h2V9H7v8zm4 0h2V7h-2v10zm4 0h2v-4h-2v4z"/>
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-800">
-                So sánh điểm trung bình qua các học kỳ
-              </h3>
-            </div>
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
             <GPAChart
               data={diemTrungBinhHocKy.map((item, index) => ({
                 name: `Học kỳ ${index + 1}`,

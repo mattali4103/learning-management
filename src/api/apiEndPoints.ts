@@ -40,6 +40,9 @@ export const HOCPHAN_SERVICE = {
   GET_ALL_HOCKY: HOCPHAN_SERVICE_URL + "/api/hocky/list",
   CTDT_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/get/:khoaHoc/:maNganh",
   CTDT_HOC_PHAN_TU_CHON_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/list",
+  CTDT_BY_LOAI_HP: HOCPHAN_SERVICE_URL + "/api/ctdt/hocphan/by_loai_hp", // RequestBody 
+  HOCPHAN_TUCHON_BY_LOAI_HP: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/by_loai_hp", // RequestBody
+  HOCPHAN_THECHAT: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/the_chat", // No Parameters, return list
 };
 
 export const KHHT_SERVICE = {

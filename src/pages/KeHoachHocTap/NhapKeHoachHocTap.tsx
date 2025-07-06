@@ -8,15 +8,14 @@ import {
   KHHT_SERVICE,
   KQHT_SERVICE,
 } from "../../api/apiEndPoints";
-import { CirclePlus, Trash2, Dumbbell, Users, BookOpen, SquareLibrary } from "lucide-react";
-import Loading from "../../components/Loading";
+import { CirclePlus, Trash2, Dumbbell, Users, BookOpen, SquareLibrary, CheckCircle } from "lucide-react";
 import Error from "../../components/Error";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import useAuth from "../../hooks/useAuth";
+import useHocKyData from "../../hooks/useHocKyData";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { HocKy } from "../../types/HocKy";
 
 interface HocPhanCaiThien {
   id: number;
@@ -33,6 +32,296 @@ interface HocPhanTuChon {
   hocPhanTuChonList: HocPhan[];
 }
 
+// Component for displaying colored badges
+const StatusBadge: React.FC<{
+  color: 'green' | 'orange' | 'blue' | 'red' | 'cyan' | 'purple' | 'gray' | 'indigo' | 'violet' | 'emerald';
+  children: React.ReactNode;
+  className?: string;
+}> = ({ color, children, className = "" }) => {
+  const colorClasses = {
+    green: "bg-green-100 text-green-800",
+    orange: "bg-orange-100 text-orange-800", 
+    blue: "bg-blue-100 text-blue-800",
+    red: "bg-red-100 text-red-800",
+    cyan: "bg-cyan-100 text-cyan-800",
+    purple: "bg-purple-100 text-purple-800",
+    gray: "bg-gray-100 text-gray-600",
+    indigo: "bg-indigo-100 text-indigo-800",
+    violet: "bg-violet-100 text-violet-800",
+    emerald: "bg-emerald-100 text-emerald-800"
+  };
+
+  return (
+    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${colorClasses[color]} ${className}`}>
+      {children}
+    </span>
+  );
+};
+
+// Component for section headers
+const SectionHeader: React.FC<{
+  title: string;
+  description: string;
+  icon: React.ReactNode;
+  children?: React.ReactNode;
+  colorScheme: 'blue' | 'emerald' | 'purple' | 'green' | 'indigo' | 'orange' | 'gray';
+  loading?: boolean;
+}> = ({ title, description, icon, children, colorScheme, loading = false }) => {
+  const colorClasses = {
+    blue: "from-blue-50 to-cyan-50 border-blue-200 text-blue-800 text-blue-600",
+    emerald: "from-emerald-50 to-green-50 border-emerald-200 text-emerald-800 text-emerald-600", 
+    purple: "from-purple-50 to-violet-50 border-purple-200 text-purple-800 text-purple-600",
+    green: "from-green-50 to-emerald-50 border-green-200 text-green-800 text-green-600",
+    indigo: "from-indigo-50 to-purple-50 border-indigo-200 text-indigo-800 text-indigo-600",
+    orange: "from-orange-50 to-red-50 border-orange-200 text-orange-800 text-orange-600",
+    gray: "from-gray-50 to-slate-50 border-gray-200 text-gray-800 text-gray-600"
+  };
+
+  const [bgClass, borderClass, titleClass, descClass] = colorClasses[colorScheme].split(' ');
+
+  return (
+    <div className={`bg-gradient-to-r ${bgClass} border ${borderClass} rounded-lg p-4 mb-4`}>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className={`text-lg font-semibold ${titleClass} mb-1`}>
+            {title}
+          </h3>
+          <p className={`${descClass} text-sm`}>
+            {description}
+          </p>
+          {children}
+        </div>
+        <div className="flex items-center space-x-3">
+          <div className={titleClass.replace('text-', '')}>
+            {icon}
+          </div>
+          {loading && (
+            <div className={`flex items-center space-x-2 ${titleClass}`}>
+              <div className={`animate-spin rounded-full h-4 w-4 border-b-2 border-${colorScheme}-600`}></div>
+              <span className="text-sm">Đang tải...</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Component for credit progress display  
+const CreditProgress: React.FC<{
+  groups: HocPhanTuChon[];
+  getTinChiDaChonTrongNhom: (nhom: HocPhanTuChon) => number;
+}> = ({ groups, getTinChiDaChonTrongNhom }) => {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {groups.map(nhom => {
+        const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
+        const isCompleted = tinChiDaChon >= nhom.tinChiYeuCau;
+        return (
+          <span 
+            key={nhom.id} 
+            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+              isCompleted 
+                ? "bg-green-100 text-green-800" 
+                : "bg-orange-100 text-orange-800"
+            }`}
+          >
+            {nhom.tenNhom}: {tinChiDaChon}/{nhom.tinChiYeuCau} TC
+            {isCompleted && <span className="ml-1">✓</span>}
+          </span>
+        );
+      })}
+    </div>
+  );
+};
+
+// Component for completion status summary
+const CompletionStatusSummary: React.FC<{
+  completionStatus: {
+    completedGroups: string[];
+    pendingGroups: string[];
+    chuyenNganhGroups: Map<string, { completed: boolean; details: string[] }>;
+  };
+}> = ({ completionStatus }) => {
+  if (completionStatus.completedGroups.length === 0 && 
+      completionStatus.pendingGroups.length === 0 && 
+      completionStatus.chuyenNganhGroups.size === 0) {
+    return null;
+  }
+
+  return (
+    <div className="mb-6">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
+        <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
+          <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Tình trạng hoàn thành các nhóm học phần
+        </h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {/* Nhóm đã hoàn thành */}
+          {completionStatus.completedGroups.length > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <h4 className="font-semibold text-green-800 mb-2 flex items-center">
+                <CheckCircle className="w-5 h-5 mr-2" />
+                Đã hoàn thành ({completionStatus.completedGroups.length})
+              </h4>
+              <div className="space-y-1">
+                {completionStatus.completedGroups.map((group, index) => (
+                  <div key={index} className="text-sm text-green-700 bg-green-100 rounded px-2 py-1">
+                    {group}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nhóm chưa hoàn thành */}
+          {completionStatus.pendingGroups.length > 0 && (
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <h4 className="font-semibold text-orange-800 mb-2 flex items-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Chưa hoàn thành ({completionStatus.pendingGroups.length})
+              </h4>
+              <div className="space-y-1">
+                {completionStatus.pendingGroups.map((group, index) => (
+                  <div key={index} className="text-sm text-orange-700 bg-orange-100 rounded px-2 py-1">
+                    {group}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Nhóm chuyên ngành */}
+          {completionStatus.chuyenNganhGroups.size > 0 && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+              <h4 className="font-semibold text-purple-800 mb-2 flex items-center">
+                <Users className="w-5 h-5 mr-2" />
+                Nhóm chuyên ngành
+              </h4>
+              <div className="space-y-2">
+                {Array.from(completionStatus.chuyenNganhGroups.entries()).map(([baseName, info]) => (
+                  <div key={baseName} className={`text-sm rounded px-2 py-1 ${
+                    info.completed 
+                      ? "bg-green-100 text-green-700" 
+                      : "bg-orange-100 text-orange-700"
+                  }`}>
+                    <div className="font-medium flex items-center">
+                      {info.completed ? (
+                        <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      ) : (
+                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      )}
+                      {baseName}
+                    </div>
+                    <div className="text-xs mt-1 opacity-80">
+                      {info.completed ? "Đã hoàn thành" : "Chưa hoàn thành"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Tổng kết */}
+        <div className="mt-4 pt-3 border-t border-blue-200">
+          <div className="flex flex-wrap gap-4 text-sm">
+            <span className="text-green-700 font-medium">
+              ✅ Hoàn thành: {completionStatus.completedGroups.length}
+            </span>
+            <span className="text-orange-700 font-medium">
+              ⏳ Chưa hoàn thành: {completionStatus.pendingGroups.length}
+            </span>
+            <span className="text-blue-700 font-medium">
+              📊 Tổng nhóm: {completionStatus.completedGroups.length + completionStatus.pendingGroups.length}
+            </span>
+            {completionStatus.chuyenNganhGroups.size > 0 && (
+              <span className="text-purple-700 font-medium">
+                🎓 Nhóm chuyên ngành: {Array.from(completionStatus.chuyenNganhGroups.values()).filter(g => g.completed).length}/{completionStatus.chuyenNganhGroups.size}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Component for course section with optional electives
+const CourseSection: React.FC<{
+  sectionName: string;
+  mainCourses: HocPhan[];
+  electiveGroups: HocPhanTuChon[];
+  columns: ColumnDef<HocPhan>[];
+  loading: boolean;
+  getTinChiDaChonTrongNhom: (nhom: HocPhanTuChon) => number;
+  getChuyenNganhCompletionStatus: (nhomList: HocPhanTuChon[]) => Map<number, boolean>;
+  selectedHocPhan: KeHoachHocTap[];
+  onAddHocPhan: (hocPhan: HocPhan, nhomId?: number) => void;
+  isHocPhanAlreadyAdded: (maHp: string) => boolean;
+}> = ({
+  sectionName,
+  mainCourses,
+  electiveGroups,
+  columns,
+  loading,
+  getTinChiDaChonTrongNhom,
+  getChuyenNganhCompletionStatus,
+  selectedHocPhan,
+  onAddHocPhan,
+  isHocPhanAlreadyAdded
+}) => {
+  // Filter out elective courses from main courses to avoid duplication
+  const filteredMainCourses = mainCourses.filter(hp => 
+    !electiveGroups.some(group => 
+      group.hocPhanTuChonList.some(tc => tc.maHp === hp.maHp)
+    )
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* Main courses */}
+      <KeHoachHocTapTable
+        name={`Học phần ${sectionName}${electiveGroups.length > 0 ? " (Bắt buộc)" : ""}`}
+        data={filteredMainCourses}
+        columns={columns}
+        initialExpanded={true}
+        loading={loading}
+      />
+      
+      {/* Elective courses */}
+      {electiveGroups.length > 0 && (
+        <div className="space-y-4">
+          <SectionHeader
+            title={`Các nhóm học phần tự chọn ${sectionName}`}
+            description={`Các nhóm học phần tự chọn thuộc khối ${sectionName} - ${electiveGroups.length} nhóm`}
+            icon={<span className="inline-flex items-center px-3 py-1 bg-current text-white rounded-full text-sm font-medium">✨ Tự chọn</span>}
+            colorScheme="purple"
+          />
+
+          <NhomHocPhanTuChonTable
+            nhomHocPhanTuChon={electiveGroups}
+            selectedHocPhan={selectedHocPhan}
+            onAddHocPhan={onAddHocPhan}
+            getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
+            getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
+            isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
+          />
+        </div>
+      )}
+    </div>
+  );
+};
+
 const NhapKeHoachHocTap: React.FC = () => {
   const { auth } = useAuth();
   const [availableHocPhan, setAvailableHocPhan] = useState<HocPhan[]>([]);
@@ -43,12 +332,22 @@ const NhapKeHoachHocTap: React.FC = () => {
   const [maHocPhanInKHHT, setMaHocPhanInKHHT] = useState<string[]>([]);
   const [hocPhanCaiThien, setHocPhanCaiThien] = useState<HocPhanCaiThien[]>([]);
   const [selectedHocPhan, setSelectedHocPhan] = useState<KeHoachHocTap[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [fetchLoading, setFetchLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  const [hocKyFromAPI, setHocKyFromApi] = useState<HocKy[]>([]);
-  const [activeTab, setActiveTab] = useState<"select" | "selected" | "theChat" | "chuyenNganh" | "other">("select");
+  const [activeTab, setActiveTab] = useState<"select" | "selected" | "theChat" | "chuyenNganh" | "other" | "daiCuong" | "coSoNganh" | "chuyenNganh2">("select");
+  
+  // States for học phần theo loại
+  const [hocPhanDaiCuong, setHocPhanDaiCuong] = useState<HocPhan[]>([]);
+  const [hocPhanCoSoNganh, setHocPhanCoSoNganh] = useState<HocPhan[]>([]);
+  const [hocPhanChuyenNganh, setHocPhanChuyenNganh] = useState<HocPhan[]>([]);
+  
+  // States for học phần tự chọn theo loại
+  const [hocPhanTuChonDaiCuong, setHocPhanTuChonDaiCuong] = useState<HocPhanTuChon[]>([]);
+  const [hocPhanTuChonCoSoNganh, setHocPhanTuChonCoSoNganh] = useState<HocPhanTuChon[]>([]);
+  const [hocPhanTuChonChuyenNganh, setHocPhanTuChonChuyenNganh] = useState<HocPhanTuChon[]>([]);
+  
+  const [loadingLoaiHp, setLoadingLoaiHp] = useState<{[key: string]: boolean}>({});
   const [completionStatus, setCompletionStatus] = useState<{
     completedGroups: string[];
     pendingGroups: string[];
@@ -58,10 +357,61 @@ const NhapKeHoachHocTap: React.FC = () => {
     pendingGroups: [],
     chuyenNganhGroups: new Map()
   });
+  
   const axiosPrivate = useAxiosPrivate();
   const maSo = auth.user?.maSo || "";
   const khoaHoc = auth.user?.khoaHoc || "";
-  const maNganh = auth.user?.maNganh || ""; // Assuming maNganh is available in auth.user
+  const maNganh = auth.user?.maNganh || "";
+
+  // Component for Tab Button - defined inside component to access setActiveTab
+  const TabButton: React.FC<{
+    tab: "select" | "selected" | "theChat" | "chuyenNganh" | "other" | "daiCuong" | "coSoNganh" | "chuyenNganh2";
+    isActive: boolean;
+    icon: React.ReactNode;
+    children: React.ReactNode;
+    count?: number;
+  }> = ({ tab, isActive, icon, children, count }) => {
+    return (
+      <button
+        onClick={() => setActiveTab(tab)}
+        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 font-medium ${
+          isActive
+            ? "bg-blue-500 text-white shadow-md"
+            : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"
+        }`}
+      >
+        {icon}
+        <span>{children}</span>
+        {count !== undefined && count > 0 && (
+          <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold ${
+            isActive 
+              ? "bg-white text-blue-500" 
+              : "bg-blue-500 text-white"
+          }`}>
+            {count}
+          </span>
+        )}
+      </button>
+    );
+  };
+
+  // Use custom hook for học kỳ data
+  const {
+    namHocList,
+    hocKyList,
+    error: hocKyError,
+    fetchHocKy,
+    clearError: clearHocKyError
+  } = useHocKyData(khoaHoc, maNganh);
+
+  // Combine error states
+  const combinedError = error || hocKyError;
+  
+  // Clear combined errors
+  const clearCombinedError = useCallback(() => {
+    setError(null);
+    clearHocKyError();
+  }, [clearHocKyError]);
 
   const fetchMaHocPhanInKHHT = useCallback(async () => {
     try {
@@ -87,63 +437,8 @@ const NhapKeHoachHocTap: React.FC = () => {
       }
     }
   }, [axiosPrivate, maSo, auth.token]);
-  // Fetch học kỳ data from API
-  const fetchHocKy = useCallback(async () => {
-    try {
-      const response = await axiosPrivate.get(KHHT_SERVICE.GET_HOCKY_MAU, {
-        params: {
-          khoaHoc: khoaHoc,
-          maNganh: maNganh, // Assuming 6 is the ID for the desired major
-        },
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
-        },
-        withCredentials: true,
-      });
-      if (response.status === 200 && response.data?.code === 200) {
-        setHocKyFromApi(response.data.data || []);
-      } else {
-        setError(
-          `API returned code: ${response.data?.code || response.status}`
-        );
-      }
-    } catch (err) {
-      if (err && typeof err === "object" && "message" in err) {
-        setError((err as { message: string }).message);
-      } else {
-        console.error(err);
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  }, [axiosPrivate, auth.token, khoaHoc, maNganh]);
-
-  // Create academic year list from API data
-  const namHocList = useMemo(() => {
-    const years = new Map<number, { id: number; tenNamHoc: string }>();
-    hocKyFromAPI.forEach((hk) => {
-      if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        years.set(hk.namHoc.id, {
-          id: hk.namHoc.id,
-          tenNamHoc: `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`,
-        });
-      }
-    });
-    return Array.from(years.values()).sort((a, b) => a.id - b.id);
-  }, [hocKyFromAPI]);
-
-  // Create semester list from API data
-  const hocKyList = useMemo(() => {
-    return hocKyFromAPI.map((hk) => ({
-      id: hk.maHocKy,
-      tenHocky: hk.tenHocKy,
-      namHocId: hk.namHoc?.id || 0,
-    }));
-  }, [hocKyFromAPI]);
   // Fetch available học phần
   const fetchAvailableHocPhan = useCallback(async () => {
-    setIsLoading(true);
     try {
       const response = await axiosPrivate.get(
         KHHT_SERVICE.CTDT_NOT_IN_KHHT.replace(":id", maSo)
@@ -164,8 +459,6 @@ const NhapKeHoachHocTap: React.FC = () => {
       } else {
         console.error(err);
       }
-    } finally {
-      setIsLoading(false);
     }
   }, [axiosPrivate, maSo, khoaHoc, maNganh]);
 
@@ -277,6 +570,126 @@ const NhapKeHoachHocTap: React.FC = () => {
       }
     }
   }, [axiosPrivate, khoaHoc, maNganh]);
+  
+  // Fetch học phần theo loại
+  const fetchHocPhanByLoaiHp = useCallback(async (loaiHp: string) => {
+    try {
+      setLoadingLoaiHp(prev => ({ ...prev, [loaiHp]: true }));
+      
+      // Fetch both main courses and electives simultaneously
+      const [mainResponse, electivesResponse] = await Promise.allSettled([
+        axiosPrivate.post(
+          HOCPHAN_SERVICE.CTDT_BY_LOAI_HP,
+          { 
+            loaiHp: loaiHp,
+            khoaHoc: khoaHoc, 
+            maNganh: maNganh 
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        ),
+        axiosPrivate.post(
+          HOCPHAN_SERVICE.HOCPHAN_TUCHON_BY_LOAI_HP,
+          { 
+            loaiHp: loaiHp,
+            khoaHoc: khoaHoc, 
+            maNganh: maNganh 
+          },
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+            withCredentials: true,
+          }
+        )
+      ]);
+      
+      // Process main courses
+      let mainCourses: HocPhan[] = [];
+      if (mainResponse.status === 'fulfilled') {
+        const rawMainData = mainResponse.value.data || [];
+        mainCourses = rawMainData.filter((hocPhan: HocPhan, index: number, self: HocPhan[]) => 
+          self.findIndex(hp => hp.maHp === hocPhan.maHp) === index
+        );
+        console.log(`Main courses ${loaiHp}:`, mainCourses);
+      } else {
+        console.error(`Error fetching main courses for ${loaiHp}:`, mainResponse.reason);
+      }
+      
+      // Process electives - electivesResponse.value.data.data returns HocPhanTuChon[]
+      let electiveCourses: HocPhan[] = [];
+      let electiveGroups: HocPhanTuChon[] = [];
+      if (electivesResponse.status === 'fulfilled') {
+        console.log(`Electives response for ${loaiHp}:`, electivesResponse.value.data.data);
+        const rawElectiveData: HocPhanTuChon[] = electivesResponse.value.data.data || [];
+        
+        // Store the full elective groups for tự chọn state
+        electiveGroups = rawElectiveData.filter(nhom => 
+          nhom.tenNhom?.toLowerCase().includes(loaiHp.toLowerCase()) ||
+          (loaiHp === "Đại Cương" && (nhom.tenNhom?.toLowerCase().includes("đại cương") || nhom.tenNhom?.toLowerCase().includes("dai cuong"))) ||
+          (loaiHp === "Cơ Sở Ngành" && (nhom.tenNhom?.toLowerCase().includes("cơ sở") || nhom.tenNhom?.toLowerCase().includes("co so"))) ||
+          (loaiHp === "Chuyên Ngành" && (nhom.tenNhom?.toLowerCase().includes("chuyên ngành") || nhom.tenNhom?.toLowerCase().includes("chuyen nganh")))
+        );
+        
+        // Extract HocPhan from HocPhanTuChon groups for merged display
+        const extractedCourses: HocPhan[] = [];
+        rawElectiveData.forEach(nhom => {
+          if (nhom.hocPhanTuChonList && Array.isArray(nhom.hocPhanTuChonList)) {
+            extractedCourses.push(...nhom.hocPhanTuChonList);
+          }
+        });
+        
+        // Remove duplicates
+        electiveCourses = extractedCourses.filter((hocPhan: HocPhan, index: number, self: HocPhan[]) => 
+          self.findIndex(hp => hp.maHp === hocPhan.maHp) === index
+        );
+        console.log(`Elective courses ${loaiHp}:`, electiveCourses);
+        console.log(`Elective groups ${loaiHp}:`, electiveGroups);
+      } else {
+        console.error(`Error fetching electives for ${loaiHp}:`, electivesResponse.reason);
+      }
+      
+      // Merge main and elective courses, removing duplicates
+      const allCourses = [...mainCourses, ...electiveCourses];
+      const uniqueMergedCourses = allCourses.filter((hocPhan, index, self) => 
+        self.findIndex(hp => hp.maHp === hocPhan.maHp) === index
+      );
+      
+      console.log(`Merged courses ${loaiHp}:`, uniqueMergedCourses);
+      
+      // Set data theo loại học phần (merged data)
+      switch (loaiHp) {
+        case "Đại Cương":
+          setHocPhanDaiCuong(uniqueMergedCourses);
+          setHocPhanTuChonDaiCuong(electiveGroups);
+          break;
+        case "Cơ Sở Ngành":
+          setHocPhanCoSoNganh(uniqueMergedCourses);
+          setHocPhanTuChonCoSoNganh(electiveGroups);
+          break;
+        case "Chuyên Ngành":
+          setHocPhanChuyenNganh(uniqueMergedCourses);
+          setHocPhanTuChonChuyenNganh(electiveGroups);
+          break;
+        default:
+          break;
+      }
+    } catch (err) {
+      console.error(`Error fetching ${loaiHp} hoc phan:`, err);
+      if (err && typeof err === "object" && "message" in err) {
+        setError(`Lỗi tải ${loaiHp}: ${(err as { message: string }).message}`);
+      } else {
+        setError(`Không thể tải danh sách học phần ${loaiHp}`);
+      }
+    } finally {
+      setLoadingLoaiHp(prev => ({ ...prev, [loaiHp]: false }));
+    }
+  }, [axiosPrivate, khoaHoc, maNganh]);
+
   useEffect(() => {
     if (maSo) {
       fetchHocKy();
@@ -285,6 +698,11 @@ const NhapKeHoachHocTap: React.FC = () => {
       fetchNhomHocPhanTuChon();
       fetchHocPhanGoiY();
       fetchMaHocPhanInKHHT();
+      
+      // Fetch học phần theo loại
+      fetchHocPhanByLoaiHp("Đại Cương");
+      fetchHocPhanByLoaiHp("Cơ Sở Ngành");
+      fetchHocPhanByLoaiHp("Chuyên Ngành");
     }
   }, [
     maSo,
@@ -294,6 +712,7 @@ const NhapKeHoachHocTap: React.FC = () => {
     fetchHocPhanCaiThien,
     fetchHocPhanGoiY,
     fetchMaHocPhanInKHHT,
+    fetchHocPhanByLoaiHp,
   ]);
 
   // Filter available học phần (exclude selected ones)
@@ -715,6 +1134,28 @@ const NhapKeHoachHocTap: React.FC = () => {
     );
   }, [hocPhanCaiThien, selectedHocPhan]);
 
+  // Filter học phần theo loại (exclude selected ones)
+  const filteredHocPhanDaiCuong = useMemo(() => {
+    return hocPhanDaiCuong.filter(
+      (hocPhan) =>
+        !selectedHocPhan?.some((selected) => selected.maHp === hocPhan.maHp)
+    );
+  }, [hocPhanDaiCuong, selectedHocPhan]);
+
+  const filteredHocPhanCoSoNganh = useMemo(() => {
+    return hocPhanCoSoNganh.filter(
+      (hocPhan) =>
+        !selectedHocPhan?.some((selected) => selected.maHp === hocPhan.maHp)
+    );
+  }, [hocPhanCoSoNganh, selectedHocPhan]);
+
+  const filteredHocPhanChuyenNganh = useMemo(() => {
+    return hocPhanChuyenNganh.filter(
+      (hocPhan) =>
+        !selectedHocPhan?.some((selected) => selected.maHp === hocPhan.maHp)
+    );
+  }, [hocPhanChuyenNganh, selectedHocPhan]);
+
   // Helper function để phân loại nhóm học phần
   const categorizeNhomHocPhan = useMemo(() => {
     const theChat: HocPhanTuChon[] = [];
@@ -947,49 +1388,13 @@ const NhapKeHoachHocTap: React.FC = () => {
     }
   }, [NhomHocPhanTuChon, maHocPhanInKHHT, selectedHocPhan, checkCompletionStatusForAllGroups]);
 
-  if (error && !selectedHocPhan.length) return <Error error={error} />;
+  if (combinedError && !selectedHocPhan.length) return <Error error={combinedError} />;
 
-  const TabButton = ({ 
-    tab, 
-    isActive, 
-    children, 
-    icon, 
-    count 
-  }: { 
-    tab: "select" | "selected" | "theChat" | "chuyenNganh" | "other"; 
-    isActive: boolean; 
-    children: React.ReactNode; 
-    icon: React.ReactNode;
-    count?: number;
-  }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`flex items-center space-x-2 px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-        isActive
-          ? "bg-blue-500 text-white shadow-lg"
-          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-      }`}
-    >
-      {icon}
-      <span>{children}</span>
-      {count !== undefined && count > 0 && (
-        <span className={`ml-2 px-2 py-1 rounded-full text-xs font-bold ${
-          isActive 
-            ? "bg-white text-blue-500" 
-            : "bg-blue-500 text-white"
-        }`}>
-          {count}
-        </span>
-      )}
-    </button>
-  );
+
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      {isLoading ? (
-        <Loading showOverlay={false} message="Đang tải dữ liệu học phần..." />
-      ) : (
-        <>
+      <>
           {/* Tab Navigation */}
           <div className="flex flex-wrap justify-between items-start gap-2 mb-6">
             {/* Left side tabs */}
@@ -1002,6 +1407,36 @@ const NhapKeHoachHocTap: React.FC = () => {
                 Chọn học phần
               </TabButton>
               
+              {/* Tab Đại cương */}
+              <TabButton 
+                tab="daiCuong" 
+                isActive={activeTab === "daiCuong"}
+                icon={<BookOpen className="h-5 w-5" />}
+                count={filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)}
+              >
+                Đại cương
+              </TabButton>
+              
+              {/* Tab Cơ sở ngành */}
+              <TabButton 
+                tab="coSoNganh" 
+                isActive={activeTab === "coSoNganh"}
+                icon={<SquareLibrary className="h-5 w-5" />}
+                count={filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)}
+              >
+                Cơ sở ngành
+              </TabButton>
+              
+              {/* Tab Chuyên ngành (từ API + nhóm tự chọn) */}
+              <TabButton 
+                tab="chuyenNganh2" 
+                isActive={activeTab === "chuyenNganh2"}
+                icon={<Users className="h-5 w-5" />}
+                count={filteredHocPhanChuyenNganh.length + hocPhanTuChonChuyenNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0) + categorizeNhomHocPhan.chuyenNganh.reduce((total, [, nhomList]) => total + nhomList.reduce((sum, nhom) => sum + nhom.hocPhanTuChonList.length, 0), 0)}
+              >
+                Chuyên ngành
+              </TabButton>
+              
               {/* Tab nhóm thể chất */}
               {categorizeNhomHocPhan.theChat.length > 0 && (
                 <TabButton 
@@ -1010,28 +1445,6 @@ const NhapKeHoachHocTap: React.FC = () => {
                   icon={<Dumbbell className="h-5 w-5" />}
                 >
                   Thể chất
-                </TabButton>
-              )}
-              
-              {/* Tab nhóm chuyên ngành */}
-              {categorizeNhomHocPhan.chuyenNganh.length > 0 && (
-                <TabButton 
-                  tab="chuyenNganh" 
-                  isActive={activeTab === "chuyenNganh"}
-                  icon={<Users className="h-5 w-5" />}
-                >
-                  Chuyên ngành
-                </TabButton>
-              )}
-              
-              {/* Tab nhóm khác */}
-              {categorizeNhomHocPhan.other.length > 0 && (
-                <TabButton 
-                  tab="other" 
-                  isActive={activeTab === "other"}
-                  icon={<BookOpen className="h-5 w-5" />}
-                >
-                  Nhóm khác
                 </TabButton>
               )}
             </div>
@@ -1049,114 +1462,8 @@ const NhapKeHoachHocTap: React.FC = () => {
             </div>
           </div>
 
-          {/* Hiển thị trạng thái hoàn thành */}
-          {(completionStatus.completedGroups.length > 0 || completionStatus.pendingGroups.length > 0 || completionStatus.chuyenNganhGroups.size > 0) && (
-            <div className="mb-6">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="text-lg font-semibold text-blue-800 mb-4 flex items-center">
-                  <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Tình trạng hoàn thành các nhóm học phần
-                </h3>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {/* Nhóm đã hoàn thành */}
-                  {completionStatus.completedGroups.length > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-green-800 mb-2 flex items-center">
-                        <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                        Đã hoàn thành ({completionStatus.completedGroups.length})
-                      </h4>
-                      <div className="space-y-1">
-                        {completionStatus.completedGroups.map((group, index) => (
-                          <div key={index} className="text-sm text-green-700 bg-green-100 rounded px-2 py-1">
-                            {group}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Nhóm chưa hoàn thành */}
-                  {completionStatus.pendingGroups.length > 0 && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-orange-800 mb-2 flex items-center">
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Chưa hoàn thành ({completionStatus.pendingGroups.length})
-                      </h4>
-                      <div className="space-y-1">
-                        {completionStatus.pendingGroups.map((group, index) => (
-                          <div key={index} className="text-sm text-orange-700 bg-orange-100 rounded px-2 py-1">
-                            {group}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Nhóm chuyên ngành */}
-                  {completionStatus.chuyenNganhGroups.size > 0 && (
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                      <h4 className="font-semibold text-purple-800 mb-2 flex items-center">
-                        <Users className="w-5 h-5 mr-2" />
-                        Nhóm chuyên ngành
-                      </h4>
-                      <div className="space-y-2">
-                        {Array.from(completionStatus.chuyenNganhGroups.entries()).map(([baseName, info]) => (
-                          <div key={baseName} className={`text-sm rounded px-2 py-1 ${
-                            info.completed 
-                              ? "bg-green-100 text-green-700" 
-                              : "bg-orange-100 text-orange-700"
-                          }`}>
-                            <div className="font-medium flex items-center">
-                              {info.completed ? (
-                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                              ) : (
-                                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                              )}
-                              {baseName}
-                            </div>
-                            <div className="text-xs mt-1 opacity-80">
-                              {info.completed ? "Đã hoàn thành" : "Chưa hoàn thành"}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Tổng kết */}
-                <div className="mt-4 pt-3 border-t border-blue-200">
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <span className="text-green-700 font-medium">
-                      ✅ Hoàn thành: {completionStatus.completedGroups.length}
-                    </span>
-                    <span className="text-orange-700 font-medium">
-                      ⏳ Chưa hoàn thành: {completionStatus.pendingGroups.length}
-                    </span>
-                    <span className="text-blue-700 font-medium">
-                      📊 Tổng nhóm: {completionStatus.completedGroups.length + completionStatus.pendingGroups.length}
-                    </span>
-                    {completionStatus.chuyenNganhGroups.size > 0 && (
-                      <span className="text-purple-700 font-medium">
-                        🎓 Nhóm chuyên ngành: {Array.from(completionStatus.chuyenNganhGroups.values()).filter(g => g.completed).length}/{completionStatus.chuyenNganhGroups.size}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Completion Status Summary */}
+          <CompletionStatusSummary completionStatus={completionStatus} />
 
           {/* Tab Content */}
           {activeTab === "select" ? (
@@ -1173,35 +1480,17 @@ const NhapKeHoachHocTap: React.FC = () => {
               {/* Bảng học phần gợi ý */}
               {filteredHocPhanGoiY && filteredHocPhanGoiY.length > 0 && (
                 <div className="space-y-2">
-                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-emerald-800 mb-1">
-                          Học phần gợi ý
-                        </h3>
-                        <p className="text-emerald-600 text-sm">
-                          Các học phần phù hợp với tiến độ học tập của bạn
-                          {filteredHocPhanGoiY.length > 0 && (
-                            <span className="ml-2 text-emerald-700">
-                              - Có{" "}
-                              <span className="font-medium">
-                                {filteredHocPhanGoiY.length}
-                              </span>{" "}
-                              môn được gợi ý
-                            </span>
-                          )}
-                        </p>
-                      </div>
+                  <SectionHeader
+                    title="Học phần gợi ý"
+                    description={`Các học phần phù hợp với tiến độ học tập của bạn - Có ${filteredHocPhanGoiY.length} môn được gợi ý`}
+                    icon={
                       <div className="flex items-center space-x-3">
-                        <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {filteredHocPhanGoiY.length} môn học
-                        </div>
-                        <div className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full text-sm font-medium">
-                          Được gợi ý
-                        </div>
+                        <StatusBadge color="emerald">{filteredHocPhanGoiY.length} môn học</StatusBadge>
+                        <StatusBadge color="blue">Được gợi ý</StatusBadge>
                       </div>
-                    </div>
-                  </div>
+                    }
+                    colorScheme="emerald"
+                  />
                   <KeHoachHocTapTable
                     name="Học phần được gợi ý"
                     data={filteredHocPhanGoiY}
@@ -1215,35 +1504,17 @@ const NhapKeHoachHocTap: React.FC = () => {
               {/* Bảng học phần cải thiện */}
               {filteredHocPhanCaiThien && filteredHocPhanCaiThien.length > 0 && (
                 <div className="space-y-2">
-                  <div className="bg-gradient-to-r from-orange-50 to-red-50 border border-orange-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-orange-800 mb-1">
-                          Học phần cải thiện
-                        </h3>
-                        <p className="text-orange-600 text-sm">
-                          Các học phần có điểm chưa đạt cần cải thiện
-                          {filteredHocPhanCaiThien.length > 0 && (
-                            <span className="ml-2 text-orange-700">
-                              - Có{" "}
-                              <span className="font-medium">
-                                {filteredHocPhanCaiThien.length}
-                              </span>{" "}
-                              môn có thể cải thiện
-                            </span>
-                          )}
-                        </p>
-                      </div>
+                  <SectionHeader
+                    title="Học phần cải thiện"
+                    description={`Các học phần có điểm chưa đạt cần cải thiện - Có ${filteredHocPhanCaiThien.length} môn có thể cải thiện`}
+                    icon={
                       <div className="flex items-center space-x-3">
-                        <div className="bg-orange-100 text-orange-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {filteredHocPhanCaiThien.length} môn học
-                        </div>
-                        <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
-                          Cần cải thiện
-                        </div>
+                        <StatusBadge color="orange">{filteredHocPhanCaiThien.length} môn học</StatusBadge>
+                        <StatusBadge color="red">Cần cải thiện</StatusBadge>
                       </div>
-                    </div>
-                  </div>
+                    }
+                    colorScheme="orange"
+                  />
                   <KeHoachHocTapTable
                     name="Học phần cần cải thiện"
                     data={filteredHocPhanCaiThien}
@@ -1254,144 +1525,256 @@ const NhapKeHoachHocTap: React.FC = () => {
                 </div>
               )}
             </div>
-          ) : activeTab === "theChat" ? (
+          ) : activeTab === "daiCuong" ? (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-green-800 mb-1">
-                      Nhóm học phần thể chất
-                    </h3>
-                    <p className="text-green-600 text-sm">
-                      Các môn thể chất cần thiết cho chương trình đào tạo
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Dumbbell className="h-8 w-8 text-green-600" />
-                  </div>
-                </div>
-              </div>
+              <SectionHeader
+                title="Học phần Đại cương"
+                description={`Bao gồm cả học phần bắt buộc và tự chọn thuộc nhóm Đại cương${(filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)) > 0 ? ` - Tổng cộng ${filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn học` : ""}${hocPhanTuChonDaiCuong.length > 0 ? ` ✨ Trong đó có ${filteredHocPhanDaiCuong.filter(hp => !hocPhanTuChonDaiCuong.some(group => group.hocPhanTuChonList.some(tc => tc.maHp === hp.maHp))).length} môn bắt buộc và ${hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn tự chọn` : ""}`}
+                icon={<BookOpen className="h-8 w-8" />}
+                colorScheme="blue"
+                loading={loadingLoaiHp["Đại Cương"]}
+              />
               
-              <NhomHocPhanTuChonTable
-                nhomHocPhanTuChon={categorizeNhomHocPhan.theChat}
-                selectedHocPhan={selectedHocPhan}
-                onAddHocPhan={addHocPhan}
+              <CourseSection
+                sectionName="Đại cương"
+                mainCourses={filteredHocPhanDaiCuong}
+                electiveGroups={hocPhanTuChonDaiCuong}
+                columns={availableColumns}
+                loading={loadingLoaiHp["Đại Cương"] || false}
                 getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
                 getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
+                selectedHocPhan={selectedHocPhan}
+                onAddHocPhan={addHocPhan}
                 isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
               />
             </div>
-          ) : activeTab === "chuyenNganh" ? (
+          ) : activeTab === "coSoNganh" ? (
             <div className="space-y-6">
-              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <SectionHeader
+                title="Học phần Cơ sở ngành"
+                description={`Bao gồm cả học phần bắt buộc và tự chọn thuộc nhóm Cơ sở ngành${(filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)) > 0 ? ` - Tổng cộng ${filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn học` : ""}${hocPhanTuChonCoSoNganh.length > 0 ? ` ✨ Trong đó có ${filteredHocPhanCoSoNganh.filter(hp => !hocPhanTuChonCoSoNganh.some(group => group.hocPhanTuChonList.some(tc => tc.maHp === hp.maHp))).length} môn bắt buộc và ${hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn tự chọn` : ""}`}
+                icon={<SquareLibrary className="h-8 w-8" />}
+                colorScheme="emerald"
+                loading={loadingLoaiHp["Cơ Sở Ngành"]}
+              />
+              
+              <CourseSection
+                sectionName="Cơ sở ngành"
+                mainCourses={filteredHocPhanCoSoNganh}
+                electiveGroups={hocPhanTuChonCoSoNganh}
+                columns={availableColumns}
+                loading={loadingLoaiHp["Cơ Sở Ngành"] || false}
+                getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
+                getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
+                selectedHocPhan={selectedHocPhan}
+                onAddHocPhan={addHocPhan}
+                isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
+              />
+            </div>
+          ) : activeTab === "chuyenNganh2" ? (
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-lg p-4 mb-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-lg font-semibold text-purple-800 mb-1">
-                      Nhóm học phần chuyên ngành
+                      Học phần Chuyên ngành
                     </h3>
                     <p className="text-purple-600 text-sm">
-                      Các nhóm học phần chuyên ngành theo từng lĩnh vực
+                      Bao gồm học phần bắt buộc, tự chọn và các nhóm chuyên ngành theo lĩnh vực
+                      {filteredHocPhanChuyenNganh.length > 0 && (
+                        <span className="ml-2 text-purple-700">
+                          - Tổng cộng{" "}
+                          <span className="font-medium">
+                            {filteredHocPhanChuyenNganh.length}
+                          </span>{" "}
+                          môn học từ CTDT
+                        </span>
+                      )}
                     </p>
-                    <div className="mt-2 p-2 bg-purple-100 rounded-lg">
-                      <p className="text-xs text-purple-700 font-medium">
-                        💡 <strong>Lưu ý quan trọng:</strong> Đối với các nhóm có đánh số (ví dụ: CN1, CN2, CN3...), 
-                        bạn chỉ cần hoàn thành <strong>một trong các nhóm</strong> là đủ. 
-                        Khi một nhóm đã hoàn thành, toàn bộ nhóm chuyên ngành đó sẽ được đánh dấu là hoàn thành.
+                    {hocPhanTuChonChuyenNganh.length > 0 && (
+                      <p className="text-purple-500 text-xs mt-1">
+                        ✨ Trong đó có {hocPhanTuChonChuyenNganh.length} môn tự chọn
                       </p>
-                    </div>
+                    )}
+                    {categorizeNhomHocPhan.chuyenNganh.length > 0 && (
+                      <p className="text-purple-500 text-xs mt-1">
+                        🎯 Và {categorizeNhomHocPhan.chuyenNganh.length} nhóm chuyên ngành tự chọn
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center space-x-3">
                     <Users className="h-8 w-8 text-purple-600" />
+                    {loadingLoaiHp["Chuyên Ngành"] && (
+                      <div className="flex items-center space-x-2 text-purple-600">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                        <span className="text-sm">Đang tải...</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
               
-              {categorizeNhomHocPhan.chuyenNganh.map(([baseName, nhomList]) => {
-                // Tính trạng thái hoàn thành cho nhóm chuyên ngành này dựa trên maHocPhanInKHHT
-                // Chỉ cần 1 trong các nhóm con (CN1, CN2, ...) hoàn thành là đủ
-                const hasCompletedGroup = nhomList.some(nhom => {
-                  const tinChiDaHoanThanh = nhom.hocPhanTuChonList
-                    .filter(hp => maHocPhanInKHHT.includes(hp.maHp))
-                    .reduce((total, hp) => total + hp.tinChi, 0);
-                  return tinChiDaHoanThanh >= nhom.tinChiYeuCau;
-                });
-
-                // Tìm nhóm con đã hoàn thành (nếu có)
-                const completedSubgroup = nhomList.find(nhom => {
-                  const tinChiDaHoanThanh = nhom.hocPhanTuChonList
-                    .filter(hp => maHocPhanInKHHT.includes(hp.maHp))
-                    .reduce((total, hp) => total + hp.tinChi, 0);
-                  return tinChiDaHoanThanh >= nhom.tinChiYeuCau;
-                });
-
-                return (
-                  <div key={baseName} className="space-y-2">
-                    <div className={`bg-gradient-to-r border rounded-lg p-3 ${
-                      hasCompletedGroup 
-                        ? "from-green-50 to-emerald-50 border-green-200" 
-                        : "from-violet-50 to-purple-50 border-violet-200"
-                    }`}>
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h4 className={`text-md font-semibold ${
-                            hasCompletedGroup ? "text-green-800" : "text-violet-800"
-                          }`}>
-                            {baseName}
-                          </h4>
-                          <p className={`text-sm ${
-                            hasCompletedGroup ? "text-green-600" : "text-violet-600"
-                          }`}>
-                            {hasCompletedGroup 
-                              ? `Đã hoàn thành qua ${completedSubgroup?.tenNhom} - Bạn có thể chọn thêm môn khác hoặc để như vậy`
-                              : "Chọn một trong các nhóm sau (chỉ cần hoàn thành 1 nhóm)"
-                            }
+              {/* Học phần chuyên ngành từ CTDT */}
+              <KeHoachHocTapTable
+                name="Học phần Chuyên ngành (Bắt buộc + Tự chọn)"
+                data={filteredHocPhanChuyenNganh}
+                columns={availableColumns}
+                initialExpanded={true}
+                loading={loadingLoaiHp["Chuyên Ngành"] || false}
+              />
+              
+              {/* Nhóm học phần chuyên ngành tự chọn */}
+              {categorizeNhomHocPhan.chuyenNganh.length > 0 && (
+                <div className="space-y-6 mt-8">
+                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 mb-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-indigo-800 mb-1">
+                          Nhóm học phần chuyên ngành tự chọn
+                        </h3>
+                        <p className="text-indigo-600 text-sm">
+                          Các nhóm học phần chuyên ngành theo từng lĩnh vực
+                        </p>
+                        {/* Hiển thị tổng quan tín chỉ yêu cầu */}
+                        <div className="mt-2 flex flex-wrap gap-1 text-xs">
+                          {categorizeNhomHocPhan.chuyenNganh.map(([baseName, nhomList]) => {
+                            const hasCompleted = nhomList.some(nhom => {
+                              const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
+                              return tinChiDaChon >= nhom.tinChiYeuCau;
+                            });
+                            return (
+                              <span 
+                                key={baseName}
+                                className={`inline-flex items-center px-2 py-1 rounded-full font-medium ${
+                                  hasCompleted 
+                                    ? "bg-green-100 text-green-800" 
+                                    : "bg-indigo-100 text-indigo-800"
+                                }`}
+                              >
+                                {baseName}: {nhomList.length} nhóm
+                                {hasCompleted && <span className="ml-1">✓</span>}
+                              </span>
+                            );
+                          })}
+                        </div>
+                        <div className="mt-2 p-2 bg-indigo-100 rounded-lg">
+                          <p className="text-xs text-indigo-700 font-medium">
+                            💡 <strong>Lưu ý quan trọng:</strong> Đối với các nhóm có đánh số (ví dụ: CN1, CN2, CN3...), 
+                            bạn chỉ cần hoàn thành <strong>một trong các nhóm</strong> là đủ. 
+                            Khi một nhóm đã hoàn thành, toàn bộ nhóm chuyên ngành đó sẽ được đánh dấu là hoàn thành.
                           </p>
                         </div>
-                        {hasCompletedGroup && (
-                          <div className="flex items-center space-x-2">
-                            <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                              <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                              </svg>
-                              Đã hoàn thành
-                            </span>
-                          </div>
-                        )}
+                      </div>
+                      <div className="flex items-center space-x-3">
+                        <Users className="h-8 w-8 text-indigo-600" />
                       </div>
                     </div>
-                    
-                    <NhomHocPhanTuChonTable
-                      nhomHocPhanTuChon={nhomList}
-                      selectedHocPhan={selectedHocPhan}
-                      onAddHocPhan={addHocPhan}
-                      getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
-                      getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
-                      isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
-                    />
                   </div>
-                );
-              })}
-            </div>
-          ) : activeTab === "other" ? (
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-gray-50 to-slate-50 border border-gray-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-1">
-                      Các nhóm học phần khác
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      Các nhóm học phần tự chọn khác trong chương trình đào tạo
-                    </p>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <BookOpen className="h-8 w-8 text-gray-600" />
-                  </div>
+                  
+                  {categorizeNhomHocPhan.chuyenNganh.map(([baseName, nhomList]) => {
+                    // Tính trạng thái hoàn thành cho nhóm chuyên ngành này dựa trên maHocPhanInKHHT
+                    // Chỉ cần 1 trong các nhóm con (CN1, CN2, ...) hoàn thành là đủ
+                    const hasCompletedGroup = nhomList.some(nhom => {
+                      const tinChiDaHoanThanh = nhom.hocPhanTuChonList
+                        .filter(hp => maHocPhanInKHHT.includes(hp.maHp))
+                        .reduce((total, hp) => total + hp.tinChi, 0);
+                      return tinChiDaHoanThanh >= nhom.tinChiYeuCau;
+                    });
+
+                    // Tìm nhóm con đã hoàn thành (nếu có)
+                    const completedSubgroup = nhomList.find(nhom => {
+                      const tinChiDaHoanThanh = nhom.hocPhanTuChonList
+                        .filter(hp => maHocPhanInKHHT.includes(hp.maHp))
+                        .reduce((total, hp) => total + hp.tinChi, 0);
+                      return tinChiDaHoanThanh >= nhom.tinChiYeuCau;
+                    });
+
+                    return (
+                      <div key={baseName} className="space-y-2">
+                        <div className={`bg-gradient-to-r border rounded-lg p-3 ${
+                          hasCompletedGroup 
+                            ? "from-green-50 to-emerald-50 border-green-200" 
+                            : "from-violet-50 to-purple-50 border-violet-200"
+                        }`}>
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <h4 className={`text-md font-semibold ${
+                                hasCompletedGroup ? "text-green-800" : "text-violet-800"
+                              }`}>
+                                {baseName}
+                              </h4>
+                              <p className={`text-sm ${
+                                hasCompletedGroup ? "text-green-600" : "text-violet-600"
+                              }`}>
+                                {hasCompletedGroup 
+                                  ? `Đã hoàn thành qua ${completedSubgroup?.tenNhom} - Bạn có thể chọn thêm môn khác hoặc để như vậy`
+                                  : "Chọn một trong các nhóm sau (chỉ cần hoàn thành 1 nhóm)"
+                                }
+                              </p>
+                              {/* Hiển thị số tín chỉ yêu cầu cho từng nhóm con */}
+                              <div className="mt-2 flex flex-wrap gap-2">
+                                {nhomList.map(nhom => {
+                                  const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
+                                  const isCompleted = tinChiDaChon >= nhom.tinChiYeuCau;
+                                  return (
+                                    <span 
+                                      key={nhom.id} 
+                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                        isCompleted 
+                                          ? "bg-green-100 text-green-800" 
+                                          : "bg-gray-100 text-gray-700"
+                                      }`}
+                                    >
+                                      {nhom.tenNhom}: {tinChiDaChon}/{nhom.tinChiYeuCau} TC
+                                      {isCompleted && <span className="ml-1">✓</span>}
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            {hasCompletedGroup && (
+                              <div className="flex items-center space-x-2">
+                                <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                  Đã hoàn thành
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <NhomHocPhanTuChonTable
+                          nhomHocPhanTuChon={nhomList}
+                          selectedHocPhan={selectedHocPhan}
+                          onAddHocPhan={addHocPhan}
+                          getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
+                          getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
+                          isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
+            </div>
+          ) : activeTab === "theChat" ? (
+            <div className="space-y-6">
+              <SectionHeader
+                title="Nhóm học phần thể chất"
+                description="Các môn thể chất cần thiết cho chương trình đào tạo"
+                icon={<Dumbbell className="h-8 w-8" />}
+                colorScheme="green"
+              >
+                <CreditProgress 
+                  groups={categorizeNhomHocPhan.theChat} 
+                  getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom} 
+                />
+              </SectionHeader>
               
               <NhomHocPhanTuChonTable
-                nhomHocPhanTuChon={categorizeNhomHocPhan.other}
+                nhomHocPhanTuChon={categorizeNhomHocPhan.theChat}
                 selectedHocPhan={selectedHocPhan}
                 onAddHocPhan={addHocPhan}
                 getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
@@ -1492,12 +1875,11 @@ const NhapKeHoachHocTap: React.FC = () => {
             />
           )}
           <ErrorMessageModal
-            isOpen={!!error}
-            onClose={() => setError(null)}
-            message={error || "Đã xảy ra lỗi. Vui lòng thử lại."}
+            isOpen={!!combinedError}
+            onClose={clearCombinedError}
+            message={combinedError || "Đã xảy ra lỗi. Vui lòng thử lại."}
           />
         </>
-      )}
     </div>
   );
 };
