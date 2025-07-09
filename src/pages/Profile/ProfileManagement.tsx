@@ -821,7 +821,6 @@ const ProfileManagement: React.FC = () => {
                     )}
                   </button>
                 </div>
-
                 <input
                   ref={fileInputRef}
                   type="file"
