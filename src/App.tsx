@@ -24,6 +24,7 @@ import KeHoachHocTapMau from "./pages/KeHoachHocTapMau/KeHoachHocTapMau";
 import KeHoachHocTapMauDetail from "./pages/KeHoachHocTapMau/KeHoachHocTapMauDetail";
 import ThemKHHTMau from "./pages/KeHoachHocTapMau/ThemKHHTMau";
 import ChinhSuaKHHTMau from "./pages/KeHoachHocTapMau/ChinhSuaKHHTMau";
+import ProfileManagement from "./pages/Profile/ProfileManagement";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -41,7 +42,8 @@ function App() {
       <Route element={<Layout />}>
         {/* Private routes */}
         <Route element={<RequireAuth allowedRoles={[ROLES.SINHVIEN]} />}>
-          <Route path="/" element={<Dashboard />} />{" "}
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/profile" element={<ProfileManagement />} />
           <Route path="/khht" element={<KeHoachHocTap />}>
             <Route index element={<KeHoachHocTapPage />} />
             <Route path="chung" element={<KeHoachHocTapPage />} />

@@ -224,7 +224,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Footer */}
-      <div className="bg-white rounded-2xl shadow-lg p-4 border border-gray-100">
+      <div className="bg-whie rounded-2xl shadow-lg p-4 border border-gray-100">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center text-gray-600">
             <AlertCircle className="w-5 h-5 mr-2" />

@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Users,
   FileText,
+  User,
 } from "lucide-react";
 import { useSidebar } from "../hooks/UseSidebar";
 import useAuth from "../hooks/useAuth";
@@ -43,6 +44,11 @@ export default function Sidebar() {
     // Menu cho sinh viên
     ...(auth.user?.roles === "SINHVIEN"
       ? [
+          {
+            name: "Thông tin cá nhân",
+            icon: User,
+            to: "/profile",
+          },
           {
             name: "Kế Hoạch Học Tập",
             icon: BookOpen,

@@ -11,7 +11,9 @@ import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 import useAuth from "../hooks/useAuth";
 import LoadingButton from "./LoadingButton";
+import useAxiosPrivate from "../hooks/useAxiosPrivate";
 const Login: React.FC = () => {
+  const axiosPrivate = useAxiosPrivate();
   const navigate = useNavigate();
   // const location = useLocation();
   // const from = location.state?.from?.pathname || "/";
@@ -49,7 +51,7 @@ const Login: React.FC = () => {
       url = PROFILE_SERVICE.GET_GIANGVIEN_PROFILE;
     }
     try {
-      const response = await axios.get(url.replace(":maSo", maSo), {
+      const response = await axiosPrivate.get(url.replace(":maSo", maSo), {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,

@@ -1,12 +1,16 @@
-// const BASE_URL = "http://localhost"; // Base URL for the API
 const BASE_URL = "http://localhost"; // Base URL for the API
+// const BASE_URL = "http://172.30.121.32"; // Base URL for the API
+// const KONG_URL = "http://172.30.121.19"
 // export const USER_SERIVCE_URL = "http://localhost:8088";
 // export const KHHT_SERVICE_URL = "http://localhost:8087";
 // export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
 // export const PROFILE_SERVICE_URL = "http://localhost:8083";
 // export const KQHT_SERVICE_URL = "http://localhost:8089";
-// const PATH = "http://172.30.121.19:8088"
+
+// export const USER_SERIVCE_URL = "http://172.30.121.19" + ":8088";
+
 export const USER_SERIVCE_URL = BASE_URL + ":8088";
+
 export const KHHT_SERVICE_URL = BASE_URL + ":8087";
 export const HOCPHAN_SERVICE_URL = BASE_URL + ":8086";
 export const PROFILE_SERVICE_URL = BASE_URL + ":8083";
@@ -21,6 +25,8 @@ export const USER_SERVICE = {
   LOGOUT: USER_SERIVCE_URL + "/api/auth/logout",
 };
 export const PROFILE_SERVICE = {
+  UPDATE_SINHVIEN_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/update", // RequestBody: Sinh viên tự cập nhật
+  UPDATE_AVATAR: PROFILE_SERVICE_URL + "/api/profile/sinhvien/update/avatar", // RequestBody: FormData
   THONGKE_LOP: PROFILE_SERVICE_URL + "/api/profile/lop/thongke", // Params, by maNganh
   GET_KHOA: PROFILE_SERVICE_URL + "/api/profile/khoa/id/:maKhoa", // Return Object
   GET_GIANGVIEN_PROFILE:
@@ -32,7 +38,11 @@ export const PROFILE_SERVICE = {
   GET_DS_LOP_BY_KHOA:
     PROFILE_SERVICE_URL + "/api/profile/lop/get_dslop_by_ma_khoa/:maKhoa", // Return List không có cấu trúc API
   GET_DS_SINH_VIEN_BY_LOP:
-    PROFILE_SERVICE_URL + "/api/profile/lop/get_sinhvien_profile_in_lop/:maLop", // Return List không có cấu trúc API
+    PROFILE_SERVICE_URL + "/api/profile/lop/get_sinhvien_profile_in_lop/:maLop", // Return List không có cấu trúc API,
+  // Endpoints cho Văn bằng, Chứng chỉ
+  GET_CERTIFICATES: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificates/maSo/:maSo", // Lấy danh sách văn bằng, chứng chỉ
+  UPLOAD_CERTIFICATE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/upload", // Upload văn bằng, chứng chỉ mới
+  UPDATE_CERTIFICATE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/update/:id", // Cập nhật thông tin văn bằng, chứng chỉ
 };
 
 export const HOCPHAN_SERVICE = {

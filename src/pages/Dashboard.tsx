@@ -29,6 +29,7 @@ interface UserInfo {
   maLop: string;
   khoaHoc: string;
   tenNganh: string;
+  avatarUrl?: string;
 }
 interface ThongKeTinChiByHocKy {
   hocKy: any;
@@ -82,16 +83,21 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchThongKeTinChi = async () => {
       try {
+        console.log("maso:", auth.user?.maSo);
+        // Đảm bảo không có dấu / dư thừa
+        const url = KHHT_SERVICE.COUNT_TINCHI_IN_KHHT
+          .replace(":khoaHoc", auth.user?.khoaHoc || "_")
+          .replace(":maNganh", auth.user?.maNganh || "_")
+          .replace(":maSo", auth.user?.maSo || "");
+        
+        console.log("API URL:", url);
+        
         const response = await axiosPrivate.get<any>(
-          KHHT_SERVICE.COUNT_TINCHI_IN_KHHT.replace(
-            ":khoaHoc",
-            auth.user?.khoaHoc || ""
-          )
-            .replace(":maNganh", auth.user?.maNganh || "")
-            .replace(":maSo", auth.user?.maSo || ""),
+          url,
           {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
+            headers: { 
+              "Content-Type": "application/json"
+            }
           }
         );
 
@@ -114,9 +120,9 @@ const Dashboard = () => {
     const fetchUserInfo = async () => {
       try {
         setLoading(true);
-        const response = await axiosPrivate.get(
-          PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", auth.user?.maSo || "")
-        );
+        const url = PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", auth.user?.maSo || "");
+        console.log("Profile API URL:", url);
+        const response = await axiosPrivate.get(url);
 
         // Check response code
         if (response.status === 200 && response.data?.code === 200) {
@@ -135,14 +141,15 @@ const Dashboard = () => {
     };
     const fetchTinChiTichLuy = async () => {
       try {
+        const url = KHHT_SERVICE.COUNT_TINCHI_GROUP_BY_HOCKY.replace(
+          ":maSo",
+          auth.user?.maSo || ""
+        );
+        console.log("Tin chi tich luy API URL:", url);
         const response = await axiosPrivate.get<any>(
-          KHHT_SERVICE.COUNT_TINCHI_GROUP_BY_HOCKY.replace(
-            ":maSo",
-            auth.user?.maSo || ""
-          ),
+          url,
           {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
+            headers: { "Content-Type": "application/json" }
           }
         ); // Check response code
         if (response.status === 200 && response.data?.code === 200) {
@@ -167,8 +174,7 @@ const Dashboard = () => {
             maSo: auth.user?.maSo || "",
           },
           {
-            headers: { "Content-Type": "application/json" },
-            withCredentials: true,
+            headers: { "Content-Type": "application/json" }
           }
         ); // Check response code
         if (response.status === 200 && response.data?.code === 200) {
@@ -245,15 +251,25 @@ const Dashboard = () => {
       <div className="bg-white rounded-2xl shadow-lg p-6 lg:p-8 border border-gray-100">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-              <GraduationCap className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-gray-200 shadow-md">
+              {userInfo?.avatarUrl ? (
+                <img 
+                  src={userInfo.avatarUrl} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                  <User className="w-8 h-8 text-white" />
+                </div>
+              )}
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">
                 {getGreeting()}, {userInfo?.hoTen?.split(" ").pop()}!
               </h1>
               <p className="text-gray-600 flex items-center mt-1">
-                <User className="w-4 h-4 mr-2" />
+                <GraduationCap className="w-4 h-4 mr-2" />
                 {userInfo?.maSo} - {userInfo?.tenNganh}
               </p>
             </div>
@@ -359,6 +375,24 @@ const Dashboard = () => {
               Thông tin sinh viên
             </h2>
           </div>
+          
+          {/* Student Avatar */}
+          <div className="flex justify-center mb-6">
+            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 shadow-md">
+              {userInfo?.avatarUrl ? (
+                <img 
+                  src={userInfo.avatarUrl} 
+                  alt="Avatar" 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
+                  <User className="w-12 h-12 text-white" />
+                </div>
+              )}
+            </div>
+          </div>
+          
           <div className="space-y-4">
             {[
               {

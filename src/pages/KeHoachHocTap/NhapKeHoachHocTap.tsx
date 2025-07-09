@@ -64,23 +64,22 @@ const SectionHeader: React.FC<{
   description: string;
   icon: React.ReactNode;
   children?: React.ReactNode;
-  colorScheme: 'blue' | 'emerald' | 'purple' | 'green' | 'indigo' | 'orange' | 'gray';
+  colorScheme: 'blue' | 'emerald' | 'purple' | 'green' | 'indigo' | 'orange';
   loading?: boolean;
 }> = ({ title, description, icon, children, colorScheme, loading = false }) => {
   const colorClasses = {
-    blue: "from-blue-50 to-cyan-50 border-blue-200 text-blue-800 text-blue-600",
-    emerald: "from-emerald-50 to-green-50 border-emerald-200 text-emerald-800 text-emerald-600", 
-    purple: "from-purple-50 to-violet-50 border-purple-200 text-purple-800 text-purple-600",
-    green: "from-green-50 to-emerald-50 border-green-200 text-green-800 text-green-600",
-    indigo: "from-indigo-50 to-purple-50 border-indigo-200 text-indigo-800 text-indigo-600",
-    orange: "from-orange-50 to-red-50 border-orange-200 text-orange-800 text-orange-600",
-    gray: "from-gray-50 to-slate-50 border-gray-200 text-gray-800 text-gray-600"
+    blue: "from-blue-100 to-cyan-100 border-blue-300 text-blue-900 text-blue-700",
+    emerald: "from-emerald-100 to-green-100 border-emerald-300 text-emerald-900 text-emerald-700", 
+    purple: "from-purple-100 to-violet-100 border-purple-300 text-purple-900 text-purple-700",
+    green: "from-green-100 to-emerald-100 border-green-300 text-green-900 text-green-700",
+    indigo: "from-indigo-100 to-purple-100 border-indigo-300 text-indigo-900 text-indigo-700",
+    orange: "from-orange-100 to-red-100 border-orange-300 text-orange-900 text-orange-700",
   };
 
   const [bgClass, borderClass, titleClass, descClass] = colorClasses[colorScheme].split(' ');
 
   return (
-    <div className={`bg-gradient-to-r ${bgClass} border ${borderClass} rounded-lg p-4 mb-4`}>
+    <div className={`bg-gradient-to-r ${bgClass} border-2 ${borderClass} rounded-lg p-4 mb-4 shadow-sm`}>
       <div className="flex items-center justify-between">
         <div>
           <h3 className={`text-lg font-semibold ${titleClass} mb-1`}>
@@ -304,7 +303,7 @@ const CourseSection: React.FC<{
           <SectionHeader
             title={`Các nhóm học phần tự chọn ${sectionName}`}
             description={`Các nhóm học phần tự chọn thuộc khối ${sectionName} - ${electiveGroups.length} nhóm`}
-            icon={<span className="inline-flex items-center px-3 py-1 bg-current text-white rounded-full text-sm font-medium">✨ Tự chọn</span>}
+            icon={<span className="inline-flex items-center px-3 py-1 bg-blue-400 rounded-full text-sm font-medium">✨ Tự chọn</span>}
             colorScheme="purple"
           />
 
@@ -1772,7 +1771,6 @@ const NhapKeHoachHocTap: React.FC = () => {
                   getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom} 
                 />
               </SectionHeader>
-              
               <NhomHocPhanTuChonTable
                 nhomHocPhanTuChon={categorizeNhomHocPhan.theChat}
                 selectedHocPhan={selectedHocPhan}
@@ -1865,7 +1863,6 @@ const NhapKeHoachHocTap: React.FC = () => {
               )}
             </div>
           )}
-
           {/* Success/Error modals */}
           {success && (
             <ErrorMessageModal
