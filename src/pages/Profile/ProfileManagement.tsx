@@ -42,7 +42,7 @@ interface SinhVienProfileRequest {
   cccd?: string;
   ngayCapCCCD?: string;
   noiCapCCCD?: string;
-  avatar?: string;
+  avatarUrl?: string;
 }
 
 const ProfileManagement: React.FC = () => {
@@ -240,7 +240,7 @@ const ProfileManagement: React.FC = () => {
         cccd: editProfile.cccd,
         ngayCapCCCD: convertDateToString(editProfile.ngayCapCCCD),
         noiCapCCCD: editProfile.noiCapCCCD,
-        avatar: editProfile.avatar,
+        avatarUrl: editProfile.avatarUrl,
       };
       
       const response = await axiosPrivate.put(
@@ -774,7 +774,7 @@ const ProfileManagement: React.FC = () => {
                     {(() => {
                       const displayAvatar =
                         avatarPreview ||
-                        (isEditingAvatar ? tempAvatar : editProfile?.avatar);
+                        (isEditingAvatar ? tempAvatar : editProfile?.avatarUrl);
                       return displayAvatar ? (
                         <img
                           src={displayAvatar}

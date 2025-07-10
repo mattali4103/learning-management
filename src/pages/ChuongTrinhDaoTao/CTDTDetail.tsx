@@ -342,10 +342,10 @@ const CTDTDetail = () => {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
-              {chuongTrinhDaoTao.nganh.tenNganh}
+              {chuongTrinhDaoTao.nganh.tenNganh} - Khóa {chuongTrinhDaoTao.khoaHoc}
             </h1>
             <p className="text-gray-600">
-              Mã ngành: {chuongTrinhDaoTao.nganh.maNganh} • Khóa học: {chuongTrinhDaoTao.khoaHoc}
+              Mã ngành: {chuongTrinhDaoTao.nganh.maNganh} • Chương trình đào tạo khóa {chuongTrinhDaoTao.khoaHoc}
             </p>
           </div>
         </div>

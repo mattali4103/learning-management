@@ -25,6 +25,7 @@ export const USER_SERVICE = {
   LOGOUT: USER_SERIVCE_URL + "/api/auth/logout",
 };
 export const PROFILE_SERVICE = {
+  GET_PREVIEW_PROFILE: PROFILE_SERVICE_URL + "/api/profile/lop/preview/:maLop", // Return Object
   UPDATE_SINHVIEN_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/update", // RequestBody: Sinh viên tự cập nhật
   UPDATE_AVATAR: PROFILE_SERVICE_URL + "/api/profile/sinhvien/update/avatar", // RequestBody: FormData
   THONGKE_LOP: PROFILE_SERVICE_URL + "/api/profile/lop/thongke", // Params, by maNganh

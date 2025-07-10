@@ -16,6 +16,8 @@ interface Lop {
   danhSachSinhVien: SinhVien[];
 }
 
+
+
 interface SinhVien {
   maSo: string;
   hoTen: string;

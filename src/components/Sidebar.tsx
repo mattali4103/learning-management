@@ -49,8 +49,8 @@ export default function Sidebar() {
             icon: User,
             to: "/profile",
             children: [
-              { name: "Hồ sơ cá nhân", to: "/profile" },
-              { name: "Quản lý chứng chỉ", to: "/profile/certificates" },
+              { name: "Hồ sơ cá nhân", to: "/profile/sinhvien" },
+              { name: "Quản lý chứng chỉ", to: "/profile/chungchi" },
             ],
           },
           {
@@ -86,17 +86,12 @@ export default function Sidebar() {
           {
             name: "Chương trình Đào tạo",
             icon: BookOpen,
-            to: "/giangvien/curriculum",
+            to: "/giangvien/chuongtrinhdaotao",
           },
           {
             name: "Kế hoạch học tập mẫu",
             icon: FileText,
             to: "/giangvien/study-plans",
-          },
-          {
-            name: "Thống kê & Báo cáo",
-            icon: GraduationCap,
-            to: "/giangvien/reports",
           },
         ]
       : []),

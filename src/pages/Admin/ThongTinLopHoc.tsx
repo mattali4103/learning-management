@@ -17,25 +17,25 @@ import {
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE, PROFILE_SERVICE } from "../../api/apiEndPoints";
 import PageHeader from "../../components/PageHeader";
+import { StudentTable } from "../../components/table/StudentTable";
+import StudentClassificationPieChart from "../../components/chart/XepLoaiSinhVienPieChart";
+import AccumulatedCreditBarChart from "../../components/chart/AccumulatedCreditBarChart";
 
-interface Lop {
-  maLop: string;
-  tenLop: string;
-  siSo: number | 0;
-  siSoCon: number | 0;
-  chuNhiem: string;
-  danhSachSinhVien: SinhVien[];
-}
-
-interface SinhVien {
+interface PreviewProfile {
+  avatarUrl: string;
   maSo: string;
   hoTen: string;
+  maLop: string;
+  tenNganh: string;
+  xepLoaiHocLuc: string;
+  diemTrungBinhTichLuy: number;
+  soTinChiTichLuy: number;
+  soTinChiCaiThien: number;
+  soTinChiDangKyHienTai: number;
   khoaHoc: string;
   maNganh: string;
-  tenNganh: string;
   ngaySinh: Date;
   gioiTinh: boolean;
-  maLop: string;
 }
 
 interface ThongKeKHHTLOP {
@@ -50,9 +50,9 @@ const ThongTinLopHoc = () => {
   const axiosPrivate = useAxiosPrivate();
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [previewProfiles, setPreviewProfiles] = useState<PreviewProfile[]>([]);
   const [statistics, setStatistics] = useState<ThongKeKHHTLOP[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [selectedClass, setSelectedClass] = useState<Lop | null>(null);
 
   // Enhanced student list states
   const [searchTerm, setSearchTerm] = useState("");
@@ -65,59 +65,50 @@ const ThongTinLopHoc = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const studentsPerPage = 8;
-  // Get statistics for a specific student
-  const getStudentStatistics = (maSo: string) => {
-    return (
-      statistics.find((stat) => stat.maSo === maSo) || {
-        maSo,
-        soTinChiDangKy: 0,
-        soTinChiCaiThien: 0,
-      }
-    );
-  };
 
   // Navigation handler
   const handleViewStudentProfile = (maSo: string) => {
     navigate(`/giangvien/lop/${maLop}/student/${maSo}`);
   };
 
-  // Fetch thông tin lớp
-  const fetchClassInfo = useCallback(async () => {
+  // Fetch preview profiles for all students in the class
+  const fetchAllPreviewProfiles = useCallback(async () => {
     if (!maLop) return;
 
     try {
       setLoading(true);
+      console.log("Fetching preview profiles for class:", maLop);
+
       const response = await axiosPrivate.get(
-        PROFILE_SERVICE.GET_DS_SINH_VIEN_BY_LOP.replace(":maLop", maLop)
+        PROFILE_SERVICE.GET_PREVIEW_PROFILE.replace(":maLop", maLop)
       );
-      const danhSachSinhVien: SinhVien[] = response.data || [];
 
-      // Create class object with fetched student data
-      const classData: Lop = {
-        maLop: maLop,
-        tenLop: `Lớp ${maLop}`, // Default name, can be updated if API provides class name
-        siSo: danhSachSinhVien.length,
-        siSoCon: danhSachSinhVien.length,
-        chuNhiem: "N/A", // Default value, can be updated if API provides this info
-        danhSachSinhVien: danhSachSinhVien,
-      };
+      console.log("Preview profiles response:", response.data);
 
-      setSelectedClass(classData);
-      console.log("DanhSachSinhVien:", danhSachSinhVien);
-      setError(null);
+      if (response.data.code === 200 && response.data.data) {
+        // The API returns an array of PreviewProfile objects
+        const profilesData: PreviewProfile[] = response.data.data;
+        console.log("Setting preview profiles:", profilesData);
+        setPreviewProfiles(profilesData);
+        setError(null);
+      } else {
+        console.log("No preview profiles from API");
+        setPreviewProfiles([]);
+      }
     } catch (error) {
-      console.error("Error fetching class info:", error);
+      console.error("Error fetching preview profiles:", error);
       setError(error instanceof Error ? error.message : "Lỗi không xác định");
+      setPreviewProfiles([]);
     } finally {
       setLoading(false);
     }
-  }, [axiosPrivate, maLop]);
+  }, [maLop, axiosPrivate]);
 
-  // Filter and sort students
+  // Filter and sort students - Now using PreviewProfile directly
   const getFilteredAndSortedStudents = () => {
-    if (!selectedClass?.danhSachSinhVien) return [];
+    if (!previewProfiles || previewProfiles.length === 0) return [];
 
-    const filtered = selectedClass.danhSachSinhVien.filter((student) => {
+    const filtered = previewProfiles.filter((student) => {
       const matchesSearch =
         student.hoTen.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.maSo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -213,11 +204,10 @@ const ThongTinLopHoc = () => {
   // Load dữ liệu khi component mount hoặc maLop thay đổi
   useEffect(() => {
     if (maLop) {
-      fetchClassInfo();
+      fetchAllPreviewProfiles();
       fetchThongKeTinChi();
     }
-  }, [maLop, fetchClassInfo, fetchThongKeTinChi]);
-
+  }, [maLop, fetchAllPreviewProfiles, fetchThongKeTinChi]);
   // Hiển thị loading
   if (loading) {
     return (
@@ -235,7 +225,7 @@ const ThongTinLopHoc = () => {
   }
 
   // Hiển thị lỗi nếu không tìm thấy lớp
-  if (error && !selectedClass) {
+  if (error && previewProfiles.length === 0) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
@@ -254,16 +244,15 @@ const ThongTinLopHoc = () => {
     );
   }
 
-  if (!selectedClass) {
-    return null;
-  }
+  // Skip rendering if still loading
+  // Removed the check for selectedClass since we're now using previewProfiles directly
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
       {/* Header */}
       <PageHeader
-        title={`Quản lý lớp ${selectedClass.maLop}`}
-        description={`Sĩ số: ${selectedClass.siSo} sinh viên • Chủ nhiệm: ${selectedClass.chuNhiem}`}
+        title={`Quản lý lớp ${maLop}`}
+        description={`Sĩ số: ${previewProfiles?.length || 0} sinh viên • Chủ nhiệm: N/A`}
         icon={Users}
         iconColor="from-blue-500 to-indigo-600"
         backButton={
@@ -283,6 +272,14 @@ const ThongTinLopHoc = () => {
         </div>
       )}
 
+      {/* Statistics Charts */}
+      {previewProfiles && previewProfiles.length > 0 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <StudentClassificationPieChart students={previewProfiles} />
+          <AccumulatedCreditBarChart students={previewProfiles} />
+        </div>
+      )}
+
       {/* Students List */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div className="p-6 border-b border-gray-200">
@@ -293,7 +290,7 @@ const ThongTinLopHoc = () => {
               </h2>
               <p className="text-gray-600">
                 {getFilteredAndSortedStudents().length} /{" "}
-                {selectedClass.danhSachSinhVien?.length || 0} sinh viên
+                {previewProfiles?.length || 0} sinh viên
               </p>
             </div>
             <div className="flex items-center space-x-3">
@@ -401,18 +398,17 @@ const ThongTinLopHoc = () => {
               Đang tải thông tin sinh viên...
             </span>
           </div>
-        ) : selectedClass.danhSachSinhVien?.length > 0 ? (
+        ) : previewProfiles?.length > 0 ? (
           <>
             {/* Student Display */}
             <div className="p-6">
               {viewMode === "grid" ? (
                 /* Grid View */
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {getPaginatedStudents().students.map((sinhVien) => {
-                    const studentStats = getStudentStatistics(sinhVien.maSo);
+                  {getPaginatedStudents().students.map((previewProfile) => {
                     return (
                       <div
-                        key={sinhVien.maSo}
+                        key={previewProfile.maSo}
                         className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
                       >
                         <div className="flex items-start justify-between">
@@ -423,10 +419,10 @@ const ThongTinLopHoc = () => {
                               </div>
                               <div>
                                 <h3 className="font-semibold text-gray-800 text-sm">
-                                  {sinhVien.hoTen}
+                                  {previewProfile.hoTen}
                                 </h3>
                                 <p className="text-xs text-gray-500">
-                                  {sinhVien.maSo}
+                                  {previewProfile.maSo}
                                 </p>
                               </div>
                             </div>
@@ -434,52 +430,97 @@ const ThongTinLopHoc = () => {
                             <div className="space-y-1">
                               <div className="flex items-center space-x-2 text-xs text-gray-600">
                                 <GraduationCap className="w-3 h-3" />
-                                <span>Khóa {sinhVien.khoaHoc}</span>
+                                <span>
+                                  Khóa {previewProfile.khoaHoc || "N/A"}
+                                </span>
                               </div>
 
                               <div className="flex items-center space-x-2 text-xs text-gray-600">
                                 <BookOpen className="w-3 h-3" />
                                 <span className="truncate">
-                                  {sinhVien.tenNganh}
+                                  {previewProfile.tenNganh || "N/A"}
                                 </span>
                               </div>
 
                               <div className="flex items-center space-x-2 text-xs text-gray-600">
                                 <User className="w-3 h-3" />
-                                <span>{sinhVien.gioiTinh ? "Nam" : "Nữ"}</span>
+                                <span>
+                                  {previewProfile.gioiTinh ? "Nam" : "Nữ"}
+                                </span>
                               </div>
 
-                              {sinhVien.ngaySinh && (
+                              {previewProfile.ngaySinh && (
                                 <div className="flex items-center space-x-2 text-xs text-gray-600">
                                   <Calendar className="w-3 h-3" />
                                   <span>
                                     {new Date(
-                                      sinhVien.ngaySinh
+                                      previewProfile.ngaySinh
                                     ).toLocaleDateString("vi-VN")}
                                   </span>
                                 </div>
                               )}
 
-                              {/* Credit Statistics */}
-                              <div className="mt-2 p-2">
-                                <div className="flex justify-between text-xs">
-                                  <span className="text-blue-600 font-medium">
-                                    Tín chỉ ĐK:
-                                  </span>
-                                  <span className="font-semibold">
-                                    {studentStats.soTinChiDangKy}
-                                  </span>
-                                </div>
-                                {studentStats.soTinChiCaiThien > 0 && (
-                                  <div className="flex justify-between text-xs mt-1">
-                                    <span className="text-orange-600 font-medium">
-                                      Cải thiện:
+                              {/* Enhanced Credit and GPA Statistics */}
+                              <div className="mt-2 p-2 bg-gray-50 rounded">
+                                <div className="grid grid-cols-2 gap-1 text-xs">
+                                  <div className="flex justify-between">
+                                    <span className="text-blue-600 font-medium">
+                                      Tín chỉ tích luỹ:
                                     </span>
-                                    <span className="font-semibold text-orange-600">
-                                      {studentStats.soTinChiCaiThien}
+                                    <span className="font-semibold">
+                                      {previewProfile.soTinChiTichLuy || 0}
                                     </span>
                                   </div>
-                                )}
+                                  <div className="flex justify-between">
+                                    <span className="text-green-600 font-medium">
+                                      GPA:
+                                    </span>
+                                    <span className="font-semibold">
+                                      {previewProfile.diemTrungBinhTichLuy?.toFixed(
+                                        2
+                                      ) || "0.00"}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-orange-600 font-medium">
+                                      Tín Chỉ Cải thiện:
+                                    </span>
+                                    <span className="font-semibold text-orange-600">
+                                      {previewProfile.soTinChiCaiThien || 0}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between">
+                                    <span className="text-purple-600 font-medium">
+                                      Tín Chỉ Đăng Ký Hiện Tại:
+                                    </span>
+                                    <span className="font-semibold">
+                                      {previewProfile.soTinChiDangKyHienTai ||
+                                        0}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="mt-1 text-center">
+                                  <span
+                                    className={`px-2 py-0.5 rounded text-xs font-medium ${
+                                      previewProfile.xepLoaiHocLuc ===
+                                      "Xuất sắc"
+                                        ? "bg-purple-100 text-purple-700"
+                                        : previewProfile.xepLoaiHocLuc ===
+                                            "Giỏi"
+                                          ? "bg-green-100 text-green-700"
+                                          : previewProfile.xepLoaiHocLuc ===
+                                              "Khá"
+                                            ? "bg-blue-100 text-blue-700"
+                                            : previewProfile.xepLoaiHocLuc ===
+                                                "Trung bình"
+                                              ? "bg-yellow-100 text-yellow-700"
+                                              : "bg-gray-100 text-gray-700"
+                                    }`}
+                                  >
+                                    {previewProfile.xepLoaiHocLuc ||
+                                      "Chưa xác định"}
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -487,7 +528,7 @@ const ThongTinLopHoc = () => {
                           <div className="flex flex-col space-y-1">
                             <button
                               onClick={() =>
-                                handleViewStudentProfile(sinhVien.maSo)
+                                handleViewStudentProfile(previewProfile.maSo)
                               }
                               className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
                               title="Xem hồ sơ sinh viên"
@@ -501,120 +542,17 @@ const ThongTinLopHoc = () => {
                   })}
                 </div>
               ) : (
-                /* List View */
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Sinh viên
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Mã số
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Khóa học
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Ngành
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Giới tính
-                        </th>
-                        <th className="text-left py-3 px-4 font-semibold text-gray-700">
-                          Ngày sinh
-                        </th>
-                        <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                          Tín chỉ ĐK
-                        </th>
-                        <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                          Cải thiện
-                        </th>
-                        <th className="text-center py-3 px-4 font-semibold text-gray-700">
-                          Thao tác
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {getPaginatedStudents().students.map((sinhVien) => {
-                        const studentStats = getStudentStatistics(
-                          sinhVien.maSo
-                        );
-                        return (
-                          <tr
-                            key={sinhVien.maSo}
-                            className="border-b border-gray-100 hover:bg-gray-50"
-                          >
-                            <td className="py-3 px-4">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                                  <User className="w-4 h-4 text-white" />
-                                </div>
-                                <span className="font-medium text-gray-800">
-                                  {sinhVien.hoTen}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-gray-600">
-                              {sinhVien.maSo}
-                            </td>
-                            <td className="py-3 px-4 text-gray-600">
-                              {sinhVien.khoaHoc}
-                            </td>
-                            <td className="py-3 px-4 text-gray-600">
-                              <span
-                                className="truncate max-w-[200px] block"
-                                title={sinhVien.tenNganh}
-                              >
-                                {sinhVien.tenNganh}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-gray-600">
-                              {sinhVien.gioiTinh ? "Nam" : "Nữ"}
-                            </td>
-                            <td className="py-3 px-4 text-gray-600">
-                              {sinhVien.ngaySinh
-                                ? new Date(
-                                    sinhVien.ngaySinh
-                                  ).toLocaleDateString("vi-VN")
-                                : "-"}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {studentStats.soTinChiDangKy}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              {studentStats.soTinChiCaiThien > 0 ? (
-                                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                                  {studentStats.soTinChiCaiThien}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <button
-                                onClick={() =>
-                                  handleViewStudentProfile(sinhVien.maSo)
-                                }
-                                className="p-2 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                                title="Xem hồ sơ sinh viên"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                /* List View - Using TanStack Table */
+                <StudentTable
+                  data={getFilteredAndSortedStudents()}
+                  loading={detailLoading}
+                  onViewProfile={handleViewStudentProfile}
+                />
               )}
             </div>
 
-            {/* Pagination */}
-            {getPaginatedStudents().totalPages > 1 && (
+            {/* Pagination - Only for Grid View */}
+            {viewMode === "grid" && getPaginatedStudents().totalPages > 1 && (
               <div className="px-6 py-4 border-t border-gray-200">
                 <div className="flex items-center justify-between">
                   <div className="text-sm text-gray-600">

@@ -26,6 +26,7 @@ import ThemKHHTMau from "./pages/KeHoachHocTapMau/ThemKHHTMau";
 import ChinhSuaKHHTMau from "./pages/KeHoachHocTapMau/ChinhSuaKHHTMau";
 import ProfileManagement from "./pages/Profile/ProfileManagement";
 import CertificateManagement from "./pages/Profile/CertificateManangement";
+import ProfileLayout from "./pages/Profile/ProfileLayout";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -44,14 +45,23 @@ function App() {
         {/* Private routes */}
         <Route element={<RequireAuth allowedRoles={[ROLES.SINHVIEN]} />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/profile" element={<ProfileManagement />} />
-          <Route path="/profile/certificates" element={<CertificateManagement />} />
+          
+          {/* Profile routes */}
+          <Route path="/profile" element={<ProfileLayout />}>
+            <Route index element={<ProfileManagement />} />
+            <Route path="sinhvien" element={<ProfileManagement />} />
+            <Route path="chungchi" element={<CertificateManagement />} />
+          </Route>
+          
+          {/* Ke Hoach Hoc Tap routes */}
           <Route path="/khht" element={<KeHoachHocTap />}>
             <Route index element={<KeHoachHocTapPage />} />
             <Route path="chung" element={<KeHoachHocTapPage />} />
             <Route path="detail" element={<KeHoachHocTapUnified />} />
             <Route path="add" element={<NhapKeHoachHocTap />} />
           </Route>
+          
+          {/* Ket Qua Hoc Tap routes */}
           <Route path="/kqht" element={<KetQuaHocTapLayout />}>
             <Route index element={<KetQuaHocTap />} />
             <Route path="chung" element={<KetQuaHocTap />} />
@@ -63,19 +73,31 @@ function App() {
             <RequireAuth allowedRoles={[ROLES.GIANGVIEN, ROLES.ADMIN]} />
           }
         >
-          {/* Routes for GIANGVIEN and ADMIN */}
+          {/* Teacher/Admin Dashboard and main routes */}
           <Route path="/giangvien" element={<AdminDashboard />} />
-          <Route path="/giangvien/lop" element={<DanhSachLopHoc />} />
-          <Route path="/giangvien/lop/:maLop" element={<ThongTinLopHoc />} />
-          <Route path="/giangvien/lop/:maLop/student/:maSo" element={<ThongTinSinhVien />} />
-          <Route path="/giangvien/curriculum" element={<ChuongTrinhDaoTao />} />
-          <Route path="/chuongtrinhdaotao/detail/:maNganh/:khoaHoc" element={<CTDTDetail />} />
           <Route path="/giangvien/reports" element={<ReportsAndStatistics />} />
-          <Route path="/giangvien/study-plans" element={<KeHoachHocTapMau />} />
-          <Route path="/giangvien/study-plans/create" element={<ThemKHHTMau />} />
-          <Route path="/giangvien/study-plans/add/:maNganh/:khoaHoc" element={<ChinhSuaKHHTMau />} />
-          <Route path="/giangvien/study-plans/edit/:maNganh/:khoaHoc" element={<ChinhSuaKHHTMau />} />
-          <Route path="/giangvien/study-plans/:maNganh/:khoaHoc" element={<KeHoachHocTapMauDetail />} />
+          
+          {/* Quản Lí Lớp */}
+          <Route path="/giangvien/lop">
+            <Route index element={<DanhSachLopHoc />} />
+            <Route path=":maLop" element={<ThongTinLopHoc />} />
+            <Route path=":maLop/student/:maSo" element={<ThongTinSinhVien />} />
+          </Route>
+          
+          {/* Quản Lí Chương Trình Đào Tạo */}
+          <Route path="/giangvien/chuongtrinhdaotao">
+            <Route index element={<ChuongTrinhDaoTao />} />
+            <Route path="detail/:maNganh/:khoaHoc" element={<CTDTDetail />} />
+          </Route>
+          
+          {/* Quản lí KHHT Mẫu*/}
+          <Route path="/giangvien/study-plans">
+            <Route index element={<KeHoachHocTapMau />} />
+            <Route path="create" element={<ThemKHHTMau />} />
+            <Route path="add/:maNganh/:khoaHoc" element={<ChinhSuaKHHTMau />} />
+            <Route path="edit/:maNganh/:khoaHoc" element={<ChinhSuaKHHTMau />} />
+            <Route path=":maNganh/:khoaHoc" element={<KeHoachHocTapMauDetail />} />
+          </Route>
         </Route>
       </Route>
     </Routes>
