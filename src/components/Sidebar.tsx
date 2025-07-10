@@ -48,6 +48,10 @@ export default function Sidebar() {
             name: "Thông tin cá nhân",
             icon: User,
             to: "/profile",
+            children: [
+              { name: "Hồ sơ cá nhân", to: "/profile" },
+              { name: "Quản lý chứng chỉ", to: "/profile/certificates" },
+            ],
           },
           {
             name: "Kế Hoạch Học Tập",

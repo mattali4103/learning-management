@@ -23,27 +23,7 @@ import Loading from "../../components/Loading";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
 import PageHeader from "../../components/PageHeader";
-
-interface SinhVienProfile {
-  maSo: string;
-  hoTen: string;
-  ngaySinh: Date | string;
-  gioiTinh: boolean;
-  maLop: string;
-  khoaHoc: string;
-  tenNganh: string;
-  soDienThoai?: string;
-  email?: string;
-  diaChi?: string;
-  queQuan?: string;
-  danToc?: string;
-  tonGiao?: string;
-  cccd?: string;
-  ngayCapCCCD?: Date | string;
-  noiCapCCCD?: string;
-  avatar?: string;
-}
-
+import type { SinhVienProfile } from "../../types/SinhVienProfile";
 // Interface for API request with string dates
 interface SinhVienProfileRequest {
   maSo: string;
@@ -162,7 +142,7 @@ const ProfileManagement: React.FC = () => {
       
       // Upload to server
       const formData = new FormData();
-      formData.append("avatar", tempAvatarFile);
+      formData.append("file", tempAvatarFile);
       formData.append("maSo", auth.user?.maSo || "");
 
       const response = await axiosPrivate.put(

@@ -40,9 +40,10 @@ export const PROFILE_SERVICE = {
   GET_DS_SINH_VIEN_BY_LOP:
     PROFILE_SERVICE_URL + "/api/profile/lop/get_sinhvien_profile_in_lop/:maLop", // Return List không có cấu trúc API,
   // Endpoints cho Văn bằng, Chứng chỉ
-  GET_CERTIFICATES: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificates/maSo/:maSo", // Lấy danh sách văn bằng, chứng chỉ
+  GET_CERTIFICATES: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/maso/:maSo", // Lấy danh sách văn bằng, chứng chỉ
   UPLOAD_CERTIFICATE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/upload", // Upload văn bằng, chứng chỉ mới
   UPDATE_CERTIFICATE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/update/:id", // Cập nhật thông tin văn bằng, chứng chỉ
+  DELETE_CERTIFICATE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/delete/:id", // Xóa văn bằng, chứng chỉ
 };
 
 export const HOCPHAN_SERVICE = {

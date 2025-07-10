@@ -44,17 +44,16 @@ const Login: React.FC = () => {
   const handleFetchUserInfo = async (
     maSo: string,
     scope: string,
-    token: string
   ) => {
     let url = PROFILE_SERVICE.GET_MY_PROFILE;
     if (scope === "GIANGVIEN") {
       url = PROFILE_SERVICE.GET_GIANGVIEN_PROFILE;
     }
     try {
-      const response = await axiosPrivate.get(url.replace(":maSo", maSo), {
+
+      const response = await axiosPrivate.get(url.replace(":maSo", maSo),{
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
         },
         withCredentials: true,
       });
@@ -92,7 +91,6 @@ const Login: React.FC = () => {
         const userInfo = await handleFetchUserInfo(
           decodedToken.sub,
           decodedToken.scope,
-          response.data.token
         );
         console.log("User Info:", userInfo);
         if (!userInfo) {
