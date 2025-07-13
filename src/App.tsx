@@ -13,10 +13,8 @@ import KeHoachHocTap, {
 } from "./pages/KeHoachHocTap/KeHoachHocTap";
 import NhapKeHoachHocTap from "./pages/KeHoachHocTap/NhapKeHoachHocTap";
 import KeHoachHocTapUnified from "./pages/KeHoachHocTap/KeHoachHocTapUnified";
-import AdminDashboard from "./pages/Admin/AdminDashboard";
 import ChuongTrinhDaoTao from "./pages/ChuongTrinhDaoTao/ChuongTrinhDaoTao";
 import CTDTDetail from "./pages/ChuongTrinhDaoTao/CTDTDetail";
-import ReportsAndStatistics from "./pages/Admin/ReportsAndStatistics";
 import DanhSachLopHoc from "./pages/Admin/DanhSachLopHoc";
 import ThongTinLopHoc from "./pages/Admin/ThongTinLopHoc";
 import ThongTinSinhVien from "./pages/Admin/ThongTinSinhVien";
@@ -73,9 +71,9 @@ function App() {
             <RequireAuth allowedRoles={[ROLES.GIANGVIEN, ROLES.ADMIN]} />
           }
         >
-          {/* Teacher/Admin Dashboard and main routes */}
-          <Route path="/giangvien" element={<AdminDashboard />} />
-          <Route path="/giangvien/reports" element={<ReportsAndStatistics />} />
+          {/* Teacher/Admin main routes */}
+          {/* Redirect to first available page */}
+          <Route path="/giangvien" element={<DanhSachLopHoc />} />
           
           {/* Quản Lí Lớp */}
           <Route path="/giangvien/lop">

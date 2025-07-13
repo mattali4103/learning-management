@@ -425,7 +425,6 @@ const NhapKeHoachHocTap: React.FC = () => {
         }
       );
         const maHocPhanList = response.data || [];
-        console.log("Ma Hoc Phan In KHHT:", maHocPhanList);
         setMaHocPhanInKHHT(maHocPhanList);
       
     } catch (err) {
@@ -450,7 +449,6 @@ const NhapKeHoachHocTap: React.FC = () => {
       const uniqueHocPhan = rawData.filter((hocPhan: HocPhan, index: number, self: HocPhan[]) => 
         self.findIndex(hp => hp.maHp === hocPhan.maHp) === index
       );
-      console.log("Available Hoc Phan:", uniqueHocPhan);
       setAvailableHocPhan(uniqueHocPhan);
     } catch (err) {
       if (err && typeof err === "object" && "message" in err) {
@@ -477,7 +475,6 @@ const NhapKeHoachHocTap: React.FC = () => {
       if (response.status !== 200 || response.data.code !== 200) {
         setError(`API returned code: ${response.data.code || response.status}`);
       }
-      console.log("Hoc Phan Goi Y:", response.data.data);
       
       // Loại bỏ học phần trùng lặp dựa trên maHp
       const rawData = response.data.data || [];
@@ -489,7 +486,6 @@ const NhapKeHoachHocTap: React.FC = () => {
     } catch (err) {
       if (err && typeof err === "object" && "message" in err) {
         setError((err as { message: string }).message);
-      } else {
         console.error(err);
       }
     }

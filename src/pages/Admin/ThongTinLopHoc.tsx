@@ -2,13 +2,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   Users,
-  Eye,
-  BookOpen,
   ArrowLeft,
   Search,
   Filter,
-  Calendar,
-  GraduationCap,
   User,
   ChevronDown,
   List,
@@ -20,6 +16,7 @@ import PageHeader from "../../components/PageHeader";
 import { StudentTable } from "../../components/table/StudentTable";
 import StudentClassificationPieChart from "../../components/chart/XepLoaiSinhVienPieChart";
 import AccumulatedCreditBarChart from "../../components/chart/AccumulatedCreditBarChart";
+import StudentTooltip from "../../components/tooltips/StudentTooltip";
 
 interface PreviewProfile {
   avatarUrl: string;
@@ -59,6 +56,7 @@ const ThongTinLopHoc = () => {
   const [filterGender, setFilterGender] = useState<"all" | "male" | "female">(
     "all"
   );
+  const [filterClassification, setFilterClassification] = useState("all");
   const [sortBy, setSortBy] = useState<"name" | "maSo" | "khoaHoc">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showFilters, setShowFilters] = useState(false);
@@ -66,10 +64,52 @@ const ThongTinLopHoc = () => {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const studentsPerPage = 8;
 
+  // Modal states for student preview
+  const [selectedStudentForPreview, setSelectedStudentForPreview] = useState<PreviewProfile | null>(null);
+  const [isTooltipVisible, setIsTooltipVisible] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
   // Navigation handler
   const handleViewStudentProfile = (maSo: string) => {
     navigate(`/giangvien/lop/${maLop}/student/${maSo}`);
   };
+
+  // Preview tooltip handlers
+  const handleShowStudentPreview = (student: PreviewProfile, event: React.MouseEvent) => {
+    // If clicking the same student, toggle tooltip
+    if (selectedStudentForPreview?.maSo === student.maSo && isTooltipVisible) {
+      handleHidePreview();
+      return;
+    }
+    
+    setSelectedStudentForPreview(student);
+    setMousePosition({ x: event.clientX, y: event.clientY });
+    setIsTooltipVisible(true);
+  };
+
+  const handleHidePreview = () => {
+    setIsTooltipVisible(false);
+    setSelectedStudentForPreview(null);
+  };
+
+  const handleViewStudentDetails = (maSo: string) => {
+    navigate(`/giangvien/lop/${maLop}/student/${maSo}`);
+  };
+
+  // Close tooltip when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('[data-student-card]') && !target.closest('[data-student-tooltip]')) {
+        handleHidePreview();
+      }
+    };
+
+    if (isTooltipVisible) {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  }, [isTooltipVisible]);
 
   // Fetch preview profiles for all students in the class
   const fetchAllPreviewProfiles = useCallback(async () => {
@@ -83,10 +123,8 @@ const ThongTinLopHoc = () => {
         PROFILE_SERVICE.GET_PREVIEW_PROFILE.replace(":maLop", maLop)
       );
 
-      console.log("Preview profiles response:", response.data);
-
       if (response.data.code === 200 && response.data.data) {
-        // The API returns an array of PreviewProfile objects
+        // Api trả về mảng PreviewProfile
         const profilesData: PreviewProfile[] = response.data.data;
         console.log("Setting preview profiles:", profilesData);
         setPreviewProfiles(profilesData);
@@ -104,11 +142,26 @@ const ThongTinLopHoc = () => {
     }
   }, [maLop, axiosPrivate]);
 
-  // Filter and sort students - Now using PreviewProfile directly
+  // Lọc và sắp xếp sinh viên - Bây giờ sử dụng PreviewProfile trực tiếp
   const getFilteredAndSortedStudents = () => {
     if (!previewProfiles || previewProfiles.length === 0) return [];
 
-    const filtered = previewProfiles.filter((student) => {
+    // Process students to update classification for those with 0 credits and 0 GPA
+    const processedStudents = previewProfiles.map((student) => {
+      // If student has 0 accumulated credits and 0 GPA, classify as "Kém"
+      if (
+        (student.soTinChiTichLuy === 0 || !student.soTinChiTichLuy) &&
+        (student.diemTrungBinhTichLuy === 0 || !student.diemTrungBinhTichLuy)
+      ) {
+        return {
+          ...student,
+          xepLoaiHocLuc: student.xepLoaiHocLuc || "Kém",
+        };
+      }
+      return student;
+    });
+
+    const filtered = processedStudents.filter((student) => {
       const matchesSearch =
         student.hoTen.toLowerCase().includes(searchTerm.toLowerCase()) ||
         student.maSo.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,10 +172,14 @@ const ThongTinLopHoc = () => {
         (filterGender === "male" && student.gioiTinh) ||
         (filterGender === "female" && !student.gioiTinh);
 
-      return matchesSearch && matchesGender;
+      const matchesClassification =
+        filterClassification === "all" ||
+        student.xepLoaiHocLuc === filterClassification;
+
+      return matchesSearch && matchesGender && matchesClassification;
     });
 
-    // Sort students
+    // Lọc sinh viên
     filtered.sort((a, b) => {
       let aValue: string | number;
       let bValue: string | number;
@@ -155,7 +212,7 @@ const ThongTinLopHoc = () => {
     return filtered;
   };
 
-  // Pagination logic
+  // Logic phân trang
   const getPaginatedStudents = () => {
     const filtered = getFilteredAndSortedStudents();
     const startIndex = (currentPage - 1) * studentsPerPage;
@@ -170,7 +227,7 @@ const ThongTinLopHoc = () => {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterGender, sortBy, sortOrder]);
+  }, [searchTerm, filterGender, filterClassification, sortBy, sortOrder]);
 
   // Fetch thống kê tín chỉ của lớp
   const fetchThongKeTinChi = useCallback(async () => {
@@ -195,6 +252,25 @@ const ThongTinLopHoc = () => {
       setDetailLoading(false);
     }
   }, [axiosPrivate, maLop]);
+
+  // Process students for charts - Apply same logic as filtering
+  const getProcessedStudentsForCharts = () => {
+    if (!previewProfiles || previewProfiles.length === 0) return [];
+
+    return previewProfiles.map((student) => {
+      // If student has 0 accumulated credits and 0 GPA, classify as "Kém"
+      if (
+        (student.soTinChiTichLuy === 0 || !student.soTinChiTichLuy) &&
+        (student.diemTrungBinhTichLuy === 0 || !student.diemTrungBinhTichLuy)
+      ) {
+        return {
+          ...student,
+          xepLoaiHocLuc: student.xepLoaiHocLuc || "Kém",
+        };
+      }
+      return student;
+    });
+  };
 
   // Quay lại danh sách lớp
   const backToClassList = () => {
@@ -244,8 +320,8 @@ const ThongTinLopHoc = () => {
     );
   }
 
-  // Skip rendering if still loading
-  // Removed the check for selectedClass since we're now using previewProfiles directly
+  // Bỏ qua trường hợp không có sinh viên nào trong lớp
+  // Bỏ qua kiểm tra selectedClass vì giờ chúng ta sử dụng previewProfiles trực tiếp
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
@@ -275,8 +351,8 @@ const ThongTinLopHoc = () => {
       {/* Statistics Charts */}
       {previewProfiles && previewProfiles.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <StudentClassificationPieChart students={previewProfiles} />
-          <AccumulatedCreditBarChart students={previewProfiles} />
+          <StudentClassificationPieChart students={getProcessedStudentsForCharts()} />
+          <AccumulatedCreditBarChart students={getProcessedStudentsForCharts()} />
         </div>
       )}
 
@@ -336,7 +412,7 @@ const ThongTinLopHoc = () => {
           {/* Filters */}
           {showFilters && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -360,6 +436,22 @@ const ThongTinLopHoc = () => {
                   <option value="all">Tất cả giới tính</option>
                   <option value="male">Nam</option>
                   <option value="female">Nữ</option>
+                </select>
+
+                {/* Classification Filter */}
+                <select
+                  value={filterClassification}
+                  onChange={(e) => setFilterClassification(e.target.value)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">Tất cả xếp loại</option>
+                  <option value="Xuất sắc">Xuất sắc</option>
+                  <option value="Giỏi">Giỏi</option>
+                  <option value="Khá">Khá</option>
+                  <option value="Trung bình">Trung bình</option>
+                  <option value="Yếu">Yếu</option>
+                  <option value="Kém">Kém</option>
+                  <option value="Chưa xác định">Chưa xác định</option>
                 </select>
 
                 {/* Sort By */}
@@ -403,140 +495,73 @@ const ThongTinLopHoc = () => {
             {/* Student Display */}
             <div className="p-6">
               {viewMode === "grid" ? (
-                /* Grid View */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                /* Grid View - Card Layout with Avatar Left + Info Right */
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                   {getPaginatedStudents().students.map((previewProfile) => {
+                    const isSelected = selectedStudentForPreview?.maSo === previewProfile.maSo && isTooltipVisible;
                     return (
                       <div
                         key={previewProfile.maSo}
-                        className="bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border border-gray-200"
+                        data-student-card
+                        className={`bg-white border rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer group ${
+                          isSelected 
+                            ? 'border-blue-500 shadow-md ring-2 ring-blue-200' 
+                            : 'border-gray-200 hover:border-blue-300'
+                        }`}
+                        onClick={(e) => handleShowStudentPreview(previewProfile, e)}
                       >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                                <User className="w-5 h-5 text-white" />
+                        {/* Main Content Area */}
+                        <div className="flex items-center space-x-3 mb-3">
+                          {/* Avatar */}
+                          <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+                            {previewProfile.avatarUrl ? (
+                              <img
+                                src={previewProfile.avatarUrl}
+                                alt={`Avatar của ${previewProfile.hoTen}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // Fallback to default icon if image fails to load
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    parent.className = "w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform";
+                                    parent.innerHTML = '<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>';
+                                  }
+                                }}
+                              />
+                            ) : (
+                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                                <User className="w-6 h-6 text-white" />
                               </div>
-                              <div>
-                                <h3 className="font-semibold text-gray-800 text-sm">
-                                  {previewProfile.hoTen}
-                                </h3>
-                                <p className="text-xs text-gray-500">
-                                  {previewProfile.maSo}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="space-y-1">
-                              <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                <GraduationCap className="w-3 h-3" />
-                                <span>
-                                  Khóa {previewProfile.khoaHoc || "N/A"}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                <BookOpen className="w-3 h-3" />
-                                <span className="truncate">
-                                  {previewProfile.tenNganh || "N/A"}
-                                </span>
-                              </div>
-
-                              <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                <User className="w-3 h-3" />
-                                <span>
-                                  {previewProfile.gioiTinh ? "Nam" : "Nữ"}
-                                </span>
-                              </div>
-
-                              {previewProfile.ngaySinh && (
-                                <div className="flex items-center space-x-2 text-xs text-gray-600">
-                                  <Calendar className="w-3 h-3" />
-                                  <span>
-                                    {new Date(
-                                      previewProfile.ngaySinh
-                                    ).toLocaleDateString("vi-VN")}
-                                  </span>
-                                </div>
-                              )}
-
-                              {/* Enhanced Credit and GPA Statistics */}
-                              <div className="mt-2 p-2 bg-gray-50 rounded">
-                                <div className="grid grid-cols-2 gap-1 text-xs">
-                                  <div className="flex justify-between">
-                                    <span className="text-blue-600 font-medium">
-                                      Tín chỉ tích luỹ:
-                                    </span>
-                                    <span className="font-semibold">
-                                      {previewProfile.soTinChiTichLuy || 0}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-green-600 font-medium">
-                                      GPA:
-                                    </span>
-                                    <span className="font-semibold">
-                                      {previewProfile.diemTrungBinhTichLuy?.toFixed(
-                                        2
-                                      ) || "0.00"}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-orange-600 font-medium">
-                                      Tín Chỉ Cải thiện:
-                                    </span>
-                                    <span className="font-semibold text-orange-600">
-                                      {previewProfile.soTinChiCaiThien || 0}
-                                    </span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-purple-600 font-medium">
-                                      Tín Chỉ Đăng Ký Hiện Tại:
-                                    </span>
-                                    <span className="font-semibold">
-                                      {previewProfile.soTinChiDangKyHienTai ||
-                                        0}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="mt-1 text-center">
-                                  <span
-                                    className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                      previewProfile.xepLoaiHocLuc ===
-                                      "Xuất sắc"
-                                        ? "bg-purple-100 text-purple-700"
-                                        : previewProfile.xepLoaiHocLuc ===
-                                            "Giỏi"
-                                          ? "bg-green-100 text-green-700"
-                                          : previewProfile.xepLoaiHocLuc ===
-                                              "Khá"
-                                            ? "bg-blue-100 text-blue-700"
-                                            : previewProfile.xepLoaiHocLuc ===
-                                                "Trung bình"
-                                              ? "bg-yellow-100 text-yellow-700"
-                                              : "bg-gray-100 text-gray-700"
-                                    }`}
-                                  >
-                                    {previewProfile.xepLoaiHocLuc ||
-                                      "Chưa xác định"}
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+                            )}
                           </div>
 
-                          <div className="flex flex-col space-y-1">
-                            <button
-                              onClick={() =>
-                                handleViewStudentProfile(previewProfile.maSo)
-                              }
-                              className="p-1.5 text-blue-600 hover:bg-blue-100 rounded transition-colors"
-                              title="Xem hồ sơ sinh viên"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </button>
+                          {/* Student Info */}
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold text-gray-800 text-sm leading-tight truncate">
+                              {previewProfile.hoTen}
+                            </h3>
+                            <p className="text-xs text-gray-500 font-mono mt-0.5">
+                              {previewProfile.maSo}
+                            </p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <span className="text-xs text-gray-600">
+                                {previewProfile.gioiTinh ? "Nam" : "Nữ"}
+                              </span>
+                              <span className="text-xs text-gray-400">•</span>
+                              <span className="text-xs text-gray-600">
+                                {previewProfile.ngaySinh 
+                                  ? new Date(previewProfile.ngaySinh).toLocaleDateString("vi-VN")
+                                  : "N/A"
+                                }
+                              </span>
+                            </div>
                           </div>
                         </div>
+
+                        {/* Separator Line */}
+                        <div className="border-t border-gray-200"></div>
                       </div>
                     );
                   })}
@@ -662,6 +687,17 @@ const ThongTinLopHoc = () => {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Student Tooltip */}
+      <div data-student-tooltip>
+        <StudentTooltip
+          student={selectedStudentForPreview}
+          isVisible={isTooltipVisible}
+          position={mousePosition}
+          delay={300} // 300ms delay
+          onViewDetails={handleViewStudentDetails}
+        />
       </div>
     </div>
   );

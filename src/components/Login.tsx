@@ -111,7 +111,7 @@ const Login: React.FC = () => {
         fetchHocKy(maSo);
         setMaSo("");
         setPassword("");
-        if (decodedToken.scope === "GIANGVIEN") {
+        if (decodedToken.scope === "GIANGVIEN" || decodedToken.scope === "ADMIN") {
           navigate("/giangvien");
         } else {
           navigate("/");

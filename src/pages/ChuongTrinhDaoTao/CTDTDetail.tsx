@@ -36,7 +36,7 @@ const CTDTDetail = () => {
   const [chuongTrinhDaoTao, setChuongTrinhDaoTao] = useState<ChuongTrinhDaoTaoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("batbuoc");
+  const [activeTab, setActiveTab] = useState("tatca");
 
   // Function to copy course code to clipboard
   const copyToClipboard = (text: string) => {
@@ -84,9 +84,43 @@ const CTDTDetail = () => {
     fetchCTDTDetail();
   }, [fetchCTDTDetail]);
 
-  // Get filtered data (no search functionality)
-  const filteredHocPhanBatBuoc = chuongTrinhDaoTao?.hocPhanList || [];
-  const filteredNhomHocPhanTuChon = chuongTrinhDaoTao?.nhomHocPhanTuChon || [];
+  // Get filtered data based on course type
+  const allCourses = useMemo(() => chuongTrinhDaoTao?.hocPhanList || [], [chuongTrinhDaoTao?.hocPhanList]);
+  
+  const filteredCoursesByType = useMemo(() => {
+    if (activeTab === "tatca") {
+      return allCourses;
+    }
+    return allCourses.filter(hp => hp.loaiHp === activeTab);
+  }, [allCourses, activeTab]);
+
+  // Calculate statistics by course type
+  const courseTypeStatistics = useMemo(() => {
+    const totalCourses = allCourses.length;
+    const daiCuongCourses = allCourses.filter(hp => hp.loaiHp === "Đại cương").length;
+    const coSoNganhCourses = allCourses.filter(hp => hp.loaiHp === "Cơ sở ngành").length;
+    const chuyenNganhCourses = allCourses.filter(hp => hp.loaiHp === "Chuyên ngành").length;
+    
+    return {
+      totalCourses,
+      daiCuongCourses,
+      coSoNganhCourses,
+      chuyenNganhCourses,
+    };
+  }, [allCourses]);
+
+  // Get elective course groups for the current active tab
+  const filteredElectiveGroups = useMemo(() => {
+    const allGroups = chuongTrinhDaoTao?.nhomHocPhanTuChon || [];
+    if (activeTab === "tatca") {
+      return allGroups;
+    }
+    
+    // Filter groups that have courses of the selected type
+    return allGroups.filter(nhom => 
+      nhom.hocPhanTuChonList?.some(hp => hp.loaiHp === activeTab)
+    );
+  }, [chuongTrinhDaoTao?.nhomHocPhanTuChon, activeTab]);
 
   // Columns for required courses table
   const requiredCoursesColumns = useMemo<ColumnDef<HocPhan>[]>(
@@ -290,21 +324,6 @@ const CTDTDetail = () => {
     []
   );
 
-  // Calculate statistics for table information
-  const tableStatistics = useMemo(() => {
-    const totalRequiredCourses = chuongTrinhDaoTao?.hocPhanList?.length || 0;
-    const totalElectiveGroups = chuongTrinhDaoTao?.nhomHocPhanTuChon?.length || 0;
-    const totalElectiveCourses = chuongTrinhDaoTao?.nhomHocPhanTuChon?.reduce(
-      (total, nhom) => total + (nhom.hocPhanTuChonList?.length || 0), 0
-    ) || 0;
-    
-    return {
-      totalRequiredCourses,
-      totalElectiveGroups,
-      totalElectiveCourses,
-    };
-  }, [chuongTrinhDaoTao]);
-
   if (loading) {
     return <Loading />;
   }
@@ -414,7 +433,11 @@ const CTDTDetail = () => {
                 Chi tiết chương trình đào tạo
               </h2>
               <p className="text-gray-600 mt-1">
-                {tableStatistics.totalRequiredCourses} học phần bắt buộc • {tableStatistics.totalElectiveGroups} nhóm tự chọn • {tableStatistics.totalElectiveCourses} học phần tự chọn
+                {courseTypeStatistics.totalCourses} học phần bắt buộc • 
+                {chuongTrinhDaoTao?.nhomHocPhanTuChon?.length || 0} nhóm tự chọn • 
+                {courseTypeStatistics.daiCuongCourses} Đại Cương • 
+                {courseTypeStatistics.coSoNganhCourses} Cơ Sở Ngành • 
+                {courseTypeStatistics.chuyenNganhCourses} Chuyên Ngành
               </p>
             </div>
           </div>
@@ -422,136 +445,188 @@ const CTDTDetail = () => {
         
         <div className="flex border-b border-gray-200">
           <button
-            onClick={() => setActiveTab("batbuoc")}
+            onClick={() => setActiveTab("tatca")}
             className={`flex-1 px-6 py-4 text-center transition-colors ${
-              activeTab === "batbuoc"
+              activeTab === "tatca"
                 ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
                 : "text-gray-600 hover:bg-gray-50"
             }`}
           >
             <span className="font-medium">
-              Học phần bắt buộc ({chuongTrinhDaoTao.hocPhanList?.length || 0})
+              Tất cả ({courseTypeStatistics.totalCourses})
             </span>
           </button>
           <button
-            onClick={() => setActiveTab("tuchon")}
+            onClick={() => setActiveTab("Đại cương")}
             className={`flex-1 px-6 py-4 text-center transition-colors ${
-              activeTab === "tuchon"
+              activeTab === "Đại cương"
                 ? "bg-green-50 text-green-700 border-b-2 border-green-500"
                 : "text-gray-600 hover:bg-gray-50"
             }`}
           >
             <span className="font-medium">
-              Nhóm học phần tự chọn ({chuongTrinhDaoTao.nhomHocPhanTuChon?.length || 0})
+              Đại Cương ({courseTypeStatistics.daiCuongCourses})
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("Cơ sở ngành")}
+            className={`flex-1 px-6 py-4 text-center transition-colors ${
+              activeTab === "Cơ sở ngành"
+                ? "bg-purple-50 text-purple-700 border-b-2 border-purple-500"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            <span className="font-medium">
+              Cơ Sở Ngành ({courseTypeStatistics.coSoNganhCourses})
+            </span>
+          </button>
+          <button
+            onClick={() => setActiveTab("Chuyên ngành")}
+            className={`flex-1 px-6 py-4 text-center transition-colors ${
+              activeTab === "Chuyên ngành"
+                ? "bg-orange-50 text-orange-700 border-b-2 border-orange-500"
+                : "text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            <span className="font-medium">
+              Chuyên Ngành ({courseTypeStatistics.chuyenNganhCourses})
             </span>
           </button>
         </div>
         {/* Content */}
         <div className="p-6">
-          {activeTab === "batbuoc" && (
-            <div>
-              {filteredHocPhanBatBuoc.length === 0 ? (
-                <div className="text-center py-12">
-                  <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                    Chưa có học phần bắt buộc
-                  </h3>
-                  <p className="text-gray-500">
-                    Hiện tại chưa có học phần bắt buộc nào
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">Danh sách học phần bắt buộc</h3>
-                        <p className="text-gray-600 text-sm">
-                          Tổng cộng {filteredHocPhanBatBuoc.length} học phần bắt buộc trong chương trình đào tạo
-                        </p>
-                      </div>
-                      <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {filteredHocPhanBatBuoc.reduce((total, hp) => total + (hp.tinChi || 0), 0)} tín chỉ
-                      </div>
-                    </div>
-                  </div>
-                  <div className="overflow-hidden">
-                  <KeHoachHocTapTable
-                    name="Học phần bắt buộc"
-                    data={filteredHocPhanBatBuoc}
-                    columns={requiredCoursesColumns}
-                    emptyStateTitle="Chưa có học phần bắt buộc"
-                    emptyStateDescription="Hiện tại chưa có học phần bắt buộc nào trong chương trình đào tạo"
-                  />
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {activeTab === "tuchon" && (
-            <div>
-              {filteredNhomHocPhanTuChon.length === 0 ? (
-                <div className="text-center py-12">
-                  <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                    Chưa có nhóm học phần tự chọn
-                  </h3>
-                  <p className="text-gray-500">
-                    Hiện tại chưa có nhóm học phần tự chọn nào
-                  </p>
-                </div>
-              ) : (
-                <div>
-                  <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">Danh sách nhóm học phần tự chọn</h3>
-                        <p className="text-gray-600 text-sm">
-                          Tổng cộng {tableStatistics.totalElectiveGroups} nhóm học phần tự chọn với {tableStatistics.totalElectiveCourses} học phần
-                        </p>
-                      </div>
-                      <div className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">
-                        {chuongTrinhDaoTao.tongSoTinChiTuChon} tín chỉ yêu cầu
-                      </div>
-                    </div>
-                  </div>
-                  <div className="space-y-6">
-                  {filteredNhomHocPhanTuChon.map((nhom, nhomIndex) => (
-                    <div
-                      key={`${nhom.id}-${nhomIndex}`}
-                      className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
-                    >
-                      <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between">
+          <div>
+            {filteredCoursesByType.length === 0 && filteredElectiveGroups.length === 0 ? (
+              <div className="text-center py-12">
+                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                  {activeTab === "tatca" ? "Chưa có học phần nào" : `Chưa có học phần ${activeTab}`}
+                </h3>
+                <p className="text-gray-500">
+                  {activeTab === "tatca" 
+                    ? "Hiện tại chưa có học phần nào trong chương trình đào tạo" 
+                    : `Hiện tại chưa có học phần ${activeTab} nào`
+                  }
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-8">
+                {/* Required Courses Section */}
+                {filteredCoursesByType.length > 0 && (
+                  <div>
+                    <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                      <div className="flex items-center justify-between">
                         <div>
-                          <h3 className="text-lg font-semibold text-emerald-800 mb-1">
-                            Nhóm học phần tự chọn: {nhom.tenNhom}
+                          <h3 className="text-lg font-semibold text-gray-800">
+                            {activeTab === "tatca" 
+                              ? "Danh sách học phần bắt buộc" 
+                              : `Danh sách học phần bắt buộc - ${activeTab}`
+                            }
+                          </h3>
+                          <p className="text-gray-600 text-sm">
+                            Tổng cộng {filteredCoursesByType.length} học phần bắt buộc
+                            {activeTab !== "tatca" && ` loại ${activeTab}`} trong chương trình đào tạo
+                          </p>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          activeTab === "tatca" ? "bg-blue-100 text-blue-800" :
+                          activeTab === "Đại cương" ? "bg-green-100 text-green-800" :
+                          activeTab === "Cơ sở ngành" ? "bg-purple-100 text-purple-800" :
+                          "bg-orange-100 text-orange-800"
+                        }`}>
+                          {filteredCoursesByType.reduce((total: number, hp: HocPhan) => total + (hp.tinChi || 0), 0)} tín chỉ
+                        </div>
+                      </div>
+                    </div>
+                    <div className="overflow-hidden mb-8">
+                      <KeHoachHocTapTable
+                        name={activeTab === "tatca" ? "Học phần bắt buộc" : `Học phần bắt buộc ${activeTab}`}
+                        data={filteredCoursesByType}
+                        columns={requiredCoursesColumns}
+                        emptyStateTitle={activeTab === "tatca" ? "Chưa có học phần bắt buộc" : `Chưa có học phần bắt buộc ${activeTab}`}
+                        emptyStateDescription={
+                          activeTab === "tatca" 
+                            ? "Hiện tại chưa có học phần bắt buộc nào trong chương trình đào tạo"
+                            : `Hiện tại chưa có học phần bắt buộc ${activeTab} nào trong chương trình đào tạo`
+                        }
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Elective Course Groups Section */}
+                {filteredElectiveGroups.length > 0 && (
+                  <div>
+                    <div className="bg-emerald-50 rounded-xl p-4 mb-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="text-lg font-semibold text-emerald-800">
+                            {activeTab === "tatca" 
+                              ? "Danh sách nhóm học phần tự chọn" 
+                              : `Nhóm học phần tự chọn - ${activeTab}`
+                            }
                           </h3>
                           <p className="text-emerald-600 text-sm">
-                            Yêu cầu: <span className="font-medium">{nhom.tinChiYeuCau}</span> tín chỉ
+                            Tổng cộng {filteredElectiveGroups.length} nhóm học phần tự chọn
+                            {activeTab !== "tatca" && ` có chứa học phần ${activeTab}`}
                           </p>
                         </div>
                         <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {nhom.hocPhanTuChonList?.length || 0} học phần
+                          {filteredElectiveGroups.reduce((total, nhom) => total + (nhom.tinChiYeuCau || 0), 0)} tín chỉ yêu cầu
                         </div>
                       </div>
-                      
-                      <div className="overflow-x-auto">
-                        <KeHoachHocTapTable
-                          name={`Nhóm ${nhom.tenNhom}`}
-                          data={nhom.hocPhanTuChonList || []}
-                          columns={electiveCoursesColumns}
-                          emptyStateTitle="Chưa có học phần tự chọn"
-                          emptyStateDescription={`Nhóm ${nhom.tenNhom} chưa có học phần tự chọn nào`}
-                        />
-                      </div>
                     </div>
-                  ))}
+                    <div className="space-y-6">
+                      {filteredElectiveGroups.map((nhom, nhomIndex) => {
+                        // Filter courses in this group by type if not showing all
+                        const coursesInGroup = activeTab === "tatca" 
+                          ? nhom.hocPhanTuChonList || []
+                          : (nhom.hocPhanTuChonList || []).filter(hp => hp.loaiHp === activeTab);
+
+                        return (
+                          <div
+                            key={`${nhom.id}-${nhomIndex}`}
+                            className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+                          >
+                            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between">
+                              <div>
+                                <h3 className="text-lg font-semibold text-emerald-800 mb-1">
+                                  Nhóm học phần tự chọn: {nhom.tenNhom}
+                                </h3>
+                                <p className="text-emerald-600 text-sm">
+                                  Yêu cầu: <span className="font-medium">{nhom.tinChiYeuCau}</span> tín chỉ
+                                  {activeTab !== "tatca" && (
+                                    <span className="ml-2">• Hiển thị {coursesInGroup.length} học phần {activeTab}</span>
+                                  )}
+                                </p>
+                              </div>
+                              <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
+                                {coursesInGroup.length} học phần
+                              </div>
+                            </div>
+                            
+                            <div className="overflow-x-auto">
+                              <KeHoachHocTapTable
+                                name={`Nhóm ${nhom.tenNhom}`}
+                                data={coursesInGroup}
+                                columns={electiveCoursesColumns}
+                                emptyStateTitle="Chưa có học phần tự chọn"
+                                emptyStateDescription={
+                                  activeTab === "tatca"
+                                    ? `Nhóm ${nhom.tenNhom} chưa có học phần tự chọn nào`
+                                    : `Nhóm ${nhom.tenNhom} chưa có học phần ${activeTab} nào`
+                                }
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

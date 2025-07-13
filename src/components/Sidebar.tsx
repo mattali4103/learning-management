@@ -34,16 +34,15 @@ export default function Sidebar() {
     auth.user?.roles === "GIANGVIEN" || auth.user?.roles === "ADMIN";
 
   const sidebarItems: SidebarItem[] = [
-    // Dashboard chung cho tất cả role nhưng route khác nhau
-    { 
-      name: "Trang chủ", 
-      icon: LayoutDashboard, 
-      to: isGiangVienOrAdmin ? "/giangvien" : "/" 
-    },
-    
     // Menu cho sinh viên
     ...(auth.user?.roles === "SINHVIEN"
       ? [
+          // Dashboard cho sinh viên
+          { 
+            name: "Trang chủ", 
+            icon: LayoutDashboard, 
+            to: "/" 
+          },
           {
             name: "Thông tin cá nhân",
             icon: User,
@@ -113,12 +112,10 @@ export default function Sidebar() {
     }
     
     // Xử lý đặc biệt cho Dashboard
-    if (item.name === "Dashboard") {
+    if (item.name === "Trang chủ") {
       if (isGiangVienOrAdmin) {
-        // Với giảng viên/admin, chỉ active khi đúng là /giangvien
         return location.pathname === "/giangvien";
       } else {
-        // Với sinh viên, chỉ active khi đúng là /
         return location.pathname === "/";
       }
     }
@@ -203,7 +200,7 @@ export default function Sidebar() {
                   className={({ isActive: navLinkIsActive }) => {
                     // Custom logic cho Dashboard
                     let customIsActive = navLinkIsActive;
-                    if (item.name === "Dashboard") {
+                    if (item.name === "Trang chủ") {
                       if (isGiangVienOrAdmin) {
                         customIsActive = location.pathname === "/giangvien";
                       } else {

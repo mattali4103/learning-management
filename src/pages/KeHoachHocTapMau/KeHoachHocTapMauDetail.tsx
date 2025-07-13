@@ -75,6 +75,10 @@ const KeHoachHocTapMauDetail = () => {
     useState<KeHoachHocTapDetail | null>(null);
   const [showDeletePlanModal, setShowDeletePlanModal] = useState(false);
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"detail" | "elective">("detail");
+  const [activeDetailTab, setActiveDetailTab] = useState("tatca");
+
   const maKhoa = auth.user?.maKhoa || "";
 
   const fetchHocPhanTuChon = useCallback(async () => {
@@ -317,6 +321,21 @@ const KeHoachHocTapMauDetail = () => {
         sortingFn: "basic",
       },
       {
+        id: "loaiHp",
+        accessorKey: "hocPhan.loaiHp",
+        header: "Loại học phần",
+        cell: ({ getValue }) => (
+          <div className="text-center">
+            <span className="text-sm text-gray-600">
+              {getValue() as string || "N/A"}
+            </span>
+          </div>
+        ),
+        size: 120,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
+      {
         id: "namHoc",
         accessorKey: "hocKy.namHoc",
         header: "Năm học",
@@ -437,6 +456,21 @@ const KeHoachHocTapMauDetail = () => {
         enableSorting: true,
         sortingFn: "basic",
       },
+      {
+        id: "loaiHp",
+        accessorKey: "loaiHp",
+        header: "Loại học phần",
+        cell: ({ getValue }) => (
+          <div className="text-center">
+            <span className="text-sm text-gray-600">
+              {getValue() as string || "N/A"}
+            </span>
+          </div>
+        ),
+        size: 120,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
     ],
     []
   );
@@ -465,8 +499,43 @@ const KeHoachHocTapMauDetail = () => {
     };
   }, [templateDetails]);
 
-  // Tab state
-  const [activeTab, setActiveTab] = useState<"detail" | "elective">("detail");
+  // Get filtered data based on course type
+  const allCourses = useMemo(() => templateDetails || [], [templateDetails]);
+  
+  const filteredCoursesByType = useMemo(() => {
+    if (activeDetailTab === "tatca") {
+      return allCourses;
+    }
+    return allCourses.filter(detail => detail.hocPhan.loaiHp === activeDetailTab);
+  }, [allCourses, activeDetailTab]);
+
+  // Calculate statistics by course type
+  const courseTypeStatistics = useMemo(() => {
+    const totalCourses = allCourses.length;
+    const daiCuongCourses = allCourses.filter(detail => detail.hocPhan.loaiHp === "Đại cương").length;
+    const coSoNganhCourses = allCourses.filter(detail => detail.hocPhan.loaiHp === "Cơ sở ngành").length;
+    const chuyenNganhCourses = allCourses.filter(detail => detail.hocPhan.loaiHp === "Chuyên ngành").length;
+    
+    return {
+      totalCourses,
+      daiCuongCourses,
+      coSoNganhCourses,
+      chuyenNganhCourses,
+    };
+  }, [allCourses]);
+
+  // Get elective course groups for the current active tab
+  const filteredElectiveGroups = useMemo(() => {
+    const allGroups = hocPhanTuChon || [];
+    if (activeDetailTab === "tatca") {
+      return allGroups;
+    }
+    
+    // Filter groups that have courses of the selected type
+    return allGroups.filter(nhom => 
+      nhom.hocPhanTuChonList?.some(hp => hp.loaiHp === activeDetailTab)
+    );
+  }, [hocPhanTuChon, activeDetailTab]);
 
   // Loading state
   if (loading) {
@@ -627,85 +696,346 @@ const KeHoachHocTapMauDetail = () => {
         <>
           {/* Main Content */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            {/* Summary Section */}
             <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
               <div className="flex items-center justify-between">
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
-                    Kê hoạch học tập mẫu
+                    Kế hoạch học tập mẫu
                   </h2>
                   <p className="text-gray-600 mt-1">
-                    {templateDetails.length} học phần đã được lên kế hoạch
+                    {courseTypeStatistics.totalCourses} học phần • 
+                    {courseTypeStatistics.daiCuongCourses} Đại Cương • 
+                    {courseTypeStatistics.coSoNganhCourses} Cơ Sở Ngành • 
+                    {courseTypeStatistics.chuyenNganhCourses} Chuyên Ngành
                   </p>
                 </div>
               </div>
             </div>
+            
+            {/* Course Type Tab Navigation */}
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveDetailTab("tatca")}
+                className={`flex-1 px-6 py-4 text-center transition-colors ${
+                  activeDetailTab === "tatca"
+                    ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">
+                  Tất cả ({courseTypeStatistics.totalCourses})
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveDetailTab("Đại cương")}
+                className={`flex-1 px-6 py-4 text-center transition-colors ${
+                  activeDetailTab === "Đại cương"
+                    ? "bg-green-50 text-green-700 border-b-2 border-green-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">
+                  Đại Cương ({courseTypeStatistics.daiCuongCourses})
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveDetailTab("Cơ sở ngành")}
+                className={`flex-1 px-6 py-4 text-center transition-colors ${
+                  activeDetailTab === "Cơ sở ngành"
+                    ? "bg-purple-50 text-purple-700 border-b-2 border-purple-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">
+                  Cơ Sở Ngành ({courseTypeStatistics.coSoNganhCourses})
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveDetailTab("Chuyên ngành")}
+                className={`flex-1 px-6 py-4 text-center transition-colors ${
+                  activeDetailTab === "Chuyên ngành"
+                    ? "bg-orange-50 text-orange-700 border-b-2 border-orange-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">
+                  Chuyên Ngành ({courseTypeStatistics.chuyenNganhCourses})
+                </span>
+              </button>
+            </div>
 
-            {templateDetails.length > 0 ? (
-              <div className="overflow-hidden">
-                <KeHoachHocTapTable
-                  name="Chi tiết kế hoạch học tập mẫu"
-                  data={templateDetails}
-                  columns={columns}
-                />
-              </div>
-            ) : (
-              <div className="p-16 text-center bg-gradient-to-br from-gray-50 to-blue-50">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-200 rounded-full mx-auto mb-6 flex items-center justify-center">
-                  <BookOpen className="w-12 h-12 text-blue-600" />
+            {/* Course Content */}
+            <div className="p-6">
+              {filteredCoursesByType.length === 0 && filteredElectiveGroups.length === 0 ? (
+                <div className="text-center py-12">
+                  <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                    {activeDetailTab === "tatca" ? "Chưa có học phần nào" : `Chưa có học phần ${activeDetailTab}`}
+                  </h3>
+                  <p className="text-gray-500">
+                    {activeDetailTab === "tatca" 
+                      ? "Kế hoạch học tập mẫu này chưa có học phần nào được thêm vào." 
+                      : `Hiện tại chưa có học phần ${activeDetailTab} nào`
+                    }
+                  </p>
                 </div>
-                <h3 className="text-xl font-bold text-gray-700 mb-3">
-                  Chưa có học phần nào
-                </h3>
-                <p className="text-gray-500 mb-8 max-w-md mx-auto leading-relaxed">
-                  Kế hoạch học tập mẫu này chưa có học phần nào được thêm vào.
-                </p>
-              </div>
-            )}
+              ) : (
+                <div className="space-y-8">
+                  {/* Required Courses Section */}
+                  {filteredCoursesByType.length > 0 && (
+                    <div>
+                      <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-800">
+                              {activeDetailTab === "tatca" 
+                                ? "Danh sách học phần" 
+                                : `Danh sách học phần ${activeDetailTab}`
+                              }
+                            </h3>
+                            <p className="text-gray-600 text-sm">
+                              Tổng cộng {filteredCoursesByType.length} học phần
+                              {activeDetailTab !== "tatca" && ` loại ${activeDetailTab}`} trong kế hoạch học tập
+                            </p>
+                          </div>
+                          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            activeDetailTab === "tatca" ? "bg-blue-100 text-blue-800" :
+                            activeDetailTab === "Đại cương" ? "bg-green-100 text-green-800" :
+                            activeDetailTab === "Cơ sở ngành" ? "bg-purple-100 text-purple-800" :
+                            "bg-orange-100 text-orange-800"
+                          }`}>
+                            {filteredCoursesByType.reduce((total: number, detail: KeHoachHocTapDetail) => total + (detail.hocPhan.tinChi || 0), 0)} tín chỉ
+                          </div>
+                        </div>
+                      </div>
+                      <div className="overflow-hidden mb-8">
+                        <KeHoachHocTapTable
+                          name={activeDetailTab === "tatca" ? "Kế hoạch học tập" : `Học phần ${activeDetailTab}`}
+                          data={filteredCoursesByType}
+                          columns={columns}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Elective Course Groups Section */}
+                  {filteredElectiveGroups.length > 0 && (
+                    <div>
+                      <div className="bg-emerald-50 rounded-xl p-4 mb-6">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="text-lg font-semibold text-emerald-800">
+                              {activeDetailTab === "tatca" 
+                                ? "Danh sách nhóm học phần tự chọn" 
+                                : `Nhóm học phần tự chọn - ${activeDetailTab}`
+                              }
+                            </h3>
+                            <p className="text-emerald-600 text-sm">
+                              Tổng cộng {filteredElectiveGroups.length} nhóm học phần tự chọn
+                              {activeDetailTab !== "tatca" && ` có chứa học phần ${activeDetailTab}`}
+                            </p>
+                          </div>
+                          <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
+                            {filteredElectiveGroups.reduce((total, nhom) => total + (nhom.tinChiYeuCau || 0), 0)} tín chỉ yêu cầu
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-6">
+                        {filteredElectiveGroups.map((nhom, nhomIndex) => {
+                          // Filter courses in this group by type if not showing all
+                          const coursesInGroup = activeDetailTab === "tatca" 
+                            ? nhom.hocPhanTuChonList || []
+                            : (nhom.hocPhanTuChonList || []).filter(hp => hp.loaiHp === activeDetailTab);
+
+                          return (
+                            <div
+                              key={`${nhom.id}-${nhomIndex}`}
+                              className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+                            >
+                              <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between">
+                                <div>
+                                  <h3 className="text-lg font-semibold text-emerald-800 mb-1">
+                                    Nhóm học phần tự chọn: {nhom.tenNhom}
+                                  </h3>
+                                  <p className="text-emerald-600 text-sm">
+                                    Yêu cầu: <span className="font-medium">{nhom.tinChiYeuCau}</span> tín chỉ
+                                    {activeDetailTab !== "tatca" && (
+                                      <span className="ml-2">• Hiển thị {coursesInGroup.length} học phần {activeDetailTab}</span>
+                                    )}
+                                  </p>
+                                </div>
+                                <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
+                                  {coursesInGroup.length} học phần
+                                </div>
+                              </div>
+                              
+                              <div className="overflow-x-auto">
+                                <KeHoachHocTapTable
+                                  name={`Nhóm ${nhom.tenNhom}`}
+                                  data={coursesInGroup.map((hp, idx) => ({
+                                    ...hp,
+                                    stt: idx + 1,
+                                  }))}
+                                  columns={electiveColumns}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </>
       )}
 
       {activeTab === "elective" && (
         <>
-          {/* Hiển thị các nhóm học phần tự chọn nếu có */}
-          {hocPhanTuChon && hocPhanTuChon.length > 0 ? (
-            <div className="space-y-6 mt-2">
-              {hocPhanTuChon.map((nhom) => (
-                <div
-                  key={nhom.id}
-                  className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
-                >
-                  <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-emerald-800 mb-1">
-                        Nhóm học phần tự chọn: {nhom.tenNhom}
-                      </h3>
-                      <p className="text-emerald-600 text-sm">
-                        Yêu cầu: {nhom.tinChiYeuCau} tín chỉ
-                      </p>
-                    </div>
-                    <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
-                      {nhom.hocPhanTuChonList.length} học phần
-                    </div>
-                  </div>
-                  <div className="overflow-x-auto">
-                    <KeHoachHocTapTable
-                      name={`${nhom.tenNhom}`}
-                      data={nhom.hocPhanTuChonList.map((hp, idx) => ({
-                        ...hp,
-                        stt: idx + 1,
-                      }))}
-                      columns={electiveColumns}
-                    />
-                  </div>
+          {/* Elective course groups with course type filtering */}
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+            {/* Summary Section for Elective */}
+            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-emerald-800">
+                    Nhóm học phần tự chọn
+                  </h2>
+                  <p className="text-emerald-600 mt-1">
+                    {hocPhanTuChon?.length || 0} nhóm học phần tự chọn • 
+                    {hocPhanTuChon?.reduce((total, nhom) => total + (nhom.hocPhanTuChonList?.length || 0), 0) || 0} học phần
+                  </p>
                 </div>
-              ))}
+              </div>
             </div>
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              Không có nhóm học phần tự chọn nào.
+            
+            {/* Course Type Tab Navigation for Elective */}
+            <div className="flex border-b border-gray-200">
+              <button
+                onClick={() => setActiveDetailTab("tatca")}
+                className={`flex-1 px-6 py-4 text-center transition-colors ${
+                  activeDetailTab === "tatca"
+                    ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">
+                  Tất cả ({hocPhanTuChon?.length || 0} nhóm)
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveDetailTab("Đại cương")}
+                className={`flex-1 px-6 py-4 text-center transition-colors ${
+                  activeDetailTab === "Đại cương"
+                    ? "bg-green-50 text-green-700 border-b-2 border-green-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">
+                  Đại Cương ({filteredElectiveGroups.filter(nhom => 
+                    nhom.hocPhanTuChonList?.some(hp => hp.loaiHp === "Đại cương")
+                  ).length})
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveDetailTab("Cơ sở ngành")}
+                className={`flex-1 px-6 py-4 text-center transition-colors ${
+                  activeDetailTab === "Cơ sở ngành"
+                    ? "bg-purple-50 text-purple-700 border-b-2 border-purple-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">
+                  Cơ Sở Ngành ({filteredElectiveGroups.filter(nhom => 
+                    nhom.hocPhanTuChonList?.some(hp => hp.loaiHp === "Cơ sở ngành")
+                  ).length})
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveDetailTab("Chuyên ngành")}
+                className={`flex-1 px-6 py-4 text-center transition-colors ${
+                  activeDetailTab === "Chuyên ngành"
+                    ? "bg-orange-50 text-orange-700 border-b-2 border-orange-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="font-medium">
+                  Chuyên Ngành ({filteredElectiveGroups.filter(nhom => 
+                    nhom.hocPhanTuChonList?.some(hp => hp.loaiHp === "Chuyên ngành")
+                  ).length})
+                </span>
+              </button>
             </div>
-          )}
+
+            {/* Elective Content */}
+            <div className="p-6">
+              {filteredElectiveGroups.length > 0 ? (
+                <div className="space-y-6">
+                  {filteredElectiveGroups.map((nhom) => {
+                    // Filter courses in this group by type if not showing all
+                    const coursesInGroup = activeDetailTab === "tatca" 
+                      ? nhom.hocPhanTuChonList || []
+                      : (nhom.hocPhanTuChonList || []).filter(hp => hp.loaiHp === activeDetailTab);
+
+                    // Only show groups that have courses for the selected type
+                    if (activeDetailTab !== "tatca" && coursesInGroup.length === 0) {
+                      return null;
+                    }
+
+                    return (
+                      <div
+                        key={nhom.id}
+                        className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
+                      >
+                        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between">
+                          <div>
+                            <h3 className="text-lg font-semibold text-emerald-800 mb-1">
+                              Nhóm học phần tự chọn: {nhom.tenNhom}
+                            </h3>
+                            <p className="text-emerald-600 text-sm">
+                              Yêu cầu: <span className="font-medium">{nhom.tinChiYeuCau}</span> tín chỉ
+                              {activeDetailTab !== "tatca" && (
+                                <span className="ml-2">• Hiển thị {coursesInGroup.length} học phần {activeDetailTab}</span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
+                            {coursesInGroup.length} học phần
+                          </div>
+                        </div>
+                        <div className="overflow-x-auto">
+                          <KeHoachHocTapTable
+                            name={`${nhom.tenNhom}`}
+                            data={coursesInGroup.map((hp, idx) => ({
+                              ...hp,
+                              stt: idx + 1,
+                            }))}
+                            columns={electiveColumns}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                    {activeDetailTab === "tatca" ? "Không có nhóm học phần tự chọn nào" : `Không có nhóm học phần tự chọn ${activeDetailTab}`}
+                  </h3>
+                  <p className="text-gray-500">
+                    {activeDetailTab === "tatca" 
+                      ? "Hiện tại chưa có nhóm học phần tự chọn nào được thiết lập."
+                      : `Hiện tại chưa có nhóm học phần tự chọn nào chứa học phần ${activeDetailTab}.`
+                    }
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </>
       )}
 
