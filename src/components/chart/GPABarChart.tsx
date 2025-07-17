@@ -120,7 +120,7 @@ export default function GPABarChart({ rawData, height = 400 }: GPABarChartProps)
         margin={{
           top: 20,
           right: 30,
-          left: 20,
+          left: -50,
           bottom: 20,
         }}
         maxBarSize={60} // Make bars narrower

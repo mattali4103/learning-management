@@ -218,7 +218,7 @@ export default function KetQuaHocTap() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
+    <div className="p-6 space-y-6 bg-gray-50">
       {/* Header */}
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="flex items-center space-x-3 mb-4">
@@ -308,7 +308,8 @@ export default function KetQuaHocTap() {
               </div>
             </div>
           )}
-        </div>{" "}        {/* Grade Distribution Pie Chart */}
+        </div>       
+        {/* Grade Distribution Pie Chart */}
         {gradeRawData.length > 0 ? (
           <GradeDistributionPieChart rawData={gradeRawData} />
         ) : (

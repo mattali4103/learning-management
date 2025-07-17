@@ -1,6 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import NavigationPanel from "../../components/navigation/NavigationPanel";
+import {
+
+  AlertCircle,
+  Calendar,
+  BarChart3,
+  PieChart,
+} from "lucide-react";
+
 import Loading from "../../components/Loading";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
 import { type ColumnDef } from "@tanstack/react-table";
@@ -9,17 +16,16 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE } from "../../api/apiEndPoints";
 import useAuth from "../../hooks/useAuth";
 import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
-import { SortableHeader } from "../../components/table/SortableHeader";
 import DeleteModal from "../../components/modals/DeleteModal";
-import type { HocKy } from "../../types/HocKy";
+import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
+import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
+
 
 const KeHoachHocTapUnified = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [selectedNamHoc, setSelectedNamHoc] = useState<string>("Tất cả");
-  const [selectedHocKy, setSelectedHocKy] = useState<string>("");
+
+
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
-  const [hocKyFromAPI, setHocKyFromAPI] = useState<HocKy[]>([]);
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
   const { maSo } = auth.user || {};
@@ -41,7 +47,6 @@ const KeHoachHocTapUnified = () => {
 
         if (response.status === 200 && response.data?.code === 200) {
           const hocKyData = response.data.data;
-          setHocKyFromAPI(hocKyData);
           localStorage.setItem("hocKy", JSON.stringify(hocKyData));
           setError(null);
         } else {
@@ -55,7 +60,7 @@ const KeHoachHocTapUnified = () => {
         try {
           const localData = localStorage.getItem("hocKy");
           if (localData) {
-            setHocKyFromAPI(JSON.parse(localData));
+
             setError(null);
           }
         } catch (localError) {
@@ -76,173 +81,29 @@ const KeHoachHocTapUnified = () => {
       fetchHocKy(maSo);
     }
   }, [maSo, fetchHocKy]);
-
-  const hocKyFromStorage: HocKy[] = useMemo(() => {
-    return hocKyFromAPI;
-  }, [hocKyFromAPI]);
-
-  // Tạo danh sách năm học từ dữ liệu
-  const namHocList = useMemo(() => {
-    const years = new Set<string>();
-    hocKyFromStorage.forEach((hk) => {
-      if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        years.add(`${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`);
-      }
-    });
-    return ["Tất cả", ...Array.from(years).sort()];
-  }, [hocKyFromStorage]);
-
-  // Tạo mapping ID năm học -> tên năm học
-  const namHocIdToName = useMemo(() => {
-    const mapping: Record<number, string> = {};
-    hocKyFromStorage.forEach((hk) => {
-      if (
-        hk.namHoc &&
-        hk.namHoc.id &&
-        hk.namHoc.namBatDau &&
-        hk.namHoc.namKetThuc
-      ) {
-        mapping[hk.namHoc.id] =
-          `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
-      }
-    });
-    return mapping;
-  }, [hocKyFromStorage]);
-
-  // Tạo mapping tên năm học -> ID năm học
-  const namHocNameToId = useMemo(() => {
-    const mapping: Record<string, number> = {};
-    hocKyFromStorage.forEach((hk) => {
-      if (
-        hk.namHoc &&
-        hk.namHoc.id &&
-        hk.namHoc.namBatDau &&
-        hk.namHoc.namKetThuc
-      ) {
-        const namHoc = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
-        mapping[namHoc] = hk.namHoc.id;
-      }
-    });
-    return mapping;
-  }, [hocKyFromStorage]);
-
-  // Tạo dữ liệu học kỳ theo năm học
-  const hocKyData = useMemo(() => {
-    const data: Record<string, string[]> = {};
-    hocKyFromStorage.forEach((hk) => {
-      if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        const namHoc = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
-        if (!data[namHoc]) {
-          data[namHoc] = [];
-        }
-        if (hk.tenHocKy && !data[namHoc].includes(hk.tenHocKy)) {
-          data[namHoc].push(hk.tenHocKy);
-        }
-      }
-    });
-    Object.keys(data).forEach((key) => {
-      data[key].sort();
-    });
-    return data;
-  }, [hocKyFromStorage]);
-
-  // Tạo mapping ID học kỳ -> tên học kỳ
-  const hocKyIdToName = useMemo(() => {
-    const mapping: Record<number, string> = {};
-    hocKyFromStorage.forEach((hk) => {
-      if (hk.maHocKy && hk.tenHocKy) {
-        mapping[hk.maHocKy] = hk.tenHocKy;
-      }
-    });
-    return mapping;
-  }, [hocKyFromStorage]);
-
-  // Tạo mapping tên học kỳ -> ID học kỳ (theo năm học)
-  const hocKyNameToId = useMemo(() => {
-    const mapping: Record<string, Record<string, number>> = {};
-    hocKyFromStorage.forEach((hk) => {
-      if (
-        hk.namHoc &&
-        hk.namHoc.namBatDau &&
-        hk.namHoc.namKetThuc &&
-        hk.maHocKy &&
-        hk.tenHocKy
-      ) {
-        const namHoc = `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`;
-        if (!mapping[namHoc]) {
-          mapping[namHoc] = {};
-        }
-        mapping[namHoc][hk.tenHocKy] = hk.maHocKy;
-      }
-    });
-    return mapping;
-  }, [hocKyFromStorage]);
-
-  useEffect(() => {
-    const namHocIdParam = searchParams.get("namHocId");
-    const hocKyIdParam = searchParams.get("hocKyId");
-
-    if (namHocIdParam) {
-      const namHocId = parseInt(namHocIdParam);
-      if (namHocIdToName[namHocId]) {
-        setSelectedNamHoc(namHocIdToName[namHocId]);
-      }
-    }
-
-    if (hocKyIdParam) {
-      const hocKyId = parseInt(hocKyIdParam);
-      if (hocKyIdToName[hocKyId]) {
-        setSelectedHocKy(hocKyIdToName[hocKyId]);
-      }
-    }
-  }, [searchParams, namHocIdToName, hocKyIdToName]);
-
-  // Hàm để thay đổi năm học và cập nhật URL
-  const handleNamHocChange = (namHoc: string) => {
-    setSelectedNamHoc(namHoc);
-    setSelectedHocKy("");
-    const newParams = new URLSearchParams(searchParams);
-    if (namHoc === "Tất cả") {
-      newParams.delete("namHocId");
-    } else {
-      const namHocId = namHocNameToId[namHoc];
-      if (namHocId) {
-        newParams.set("namHocId", namHocId.toString());
-      }
-    }
-    newParams.delete("hocKyId");
-    setSearchParams(newParams);
-  };
-
-  // Hàm để thay đổi học kỳ
-  const handleHocKyChange = (hocKy: string) => {
-    setSelectedHocKy(hocKy);
-    const newParams = new URLSearchParams(searchParams);
-
-    const hocKyId = hocKyNameToId[selectedNamHoc]?.[hocKy];
-    if (hocKyId) {
-      newParams.set("hocKyId", hocKyId.toString());
-    }
-
-    setSearchParams(newParams);
-  };
   return (
-    <div className="w-full space-y-4">
-      {/* Thanh điều hướng luôn hiển thị */}
-      <NavigationPanel
-        namHocList={namHocList}
-        selectedNamHoc={selectedNamHoc}
-        selectedHocKy={selectedHocKy}
-        hocKyData={hocKyData}
-        onNamHocChange={handleNamHocChange}
-        onHocKyChange={handleHocKyChange}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
       {/* Loading chỉ cho navigation data */}
       {loading ? (
-        <Loading showOverlay={false} message="Đang tải dữ liệu học kỳ..." />
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Đang tải dữ liệu học kỳ...</span>
+          </div>
+        </div>
       ) : error ? (
-        <div className="p-4 text-red-500 bg-red-50 border border-red-200 rounded-lg">
-          Lỗi: {error}
+        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
+          <div className="text-center">
+            <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Lỗi</h2>
+            <p className="text-red-600 mb-4">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              Thử lại
+            </button>
+          </div>
         </div>
       ) : (
         /* Nội dung hiển thị */
@@ -267,6 +128,17 @@ const UnifiedContentDisplay = () => {
     null
   );
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Tab states
+  const [activeMainTab, setActiveMainTab] = useState<"overview" | "coursetype" | "year">("overview");
+  const [activeCourseTypeTab, setActiveCourseTypeTab] = useState<string>("all");
+  const [activeYearTab, setActiveYearTab] = useState<string>("all");
+
+  // Modal states for success/error messages
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string>("");
+  const [errorMessage, setErrorMessage] = useState<string>("");
 
   // Hàm xử lý xóa học phần
   const fetchDeleteHocPhan = useCallback(
@@ -329,35 +201,47 @@ const UnifiedContentDisplay = () => {
     () => [
       {
         accessorKey: "id",
-        header: () => (
-          <div className="items-center justify-center hidden">STT</div>
-        ),
+        header: "STT",
         cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
+        enableSorting: false,
       },
       {
         accessorKey: "maHp",
-        header: ({ column }) => (
-          <SortableHeader column={column} title="Học phần" />
+        header: "Mã học phần",
+        cell: ({ row }) => (
+          <div className="font-mono text-sm text-blue-700 px-3 py-1.5">
+            {row.getValue("maHp")}
+          </div>
         ),
-        cell: ({ row }) => <div>{row.getValue("maHp")}</div>,
+        enableSorting: true,
       },
       {
         accessorKey: "tenHp",
-        header: ({ column }) => (
-          <SortableHeader column={column} title="Tên học phần" />
+        header: "Tên học phần",
+        cell: ({ getValue }) => (
+          <div className="max-w-xs">
+            <div className="font-semibold text-gray-900 text-sm leading-tight">
+              {getValue() as string}
+            </div>
+          </div>
         ),
+        enableSorting: true,
       },
       {
         accessorKey: "tinChi",
-        header: ({ column }) => (
-          <SortableHeader column={column} title="Tín chỉ" />
+        header: "Tín chỉ",
+        cell: ({ getValue }) => (
+          <div className="text-center">
+            <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-emerald-700">
+              {getValue() as number}
+            </span>
+          </div>
         ),
+        enableSorting: true,
       },
       {
         accessorKey: "loaiHp",
-        header: ({ column }) => (
-          <SortableHeader column={column} title="Loại học phần" />
-        ),
+        header: "Loại học phần",
         cell: ({ row }) => {
           const loaiHp = row.getValue("loaiHp") as string;
           const colorMap: Record<string, string> = {
@@ -375,34 +259,49 @@ const UnifiedContentDisplay = () => {
             </div>
           );
         },
+        enableSorting: true,
       },
       {
         id: "maHocKy",
         accessorKey: "tenHocKy",
-        header: ({ column }) => (
-          <SortableHeader column={column} title="Học kỳ" />
+        header: "Học kỳ",
+        cell: ({ getValue }) => (
+          <div className="text-center">
+            <span className="inline-flex items-center px-3 py-1.5">
+              {getValue() as string}
+            </span>
+          </div>
         ),
+        enableSorting: true,
       },
       {
         id: "namHocId",
         accessorKey: "namBdNamKt",
-        header: ({ column }) => (
-          <SortableHeader
-            column={column}
-            title="Năm học"
-            className="ml-2 text-gray-600 hover:text-gray-800"
-          />
+        header: "Năm học",
+        cell: ({ getValue }) => (
+          <div className="text-center">
+            <span className="text-sm font-medium text-gray-600">
+              {getValue() as string}
+            </span>
+          </div>
         ),
+        enableSorting: true,
       },
       {
         accessorKey: "hocPhanTienQuyet",
-        header: ({ column }) => (
-          <SortableHeader column={column} title="Tiên quyết" />
+        header: "Tiên quyết",
+        cell: ({ getValue }) => (
+          <div className="text-center">
+            <span className="text-sm text-gray-600">
+              {(getValue() as string) || "Không"}
+            </span>
+          </div>
         ),
+        enableSorting: true,
       },
       {
         id: "actions",
-        header: () => <div className="text-center">Thao tác</div>,
+        header: "Thao tác",
         cell: ({ row }) => (
           <div className="flex justify-center">
             <button
@@ -488,6 +387,45 @@ const UnifiedContentDisplay = () => {
     }
   }, [axiosPrivate, maSo, khoaHoc, maNganh]);
 
+  // Calculate statistics from all data
+  const statistics = useMemo(() => {
+    const totalCredits = allData.reduce((sum, item) => sum + item.tinChi, 0);
+    const totalSubjects = allData.length;
+    
+    // Count by course type
+    const daiCuongCount = allData.filter(item => item.loaiHp === "Đại cương").length;
+    const coSoNganhCount = allData.filter(item => item.loaiHp === "Cơ sở ngành").length;
+    const chuyenNganhCount = allData.filter(item => item.loaiHp === "Chuyên ngành").length;
+    console.log("All data", allData);
+    // Count unique semesters
+    const semesterSet = new Set<string>();
+    allData.forEach(item => {
+      if (item.tenHocKy && item.namBdNamKt) {
+        semesterSet.add(`${item.tenHocKy}-${item.namBdNamKt}`);
+      }
+    });
+
+    return {
+      totalCredits,
+      totalSubjects,
+      totalSemesters: semesterSet.size,
+      daiCuongCount,
+      coSoNganhCount,
+      chuyenNganhCount,
+    };
+  }, [allData]);
+
+  // Get unique years for year tab
+  const uniqueYears = useMemo(() => {
+    const years = new Set<string>();
+    allData.forEach(item => {
+      if (item.namBdNamKt) {
+        years.add(item.namBdNamKt);
+      }
+    });
+    return Array.from(years).sort();
+  }, [allData]);
+
   // Hàm để lọc dữ liệu theo năm học và học kỳ
   const filteredData = useMemo(() => {
     if (!allData || allData.length === 0) return [];
@@ -507,8 +445,18 @@ const UnifiedContentDisplay = () => {
       const hocKyId = parseInt(hocKyIdParam);
       filtered = filtered.filter((item) => item.maHocKy === hocKyId);
     }
+
+    // Additional filtering based on active tabs
+    if (activeMainTab === "coursetype" && activeCourseTypeTab !== "all") {
+      filtered = filtered.filter(item => item.loaiHp === activeCourseTypeTab);
+    }
+
+    if (activeMainTab === "year" && activeYearTab !== "all") {
+      filtered = filtered.filter(item => item.namBdNamKt === activeYearTab);
+    }
+
     return filtered;
-  }, [allData, searchParams]);
+  }, [allData, searchParams, activeMainTab, activeCourseTypeTab, activeYearTab]);
   
   if (loading) {
     return (
@@ -528,13 +476,186 @@ const UnifiedContentDisplay = () => {
     );
   }
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4">
-      <KeHoachHocTapTable
-        name="Tất cả học phần trong kế hoạch học tập"
-        data={filteredData}
-        columns={columns}
-        loading={loading}
-      />
+    <div className="space-y-6">
+      {/* Statistics Cards */}
+
+      {/* Tab Navigation */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        {/* Main Tab Bar */}
+        <div className="flex space-x-2 border-b border-blue-400 mb-4 bg-gradient-to-r from-blue-100 to-indigo-100 rounded-t-xl shadow-md px-2 pt-2">
+          <button
+            className={`px-6 py-2 font-semibold text-sm rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 shadow-sm
+              ${
+                activeMainTab === "overview"
+                  ? "bg-white border-x border-t border-b-0 border-blue-500 text-blue-700 shadow-lg z-10"
+                  : "bg-blue-50 text-blue-500 hover:text-blue-700 hover:bg-white/80"
+              }
+            `}
+            onClick={() => setActiveMainTab("overview")}
+          >
+            <div className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Tổng quan
+            </div>
+          </button>
+          <button
+            className={`px-6 py-2 font-semibold text-sm rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 shadow-sm
+              ${
+                activeMainTab === "coursetype"
+                  ? "bg-white border-x border-t border-b-0 border-blue-500 text-blue-700 shadow-lg z-10"
+                  : "bg-blue-50 text-blue-500 hover:text-blue-700 hover:bg-white/80"
+              }
+            `}
+            onClick={() => setActiveMainTab("coursetype")}
+          >
+            <div className="flex items-center gap-2">
+              <PieChart className="w-4 h-4" />
+              Theo loại học phần
+            </div>
+          </button>
+          <button
+            className={`px-6 py-2 font-semibold text-sm rounded-t-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 shadow-sm
+              ${
+                activeMainTab === "year"
+                  ? "bg-white border-x border-t border-b-0 border-blue-500 text-blue-700 shadow-lg z-10"
+                  : "bg-blue-50 text-blue-500 hover:text-blue-700 hover:bg-white/80"
+              }
+            `}
+            onClick={() => setActiveMainTab("year")}
+          >
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" />
+              Theo năm học
+            </div>
+          </button>
+        </div>
+
+        {/* Tab Content */}
+        <div>
+          {activeMainTab === "overview" && (
+            <div>
+              <KeHoachHocTapTable
+                name="Tất cả học phần trong kế hoạch học tập"
+                data={filteredData}
+                columns={columns}
+                loading={loading}
+              />
+            </div>
+          )}
+
+          {activeMainTab === "coursetype" && (
+            <div>
+              {/* Course Type Sub-tabs */}
+              <div className="flex border-b border-gray-200 mb-6">
+                <button
+                  onClick={() => setActiveCourseTypeTab("all")}
+                  className={`flex-1 px-6 py-4 text-center transition-colors ${
+                    activeCourseTypeTab === "all"
+                      ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="font-medium">
+                    Tất cả ({statistics.totalSubjects})
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveCourseTypeTab("Đại cương")}
+                  className={`flex-1 px-6 py-4 text-center transition-colors ${
+                    activeCourseTypeTab === "Đại cương"
+                      ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="font-medium">
+                    Đại Cương ({statistics.daiCuongCount})
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveCourseTypeTab("Cơ sở ngành")}
+                  className={`flex-1 px-6 py-4 text-center transition-colors ${
+                    activeCourseTypeTab === "Cơ sở ngành"
+                      ? "bg-green-50 text-green-700 border-b-2 border-green-500"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="font-medium">
+                    Cơ Sở Ngành ({statistics.coSoNganhCount})
+                  </span>
+                </button>
+                <button
+                  onClick={() => setActiveCourseTypeTab("Chuyên ngành")}
+                  className={`flex-1 px-6 py-4 text-center transition-colors ${
+                    activeCourseTypeTab === "Chuyên ngành"
+                      ? "bg-purple-50 text-purple-700 border-b-2 border-purple-500"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="font-medium">
+                    Chuyên Ngành ({statistics.chuyenNganhCount})
+                  </span>
+                </button>
+              </div>
+
+              <KeHoachHocTapTable
+                name={activeCourseTypeTab === "all" 
+                  ? "Tất cả học phần" 
+                  : `Học phần ${activeCourseTypeTab}`
+                }
+                data={filteredData}
+                columns={columns}
+                loading={loading}
+              />
+            </div>
+          )}
+
+          {activeMainTab === "year" && (
+            <div>
+              {/* Year Sub-tabs */}
+              <div className="flex flex-wrap border-b border-gray-200 mb-6">
+                <button
+                  onClick={() => setActiveYearTab("all")}
+                  className={`px-6 py-4 text-center transition-colors ${
+                    activeYearTab === "all"
+                      ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
+                      : "text-gray-600 hover:bg-gray-50"
+                  }`}
+                >
+                  <span className="font-medium">
+                    Tất cả ({statistics.totalSubjects})
+                  </span>
+                </button>
+                {uniqueYears.map((year) => (
+                  <button
+                    key={year}
+                    onClick={() => setActiveYearTab(year)}
+                    className={`px-6 py-4 text-center transition-colors ${
+                      activeYearTab === year
+                        ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
+                        : "text-gray-600 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span className="font-medium">
+                      {year} ({allData.filter(item => item.namBdNamKt === year).length})
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <KeHoachHocTapTable
+                name={activeYearTab === "all" 
+                  ? "Tất cả năm học" 
+                  : `Năm học ${activeYearTab}`
+                }
+                data={filteredData}
+                columns={columns}
+                loading={loading}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
       <DeleteModal
         isOpen={isDeleteModalOpen}
         onConfirm={handleConfirmDelete}
@@ -543,6 +664,28 @@ const UnifiedContentDisplay = () => {
         message={`Bạn có chắc chắn muốn xóa học phần "${hocPhanToDelete?.tenHp}" không? Hành động này không thể hoàn tác.`}
         isLoading={isDeleting}
       />
+
+      {showSuccessModal && (
+        <SuccessMessageModal
+          isOpen={showSuccessModal}
+          message={successMessage}
+          onClose={() => {
+            setShowSuccessModal(false);
+            setSuccessMessage("");
+          }}
+        />
+      )}
+
+      {showErrorModal && (
+        <ErrorMessageModal
+          isOpen={showErrorModal}
+          message={errorMessage}
+          onClose={() => {
+            setShowErrorModal(false);
+            setErrorMessage("");
+          }}
+        />
+      )}
     </div>
   );
 };
