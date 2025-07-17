@@ -21,6 +21,7 @@ import type { HocKy } from "../../types/HocKy";
 import type { NamHoc } from "../../types/NamHoc";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
+import { KetQuaHocTapExportButton } from "../PDFExportButton";
 
 // define columns for the KetQuaHocTapTable
 export interface KetQuaHocTapTableType {
@@ -191,7 +192,19 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
           )}
         </div>
 
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+          {/* PDF Export Button */}
+          {data.length > 0 && (
+            <KetQuaHocTapExportButton
+              data={data}
+              title={name}
+              variant="minimal"
+              size="sm"
+              showText={false}
+              className="text-white hover:bg-white/20 border-white/30"
+            />
+          )}
+          
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="group p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/30 backdrop-blur-sm"

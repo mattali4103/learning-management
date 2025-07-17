@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User, Calendar, GraduationCap, BookOpen, Trophy, CreditCard, TrendingUp, UserCheck, ExternalLink } from "lucide-react";
 
+interface CanhBaoHocVu{
+  maSo: string;
+  lyDo: string;
+}
+
 interface PreviewProfile {
+  canhBaoHocVu: CanhBaoHocVu;
   avatarUrl: string;
   maSo: string;
   hoTen: string;
@@ -212,7 +218,7 @@ const StudentTooltip: React.FC<StudentTooltipProps> = ({
             </span>
           </div>
           <div className="text-center">
-            <span className="block">Đăng ký</span>
+            <span className="block">Đã đăng ký ở học kỳ này</span>
             <span className="font-semibold text-purple-600">
               {student.soTinChiDangKyHienTai || 0}
             </span>
@@ -229,6 +235,28 @@ const StudentTooltip: React.FC<StudentTooltipProps> = ({
             {student.xepLoaiHocLuc || "Chưa xác định"}
           </span>
         </div>
+
+        {/* Cảnh báo học vụ */}
+        {student.canhBaoHocVu && student.canhBaoHocVu.lyDo ? (
+          <div className="mt-2">
+            <div className="text-center mb-2">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 border border-red-200">
+                ⚠️ Nguy cơ cảnh báo học vụ
+              </span>
+            </div>
+            <div className="bg-red-50 border border-red-200 rounded p-2">
+              <p className="text-xs text-red-700">
+                <strong>Lý do:</strong> {student.canhBaoHocVu.lyDo}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-2 text-center">
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+              ✓ Không có cảnh báo
+            </span>
+          </div>
+        )}
       </div>
 
       {/* View Details Button */}

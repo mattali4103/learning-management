@@ -20,6 +20,7 @@ import {
 import { useMemo, useState, useEffect } from "react";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
+import { KeHoachHocTapExportButton } from "../PDFExportButton";
 
 interface KeHoachHocTapTableProps {
   name: string;
@@ -39,6 +40,8 @@ interface KeHoachHocTapTableProps {
   emptyStateDescription?: string;
   emptyStateIcon?: React.ComponentType<any>;
   showEmptyStateWarningBadge?: boolean;
+  // Row click handler
+  onRowClick?: (row: any) => void;
 }
 
 export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
@@ -59,6 +62,8 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   emptyStateDescription,
   emptyStateIcon,
   showEmptyStateWarningBadge,
+  // Row click handler
+  onRowClick,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -154,7 +159,19 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
             </span>
           )}
         </div>
-        <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
+          {/* PDF Export Button */}
+          {data.length > 0 && (
+            <KeHoachHocTapExportButton
+              data={data}
+              title={name}
+              variant="minimal"
+              size="sm"
+              showText={false}
+              className="text-white hover:bg-white/20 border-white/30"
+            />
+          )}
+          
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="group p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/30 backdrop-blur-sm"
@@ -250,7 +267,8 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                     key={row.id}
                     className={`hover:bg-gray-200 bg-gray-50 ${
                       row.id === "id" ? "hidden" : ""
-                    }`}
+                    } ${onRowClick ? "cursor-pointer" : ""}`}
+                    onClick={() => onRowClick && onRowClick(row)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <td

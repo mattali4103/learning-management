@@ -25,6 +25,8 @@ import ChinhSuaKHHTMau from "./pages/KeHoachHocTapMau/ChinhSuaKHHTMau";
 import ProfileManagement from "./pages/Profile/ProfileManagement";
 import CertificateManagement from "./pages/Profile/CertificateManangement";
 import ProfileLayout from "./pages/Profile/ProfileLayout";
+import PDFExportExample from "./components/PDFExportExample";
+import PDFExportPaginationTest from "./components/PDFExportPaginationTest";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -36,6 +38,8 @@ function App() {
   return (
     <Routes>
       {/* Public routes */}
+      <Route path="/test" element={<PDFExportExample />} />
+      <Route path="/pagination-test" element={<PDFExportPaginationTest />} />
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />

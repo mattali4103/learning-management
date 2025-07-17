@@ -1,9 +1,15 @@
 import React from "react";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Eye, User } from "lucide-react";
+import { User } from "lucide-react";
 import { KeHoachHocTapTable } from "./KeHoachHocTapTable";
 
+interface CanhBaoHocVu{
+  maSo: string;
+  lyDo: string;
+}
+
 interface PreviewProfile {
+  canhBaoHocVu: CanhBaoHocVu;
   avatarUrl: string;
   maSo: string;
   hoTen: string;
@@ -175,22 +181,6 @@ export const StudentTable: React.FC<StudentTableProps> = ({
       },
       size: 130,
     },
-    {
-      id: "actions",
-      header: "Thao tác",
-      cell: ({ row }) => (
-        <div className="flex justify-center">
-          <button
-            onClick={() => onViewProfile(row.original.maSo)}
-            className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-            title="Xem hồ sơ sinh viên"
-          >
-            <Eye className="w-4 h-4" />
-          </button>
-        </div>
-      ),
-      size: 100,
-    },
   ];
 
   return (
@@ -210,6 +200,7 @@ export const StudentTable: React.FC<StudentTableProps> = ({
       emptyStateDescription="Lớp này chưa có sinh viên nào"
       emptyStateIcon={User}
       showEmptyStateWarningBadge={false}
+      onRowClick={(row) => onViewProfile(row.original.maSo)}
     />
   );
 };

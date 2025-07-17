@@ -9,6 +9,7 @@ import {
   ChevronDown,
   List,
   Grid3X3,
+  Download,
 } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE, PROFILE_SERVICE } from "../../api/apiEndPoints";
@@ -17,8 +18,15 @@ import { StudentTable } from "../../components/table/StudentTable";
 import StudentClassificationPieChart from "../../components/chart/XepLoaiSinhVienPieChart";
 import AccumulatedCreditBarChart from "../../components/chart/AccumulatedCreditBarChart";
 import StudentTooltip from "../../components/tooltips/StudentTooltip";
+import { useTablePDFExport } from "../../hooks/useTablePDFExport";
+import ExportModal from "../../components/modals/ExportModal";
 
+interface CanhBaoHocVu{
+  maSo: string;
+  lyDo: string;
+}
 interface PreviewProfile {
+  canhBaoHocVu: CanhBaoHocVu;
   avatarUrl: string;
   maSo: string;
   hoTen: string;
@@ -51,18 +59,26 @@ const ThongTinLopHoc = () => {
   const [statistics, setStatistics] = useState<ThongKeKHHTLOP[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  // PDF Export hook
+  const { exportCustomTable } = useTablePDFExport();
+
   // Enhanced student list states
   const [searchTerm, setSearchTerm] = useState("");
   const [filterGender, setFilterGender] = useState<"all" | "male" | "female">(
     "all"
   );
   const [filterClassification, setFilterClassification] = useState("all");
+  const [filterCanhBao, setFilterCanhBao] = useState<"all" | "warning" | "normal">("all");
   const [sortBy, setSortBy] = useState<"name" | "maSo" | "khoaHoc">("name");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const studentsPerPage = 8;
+
+  // Export modal states
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [selectedClassifications, setSelectedClassifications] = useState<string[]>([]);
 
   // Modal states for student preview
   const [selectedStudentForPreview, setSelectedStudentForPreview] = useState<PreviewProfile | null>(null);
@@ -127,6 +143,23 @@ const ThongTinLopHoc = () => {
         // Api trả về mảng PreviewProfile
         const profilesData: PreviewProfile[] = response.data.data;
         console.log("Setting preview profiles:", profilesData);
+        
+        // Debug: Log chi tiết về canhBaoHocVu của từng sinh viên
+        profilesData.forEach((student, index) => {
+          console.log(`Student ${index + 1} (${student.maSo} - ${student.hoTen}):`);
+          console.log("  - canhBaoHocVu:", student.canhBaoHocVu);
+          console.log("  - type of canhBaoHocVu:", typeof student.canhBaoHocVu);
+          console.log("  - is Array:", Array.isArray(student.canhBaoHocVu));
+          console.log("  - JSON stringified:", JSON.stringify(student.canhBaoHocVu));
+          
+          if (student.canhBaoHocVu) {
+            console.log("  - canhBaoHocVu.maSo:", student.canhBaoHocVu.maSo);
+            console.log("  - canhBaoHocVu.lyDo:", student.canhBaoHocVu.lyDo);
+            console.log("  - has warning condition:", student.canhBaoHocVu.lyDo && student.canhBaoHocVu.lyDo.trim() !== "");
+          }
+          console.log("---");
+        });
+        
         setPreviewProfiles(profilesData);
         setError(null);
       } else {
@@ -176,7 +209,12 @@ const ThongTinLopHoc = () => {
         filterClassification === "all" ||
         student.xepLoaiHocLuc === filterClassification;
 
-      return matchesSearch && matchesGender && matchesClassification;
+      const matchesCanhBao =
+        filterCanhBao === "all" ||
+        (filterCanhBao === "warning" && student.canhBaoHocVu && student.canhBaoHocVu.lyDo && student.canhBaoHocVu.lyDo.trim() !== "") ||
+        (filterCanhBao === "normal" && (!student.canhBaoHocVu || !student.canhBaoHocVu.lyDo || student.canhBaoHocVu.lyDo.trim() === ""));
+
+      return matchesSearch && matchesGender && matchesClassification && matchesCanhBao;
     });
 
     // Lọc sinh viên
@@ -227,7 +265,7 @@ const ThongTinLopHoc = () => {
   // Reset pagination when filters change
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm, filterGender, filterClassification, sortBy, sortOrder]);
+  }, [searchTerm, filterGender, filterClassification, filterCanhBao, sortBy, sortOrder]);
 
   // Fetch thống kê tín chỉ của lớp
   const fetchThongKeTinChi = useCallback(async () => {
@@ -258,7 +296,7 @@ const ThongTinLopHoc = () => {
     if (!previewProfiles || previewProfiles.length === 0) return [];
 
     return previewProfiles.map((student) => {
-      // If student has 0 accumulated credits and 0 GPA, classify as "Kém"
+      // Nếu sinh viên có 0 tín chỉ tích lũy và 0 điểm trung bình, phân loại là "Kém"
       if (
         (student.soTinChiTichLuy === 0 || !student.soTinChiTichLuy) &&
         (student.diemTrungBinhTichLuy === 0 || !student.diemTrungBinhTichLuy)
@@ -272,9 +310,66 @@ const ThongTinLopHoc = () => {
     });
   };
 
+  // Lấy các xếp loại học lực có sẵn trong lớp
+  const getAvailableClassifications = () => {
+    const students = getProcessedStudentsForCharts();
+    const classifications = [...new Set(students.map(student => student.xepLoaiHocLuc))];
+    return classifications.filter(classification => classification && classification.trim() !== '');
+  };
+
   // Quay lại danh sách lớp
   const backToClassList = () => {
     navigate("/giangvien/lop");
+  };
+
+  // Export danh sách sinh viên theo xếp loại
+  const handleExportStudentList = () => {
+    if (!selectedClassifications || selectedClassifications.length === 0) {
+      alert('Vui lòng chọn ít nhất một xếp loại để xuất');
+      return;
+    }
+
+    // Get all processed students
+    const allProcessedStudents = getProcessedStudentsForCharts();
+    
+    // Filter data based on selection
+    let dataToExport;
+    let titleSuffix;
+    let filenameSuffix;
+    
+    if (selectedClassifications[0] === "all") {
+      // Export all students
+      dataToExport = allProcessedStudents;
+      titleSuffix = "Tất cả";
+      filenameSuffix = "danh-sach-sinh-vien";
+    } else {
+      // Xuất file theo xếp loại đã chọn
+      dataToExport = allProcessedStudents.filter(student => 
+        selectedClassifications.includes(student.xepLoaiHocLuc)
+      );
+      titleSuffix = `xếp loại: ${selectedClassifications.join(', ')}`;
+      filenameSuffix = `xep-loai-${selectedClassifications.join('-').toLowerCase()}`;
+    }
+    
+    if (!dataToExport || dataToExport.length === 0) {
+      alert('Không có dữ liệu sinh viên để xuất');
+      return;
+    }
+
+    const columns = [
+      { header: 'MSSV', dataKey: 'maSo', width: 30 },
+      { header: 'Họ và tên', dataKey: 'hoTen', width: 50 },
+      { header: 'Giới tính', dataKey: 'gioiTinh', width: 20, align: 'center' as const, formatter: (value: boolean) => value ? 'Nam' : 'Nữ' },
+      { header: 'Ngày sinh', dataKey: 'ngaySinh', width: 30, align: 'center' as const, formatter: (value: Date) => value ? new Date(value).toLocaleDateString('vi-VN') : 'N/A' },
+      {header : "Điểm TB", dataKey: 'diemTrungBinhTichLuy', width: 20, align: 'center' as const, formatter: (value: number) => (value !== undefined && value !== null ? value.toFixed(2) : '0.00') },
+    ];
+
+    const title = `Danh sách sinh viên lớp ${maLop} (${titleSuffix})`;
+    const filename = `danh-sach-sinh-vien-lop-${maLop}-${filenameSuffix}.pdf`;
+
+    exportCustomTable(dataToExport, columns, title, filename);
+    setShowExportModal(false);
+    setSelectedClassifications([]); // Reset selection
   };
 
   // Load dữ liệu khi component mount hoặc maLop thay đổi
@@ -356,6 +451,29 @@ const ThongTinLopHoc = () => {
         </div>
       )}
 
+      {/* Export Controls */}
+      {previewProfiles && previewProfiles.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-800">Xuất báo cáo</h3>
+              <p className="text-gray-600 text-sm">
+                Xuất danh sách sinh viên theo xếp loại học lực
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <Download className="w-4 h-4" />
+                <span>Xuất PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Students List */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div className="p-6 border-b border-gray-200">
@@ -412,7 +530,7 @@ const ThongTinLopHoc = () => {
           {/* Filters */}
           {showFilters && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
                 {/* Search */}
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -452,6 +570,19 @@ const ThongTinLopHoc = () => {
                   <option value="Yếu">Yếu</option>
                   <option value="Kém">Kém</option>
                   <option value="Chưa xác định">Chưa xác định</option>
+                </select>
+
+                {/* Cảnh báo học vụ Filter */}
+                <select
+                  value={filterCanhBao}
+                  onChange={(e) =>
+                    setFilterCanhBao(e.target.value as "all" | "warning" | "normal")
+                  }
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="all">Tất cả trạng thái</option>
+                  <option value="warning">Có cảnh báo</option>
+                  <option value="normal">Bình thường</option>
                 </select>
 
                 {/* Sort By */}
@@ -557,6 +688,14 @@ const ThongTinLopHoc = () => {
                                 }
                               </span>
                             </div>
+                            {/* Cảnh báo học vụ */}
+                            {previewProfile.canhBaoHocVu && previewProfile.canhBaoHocVu.lyDo && previewProfile.canhBaoHocVu.lyDo.trim() !== "" && (
+                              <div className="mt-1">
+                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                  ⚠️ Nguy cơ cảnh báo học vụ
+                                </span>
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -699,6 +838,16 @@ const ThongTinLopHoc = () => {
           onViewDetails={handleViewStudentDetails}
         />
       </div>
+
+      {/* Export Modal */}
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        availableClassifications={getAvailableClassifications()}
+        selectedClassifications={selectedClassifications}
+        onClassificationChange={setSelectedClassifications}
+        onExport={handleExportStudentList}
+      />
     </div>
   );
 };
