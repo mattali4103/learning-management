@@ -15,7 +15,6 @@ import {
   User,
   Calendar,
   BookOpen,
-  Award,
   GraduationCap,
   Clock,
   Target,
@@ -323,7 +322,7 @@ const Dashboard = () => {
         </div>
 
         {/* Additional Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-200">
           <div className="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
             <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-blue-600">
@@ -331,31 +330,7 @@ const Dashboard = () => {
             </p>
             <p className="text-sm text-gray-600">Học kỳ đã hoàn thành</p>
           </div>
-
-          <div className="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-            <Award className="w-8 h-8 text-green-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-600">
-              {(() => {
-                if (tinChiTichLuy.length === 0) return 0;
-
-                // Tính tín chỉ của từng học kỳ riêng lẻ từ dữ liệu tích lũy
-                let totalTinChiRiengLe = 0;
-                for (let i = 0; i < tinChiTichLuy.length; i++) {
-                  const tinChiHocKy =
-                    i === 0
-                      ? tinChiTichLuy[i].soTinChiDangKy
-                      : tinChiTichLuy[i].soTinChiDangKy -
-                        tinChiTichLuy[i - 1].soTinChiDangKy;
-                  totalTinChiRiengLe += tinChiHocKy;
-                }
-
-                return (totalTinChiRiengLe / tinChiTichLuy.length).toFixed(1);
-              })()}
-            </p>
-            <p className="text-sm text-gray-600">Tín chỉ TB/học kỳ</p>
-          </div>
-
-          <div className="text-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors sm:col-span-2 lg:col-span-1">
+          <div className="text-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors ">
             <GraduationCap className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-indigo-600">
               {((statistics.soTinChiTichLuy / 156) * 100).toFixed(1)}%
@@ -375,24 +350,7 @@ const Dashboard = () => {
               Thông tin sinh viên
             </h2>
           </div>
-          
-          {/* Student Avatar */}
-          <div className="flex justify-center mb-6">
-            <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-gray-200 shadow-md">
-              {userInfo?.avatarUrl ? (
-                <img 
-                  src={userInfo.avatarUrl} 
-                  alt="Avatar" 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">
-                  <User className="w-12 h-12 text-white" />
-                </div>
-              )}
-            </div>
-          </div>
-          
+           
           <div className="space-y-4">
             {[
               {

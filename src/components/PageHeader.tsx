@@ -23,27 +23,27 @@ const PageHeader: React.FC<PageHeaderProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`bg-white rounded-2xl shadow-lg p-6 border border-gray-100 ${className}`}>
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-        <div className="flex items-center space-x-4">
+    <div
+      className={`bg-white rounded-2xl shadow-lg p-4 border border-gray-100 ${className}`}
+    >
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+        <div className="flex items-center space-x-3">
           {backButton}
-          <div className={`w-12 h-12 bg-gradient-to-br ${iconColor} rounded-xl flex items-center justify-center`}>
-            <Icon className="w-6 h-6 text-white" />
+          <div
+            className={`w-10 h-10 bg-gradient-to-br ${iconColor} rounded-xl flex items-center justify-center`}
+          >
+            <Icon className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              {title}
-            </h1>
-            <p className="text-gray-600 flex items-center mt-1">
-              {DescriptionIcon && <DescriptionIcon className="w-4 h-4 mr-2" />}
+            <h1 className="text-xl font-bold text-gray-800">{title}</h1>
+            <p className="text-gray-600 flex items-center text-sm">
+              {DescriptionIcon && <DescriptionIcon className="w-4 h-4 mr-1" />}
               {description}
             </p>
           </div>
         </div>
         {actions && (
-          <div className="flex items-center space-x-3">
-            {actions}
-          </div>
+          <div className="flex items-center space-x-2">{actions}</div>
         )}
       </div>
     </div>

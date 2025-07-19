@@ -1,12 +1,13 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { BookOpen, ArrowLeft, Users, GraduationCap, Copy } from "lucide-react";
-import type { ColumnDef } from "@tanstack/react-table";
+import { BookOpen, ArrowLeft, Users, GraduationCap } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import type { HocPhan } from "../../types/HocPhan";
 import type { Nganh } from "../../types/Nganh";
 import Loading from "../../components/Loading";
-import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
+import PageHeader from "../../components/PageHeader";
+import StatisticsCard from "../../components/StatisticsCard";
+import { CollapsibleCourseTable } from "../../components/table/CollapsibleCourseTable";
 import { HOCPHAN_SERVICE } from "../../api/apiEndPoints";
 
 interface HocPhanTuChon{
@@ -122,207 +123,6 @@ const CTDTDetail = () => {
     );
   }, [chuongTrinhDaoTao?.nhomHocPhanTuChon, activeTab]);
 
-  // Columns for required courses table
-  const requiredCoursesColumns = useMemo<ColumnDef<HocPhan>[]>(
-    () => [
-      {
-        id: "stt",
-        header: "STT",
-        cell: ({ row }) => (
-          <div className="text-center">
-            <span className="text-sm font-medium text-gray-600">
-              {row.index + 1}
-            </span>
-          </div>
-        ),
-        size: 80,
-        enableSorting: false,
-      },
-      {
-        id: "maHp",
-        accessorKey: "maHp",
-        header: "Mã học phần",
-        cell: ({ getValue }) => {
-          const code = getValue() as string;
-          return (
-            <div 
-              className="font-mono text-sm text-blue-700 px-3 py-1.5 flex items-center cursor-pointer group"
-              onClick={() => copyToClipboard(code)}
-              title="Click để sao chép mã học phần"
-            >
-              {code}
-              <Copy className="w-3.5 h-3.5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          );
-        },
-        size: 140,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "tenHp",
-        accessorKey: "tenHp",
-        header: "Tên học phần",
-        cell: ({ getValue }) => (
-          <div className="max-w-xs">
-            <div className="font-semibold text-gray-900 text-sm leading-tight">
-              {getValue() as string || "Chưa có tên"}
-            </div>
-          </div>
-        ),
-        size: 300,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "tinChi",
-        accessorKey: "tinChi",
-        header: "Tín chỉ",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-blue-700">
-              {getValue() as number || 0}
-            </span>
-          </div>
-        ),
-        size: 100,
-        enableSorting: true,
-        sortingFn: "basic",
-      },
-      {
-        id: "loaiHp",
-        accessorKey: "loaiHp",
-        header: "Loại học phần",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="text-sm text-gray-600">
-              {getValue() as string || "N/A"}
-            </span>
-          </div>
-        ),
-        size: 120,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "hocPhanTienQuyet",
-        accessorKey: "hocPhanTienQuyet",
-        header: "Tiên quyết",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="text-sm text-gray-600">
-              {getValue() as string || "-"}
-            </span>
-          </div>
-        ),
-        size: 150,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-    ],
-    []
-  );
-
-  // Columns for elective courses table
-  const electiveCoursesColumns = useMemo<ColumnDef<HocPhan>[]>(
-    () => [
-      {
-        id: "stt",
-        header: "STT",
-        cell: ({ row }) => (
-          <div className="text-center">
-            <span className="text-sm font-medium text-gray-600">
-              {row.index + 1}
-            </span>
-          </div>
-        ),
-        size: 80,
-        enableSorting: false,
-      },
-      {
-        id: "maHp",
-        accessorKey: "maHp",
-        header: "Mã học phần",
-        cell: ({ getValue }) => {
-          const code = getValue() as string;
-          return (
-            <div 
-              className="font-mono text-sm text-green-700 px-3 py-1.5 flex items-center cursor-pointer group"
-              onClick={() => copyToClipboard(code)}
-              title="Click để sao chép mã học phần"
-            >
-              {code}
-              <Copy className="w-3.5 h-3.5 ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
-            </div>
-          );
-        },
-        size: 140,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "tenHp",
-        accessorKey: "tenHp",
-        header: "Tên học phần",
-        cell: ({ getValue }) => (
-          <div className="max-w-xs">
-            <div className="font-semibold text-gray-900 text-sm leading-tight">
-              {getValue() as string || "Chưa có tên"}
-            </div>
-          </div>
-        ),
-        size: 300,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "tinChi",
-        accessorKey: "tinChi",
-        header: "Tín chỉ",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-green-700">
-              {getValue() as number || 0}
-            </span>
-          </div>
-        ),
-        size: 100,
-        enableSorting: true,
-        sortingFn: "basic",
-      },
-      {
-        id: "loaiHp",
-        accessorKey: "loaiHp",
-        header: "Loại học phần",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="text-sm text-gray-600">
-              {getValue() as string || "N/A"}
-            </span>
-          </div>
-        ),
-        size: 120,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "hocPhanTienQuyet",
-        accessorKey: "hocPhanTienQuyet",
-        header: "Tiên quyết",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="text-sm text-gray-600">
-              {getValue() as string || "-"}
-            </span>
-          </div>
-        ),
-        size: 150,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-    ],
-    []
-  );
 
   if (loading) {
     return <Loading />;
@@ -344,8 +144,12 @@ const CTDTDetail = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
       {/* Header */}
-      <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-        <div className="flex items-center justify-between mb-4">
+      <PageHeader
+        title={`${chuongTrinhDaoTao.nganh.tenNganh} - Khóa ${chuongTrinhDaoTao.khoaHoc}`}
+        description={`Mã ngành: ${chuongTrinhDaoTao.nganh.maNganh} • Chương trình đào tạo khóa ${chuongTrinhDaoTao.khoaHoc}`}
+        icon={BookOpen}
+        iconColor="from-green-500 to-emerald-600"
+        backButton={
           <button
             onClick={() => navigate(-1)}
             className="flex items-center px-3 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
@@ -353,22 +157,8 @@ const CTDTDetail = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Quay lại
           </button>
-        </div>
-        
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center">
-            <BookOpen className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">
-              {chuongTrinhDaoTao.nganh.tenNganh} - Khóa {chuongTrinhDaoTao.khoaHoc}
-            </h1>
-            <p className="text-gray-600">
-              Mã ngành: {chuongTrinhDaoTao.nganh.maNganh} • Chương trình đào tạo khóa {chuongTrinhDaoTao.khoaHoc}
-            </p>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Error Message */}
       {error && (
@@ -379,69 +169,37 @@ const CTDTDetail = () => {
 
       {/* Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Tổng số tín chỉ</p>
-              <p className="text-3xl font-bold text-blue-600">
-                {chuongTrinhDaoTao.tongSoTinChi}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-              <GraduationCap className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Tín chỉ tự chọn</p>
-              <p className="text-3xl font-bold text-green-600">
-                {chuongTrinhDaoTao.tongSoTinChiTuChon}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-              <Users className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Tổng môn học</p>
-              <p className="text-3xl font-bold text-purple-600">
-                {(chuongTrinhDaoTao.hocPhanList?.length || 0) + 
-                 (chuongTrinhDaoTao.nhomHocPhanTuChon?.reduce((total, nhom) => total + (nhom.hocPhanTuChonList?.length || 0), 0) || 0)}
-              </p>
-            </div>
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-              <BookOpen className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
+        <StatisticsCard
+          title="Tổng số tín chỉ"
+          value={chuongTrinhDaoTao.tongSoTinChi}
+          icon={GraduationCap}
+          colorScheme="blue"
+          size="md"
+        />
+        
+        <StatisticsCard
+          title="Tín chỉ tự chọn"
+          value={chuongTrinhDaoTao.tongSoTinChiTuChon}
+          icon={Users}
+          colorScheme="green"
+          size="md"
+        />
+        
+        <StatisticsCard
+          title="Tổng môn học"
+          value={
+            (chuongTrinhDaoTao.hocPhanList?.length || 0) + 
+            (chuongTrinhDaoTao.nhomHocPhanTuChon?.reduce((total, nhom) => total + (nhom.hocPhanTuChonList?.length || 0), 0) || 0)
+          }
+          icon={BookOpen}
+          colorScheme="purple"
+          size="md"
+        />
       </div>
 
       {/* Tab Navigation & Content */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        {/* Summary Section */}
-        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-blue-50">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-bold text-gray-800">
-                Chi tiết chương trình đào tạo
-              </h2>
-              <p className="text-gray-600 mt-1">
-                {courseTypeStatistics.totalCourses} học phần bắt buộc • 
-                {chuongTrinhDaoTao?.nhomHocPhanTuChon?.length || 0} nhóm tự chọn • 
-                {courseTypeStatistics.daiCuongCourses} Đại Cương • 
-                {courseTypeStatistics.coSoNganhCourses} Cơ Sở Ngành • 
-                {courseTypeStatistics.chuyenNganhCourses} Chuyên Ngành
-              </p>
-            </div>
-          </div>
-        </div>
+
         
         <div className="flex border-b border-gray-200">
           <button
@@ -495,138 +253,23 @@ const CTDTDetail = () => {
         </div>
         {/* Content */}
         <div className="p-6">
-          <div>
-            {filteredCoursesByType.length === 0 && filteredElectiveGroups.length === 0 ? (
-              <div className="text-center py-12">
-                <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                  {activeTab === "tatca" ? "Chưa có học phần nào" : `Chưa có học phần ${activeTab}`}
-                </h3>
-                <p className="text-gray-500">
-                  {activeTab === "tatca" 
-                    ? "Hiện tại chưa có học phần nào trong chương trình đào tạo" 
-                    : `Hiện tại chưa có học phần ${activeTab} nào`
-                  }
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-8">
-                {/* Required Courses Section */}
-                {filteredCoursesByType.length > 0 && (
-                  <div>
-                    <div className="bg-gray-50 rounded-xl p-4 mb-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-lg font-semibold text-gray-800">
-                            {activeTab === "tatca" 
-                              ? "Danh sách học phần bắt buộc" 
-                              : `Danh sách học phần bắt buộc - ${activeTab}`
-                            }
-                          </h3>
-                          <p className="text-gray-600 text-sm">
-                            Tổng cộng {filteredCoursesByType.length} học phần bắt buộc
-                            {activeTab !== "tatca" && ` loại ${activeTab}`} trong chương trình đào tạo
-                          </p>
-                        </div>
-                        <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          activeTab === "tatca" ? "bg-blue-100 text-blue-800" :
-                          activeTab === "Đại cương" ? "bg-green-100 text-green-800" :
-                          activeTab === "Cơ sở ngành" ? "bg-purple-100 text-purple-800" :
-                          "bg-orange-100 text-orange-800"
-                        }`}>
-                          {filteredCoursesByType.reduce((total: number, hp: HocPhan) => total + (hp.tinChi || 0), 0)} tín chỉ
-                        </div>
-                      </div>
-                    </div>
-                    <div className="overflow-hidden mb-8">
-                      <KeHoachHocTapTable
-                        name={activeTab === "tatca" ? "Học phần bắt buộc" : `Học phần bắt buộc ${activeTab}`}
-                        data={filteredCoursesByType}
-                        columns={requiredCoursesColumns}
-                        emptyStateTitle={activeTab === "tatca" ? "Chưa có học phần bắt buộc" : `Chưa có học phần bắt buộc ${activeTab}`}
-                        emptyStateDescription={
-                          activeTab === "tatca" 
-                            ? "Hiện tại chưa có học phần bắt buộc nào trong chương trình đào tạo"
-                            : `Hiện tại chưa có học phần bắt buộc ${activeTab} nào trong chương trình đào tạo`
-                        }
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {/* Elective Course Groups Section */}
-                {filteredElectiveGroups.length > 0 && (
-                  <div>
-                    <div className="bg-emerald-50 rounded-xl p-4 mb-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <h3 className="text-lg font-semibold text-emerald-800">
-                            {activeTab === "tatca" 
-                              ? "Danh sách nhóm học phần tự chọn" 
-                              : `Nhóm học phần tự chọn - ${activeTab}`
-                            }
-                          </h3>
-                          <p className="text-emerald-600 text-sm">
-                            Tổng cộng {filteredElectiveGroups.length} nhóm học phần tự chọn
-                            {activeTab !== "tatca" && ` có chứa học phần ${activeTab}`}
-                          </p>
-                        </div>
-                        <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {filteredElectiveGroups.reduce((total, nhom) => total + (nhom.tinChiYeuCau || 0), 0)} tín chỉ yêu cầu
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-6">
-                      {filteredElectiveGroups.map((nhom, nhomIndex) => {
-                        // Filter courses in this group by type if not showing all
-                        const coursesInGroup = activeTab === "tatca" 
-                          ? nhom.hocPhanTuChonList || []
-                          : (nhom.hocPhanTuChonList || []).filter(hp => hp.loaiHp === activeTab);
-
-                        return (
-                          <div
-                            key={`${nhom.id}-${nhomIndex}`}
-                            className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"
-                          >
-                            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-between">
-                              <div>
-                                <h3 className="text-lg font-semibold text-emerald-800 mb-1">
-                                  Nhóm học phần tự chọn: {nhom.tenNhom}
-                                </h3>
-                                <p className="text-emerald-600 text-sm">
-                                  Yêu cầu: <span className="font-medium">{nhom.tinChiYeuCau}</span> tín chỉ
-                                  {activeTab !== "tatca" && (
-                                    <span className="ml-2">• Hiển thị {coursesInGroup.length} học phần {activeTab}</span>
-                                  )}
-                                </p>
-                              </div>
-                              <div className="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-sm font-medium">
-                                {coursesInGroup.length} học phần
-                              </div>
-                            </div>
-                            
-                            <div className="overflow-x-auto">
-                              <KeHoachHocTapTable
-                                name={`Nhóm ${nhom.tenNhom}`}
-                                data={coursesInGroup}
-                                columns={electiveCoursesColumns}
-                                emptyStateTitle="Chưa có học phần tự chọn"
-                                emptyStateDescription={
-                                  activeTab === "tatca"
-                                    ? `Nhóm ${nhom.tenNhom} chưa có học phần tự chọn nào`
-                                    : `Nhóm ${nhom.tenNhom} chưa có học phần ${activeTab} nào`
-                                }
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+          <CollapsibleCourseTable
+            name={activeTab === "tatca" 
+              ? "Chi tiết chương trình đào tạo" 
+              : `Chi tiết chương trình đào tạo - ${activeTab}`
+            }
+            requiredCourses={filteredCoursesByType}
+            electiveGroups={filteredElectiveGroups}
+            activeTab={activeTab}
+            loading={loading}
+            emptyStateTitle={activeTab === "tatca" ? "Chưa có học phần nào" : `Chưa có học phần ${activeTab}`}
+            emptyStateDescription={
+              activeTab === "tatca" 
+                ? "Hiện tại chưa có học phần nào trong chương trình đào tạo" 
+                : `Hiện tại chưa có học phần ${activeTab} nào`
+            }
+            onCopyToClipboard={copyToClipboard}
+          />
         </div>
       </div>
     </div>

@@ -10,6 +10,8 @@ import {
   List,
   Grid3X3,
   Download,
+  BarChart3,
+  UserCheck,
 } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE, PROFILE_SERVICE } from "../../api/apiEndPoints";
@@ -74,7 +76,10 @@ const ThongTinLopHoc = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const studentsPerPage = 8;
+  const studentsPerPage = 12;
+
+  // Tab state
+  const [activeTab, setActiveTab] = useState<"students" | "statistics">("students");
 
   // Export modal states
   const [showExportModal, setShowExportModal] = useState(false);
@@ -382,7 +387,7 @@ const ThongTinLopHoc = () => {
   // Hiển thị loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
+      <div className="min-h-[calc(100vh - 64px)] bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -419,7 +424,7 @@ const ThongTinLopHoc = () => {
   // Bỏ qua kiểm tra selectedClass vì giờ chúng ta sử dụng previewProfiles trực tiếp
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
+    <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 overflow-hidden flex flex-col">
       {/* Header */}
       <PageHeader
         title={`Quản lý lớp ${maLop}`}
@@ -434,6 +439,17 @@ const ThongTinLopHoc = () => {
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
         }
+        actions={
+          previewProfiles && previewProfiles.length > 0 ? (
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>Xuất PDF</span>
+            </button>
+          ) : null
+        }
       />
 
       {/* Error Message */}
@@ -443,39 +459,54 @@ const ThongTinLopHoc = () => {
         </div>
       )}
 
-      {/* Statistics Charts */}
+      {/* Tab Navigation */}
       {previewProfiles && previewProfiles.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <StudentClassificationPieChart students={getProcessedStudentsForCharts()} />
-          <AccumulatedCreditBarChart students={getProcessedStudentsForCharts()} />
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
+          <div className="flex border-b border-gray-200">
+            <button
+              onClick={() => setActiveTab("students")}
+              className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === "students"
+                  ? "border-b-2 border-blue-500 text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <UserCheck className="w-4 h-4" />
+              <span>Danh sách sinh viên</span>
+              <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs">
+                {previewProfiles?.length || 0}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab("statistics")}
+              className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === "statistics"
+                  ? "border-b-2 border-blue-500 text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Thống kê & Biểu đồ</span>
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Export Controls */}
-      {previewProfiles && previewProfiles.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-semibold text-gray-800">Xuất báo cáo</h3>
-              <p className="text-gray-600 text-sm">
-                Xuất danh sách sinh viên theo xếp loại học lực
-              </p>
-            </div>
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setShowExportModal(true)}
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <Download className="w-4 h-4" />
-                <span>Xuất PDF</span>
-              </button>
+      {/* Statistics Charts */}
+      {previewProfiles && previewProfiles.length > 0 && activeTab === "statistics" && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 flex-1 overflow-y-auto">
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <StudentClassificationPieChart students={getProcessedStudentsForCharts()} />
+              <AccumulatedCreditBarChart students={getProcessedStudentsForCharts()} />
             </div>
           </div>
         </div>
       )}
 
       {/* Students List */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
+      {activeTab === "students" && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 flex-1 flex flex-col overflow-hidden">
         <div className="p-6 border-b border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -624,17 +655,17 @@ const ThongTinLopHoc = () => {
         ) : previewProfiles?.length > 0 ? (
           <>
             {/* Student Display */}
-            <div className="p-6">
+            <div className="p-4 flex-1 overflow-y-auto">
               {viewMode === "grid" ? (
                 /* Grid View - Card Layout with Avatar Left + Info Right */
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                   {getPaginatedStudents().students.map((previewProfile) => {
                     const isSelected = selectedStudentForPreview?.maSo === previewProfile.maSo && isTooltipVisible;
                     return (
                       <div
                         key={previewProfile.maSo}
                         data-student-card
-                        className={`bg-white border rounded-lg p-4 hover:shadow-md transition-all duration-200 cursor-pointer group ${
+                        className={`bg-white border rounded-lg p-3 hover:shadow-md transition-all duration-200 cursor-pointer group ${
                           isSelected 
                             ? 'border-blue-500 shadow-md ring-2 ring-blue-200' 
                             : 'border-gray-200 hover:border-blue-300'
@@ -642,9 +673,9 @@ const ThongTinLopHoc = () => {
                         onClick={(e) => handleShowStudentPreview(previewProfile, e)}
                       >
                         {/* Main Content Area */}
-                        <div className="flex items-center space-x-3 mb-3">
+                        <div className="flex items-center space-x-2">
                           {/* Avatar */}
-                          <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
+                          <div className="w-10 h-10 rounded-full overflow-hidden flex-shrink-0 group-hover:scale-105 transition-transform">
                             {previewProfile.avatarUrl ? (
                               <img
                                 src={previewProfile.avatarUrl}
@@ -656,14 +687,14 @@ const ThongTinLopHoc = () => {
                                   target.style.display = 'none';
                                   const parent = target.parentElement;
                                   if (parent) {
-                                    parent.className = "w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform";
-                                    parent.innerHTML = '<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>';
+                                    parent.className = "w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform";
+                                    parent.innerHTML = '<User className="w-5 h-5 text-white" />';
                                   }
                                 }}
                               />
                             ) : (
-                              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                                <User className="w-6 h-6 text-white" />
+                              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                                <User className="w-5 h-5 text-white" />
                               </div>
                             )}
                           </div>
@@ -673,34 +704,32 @@ const ThongTinLopHoc = () => {
                             <h3 className="font-semibold text-gray-800 text-sm leading-tight truncate">
                               {previewProfile.hoTen}
                             </h3>
-                            <p className="text-xs text-gray-500 font-mono mt-0.5">
+                            <p className="text-xs text-gray-500 font-mono">
                               {previewProfile.maSo}
                             </p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <span className="text-xs text-gray-600">
+                            <div className="flex items-center space-x-1 text-xs text-gray-600">
+                              <span>
                                 {previewProfile.gioiTinh ? "Nam" : "Nữ"}
                               </span>
-                              <span className="text-xs text-gray-400">•</span>
-                              <span className="text-xs text-gray-600">
+                              <span className="text-gray-400">•</span>
+                              <span>
                                 {previewProfile.ngaySinh 
                                   ? new Date(previewProfile.ngaySinh).toLocaleDateString("vi-VN")
                                   : "N/A"
                                 }
                               </span>
+                              {/* Cảnh báo học vụ - inline */}
+                              {previewProfile.canhBaoHocVu && previewProfile.canhBaoHocVu.lyDo && previewProfile.canhBaoHocVu.lyDo.trim() !== "" && (
+                                <>
+                                  <span className="text-gray-400">•</span>
+                                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-red-100 text-red-600 text-xs" title="Nguy cơ cảnh báo học vụ">
+                                    ⚠️
+                                  </span>
+                                </>
+                              )}
                             </div>
-                            {/* Cảnh báo học vụ */}
-                            {previewProfile.canhBaoHocVu && previewProfile.canhBaoHocVu.lyDo && previewProfile.canhBaoHocVu.lyDo.trim() !== "" && (
-                              <div className="mt-1">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                  ⚠️ Nguy cơ cảnh báo học vụ
-                                </span>
-                              </div>
-                            )}
                           </div>
                         </div>
-
-                        {/* Separator Line */}
-                        <div className="border-t border-gray-200"></div>
                       </div>
                     );
                   })}
@@ -812,21 +841,8 @@ const ThongTinLopHoc = () => {
             <p className="text-gray-500">Lớp này chưa có sinh viên nào</p>
           </div>
         )}
-
-        {/* Statistics Table */}
-        {statistics.length > 0 && (
-          <div className="border-t border-gray-200">
-            <div className="p-6 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-800">
-                Thống kê tín chỉ chi tiết theo sinh viên
-              </h3>
-              <p className="text-sm text-gray-600 mt-1">
-                Dữ liệu này đã được tích hợp vào danh sách sinh viên ở trên
-              </p>
-            </div>
-          </div>
-        )}
       </div>
+      )}
 
       {/* Student Tooltip */}
       <div data-student-tooltip>
@@ -848,7 +864,7 @@ const ThongTinLopHoc = () => {
         onClassificationChange={setSelectedClassifications}
         onExport={handleExportStudentList}
       />
-    </div>
+      </div>
   );
 };
 

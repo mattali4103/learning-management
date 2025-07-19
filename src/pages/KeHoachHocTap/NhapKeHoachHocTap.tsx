@@ -8,7 +8,8 @@ import {
   KHHT_SERVICE,
   KQHT_SERVICE,
 } from "../../api/apiEndPoints";
-import { CirclePlus, Trash2, Dumbbell, Users, BookOpen, SquareLibrary, CheckCircle } from "lucide-react";
+import { CirclePlus, Trash2, Users, BookOpen, SquareLibrary, CheckCircle, BarChart3 } from "lucide-react";
+
 import Error from "../../components/Error";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
@@ -106,33 +107,6 @@ const SectionHeader: React.FC<{
   );
 };
 
-// Component for credit progress display  
-const CreditProgress: React.FC<{
-  groups: HocPhanTuChon[];
-  getTinChiDaChonTrongNhom: (nhom: HocPhanTuChon) => number;
-}> = ({ groups, getTinChiDaChonTrongNhom }) => {
-  return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      {groups.map(nhom => {
-        const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
-        const isCompleted = tinChiDaChon >= nhom.tinChiYeuCau;
-        return (
-          <span 
-            key={nhom.id} 
-            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-              isCompleted 
-                ? "bg-green-100 text-green-800" 
-                : "bg-orange-100 text-orange-800"
-            }`}
-          >
-            {nhom.tenNhom}: {tinChiDaChon}/{nhom.tinChiYeuCau} TC
-            {isCompleted && <span className="ml-1">✓</span>}
-          </span>
-        );
-      })}
-    </div>
-  );
-};
 
 // Component for completion status summary
 const CompletionStatusSummary: React.FC<{
@@ -334,7 +308,7 @@ const NhapKeHoachHocTap: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [fetchLoading, setFetchLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"select" | "selected" | "theChat" | "chuyenNganh" | "other" | "daiCuong" | "coSoNganh" | "chuyenNganh2">("select");
+  const [activeTab, setActiveTab] = useState<"select" | "selected" | "chuyenNganh" | "other" | "daiCuong" | "coSoNganh" | "chuyenNganh2" | "completionStatus">("select");
   
   // States for học phần theo loại
   const [hocPhanDaiCuong, setHocPhanDaiCuong] = useState<HocPhan[]>([]);
@@ -364,7 +338,7 @@ const NhapKeHoachHocTap: React.FC = () => {
 
   // Component for Tab Button - defined inside component to access setActiveTab
   const TabButton: React.FC<{
-    tab: "select" | "selected" | "theChat" | "chuyenNganh" | "other" | "daiCuong" | "coSoNganh" | "chuyenNganh2";
+    tab: "select" | "selected" | "chuyenNganh" | "other" | "daiCuong" | "coSoNganh" | "chuyenNganh2" | "completionStatus";
     isActive: boolean;
     icon: React.ReactNode;
     children: React.ReactNode;
@@ -1153,19 +1127,10 @@ const NhapKeHoachHocTap: React.FC = () => {
 
   // Helper function để phân loại nhóm học phần
   const categorizeNhomHocPhan = useMemo(() => {
-    const theChat: HocPhanTuChon[] = [];
     const chuyenNganhGroups = new Map<string, HocPhanTuChon[]>();
     const other: HocPhanTuChon[] = [];
 
     NhomHocPhanTuChon.forEach(nhom => {
-      const tenNhom = nhom.tenNhom?.toLowerCase() || '';
-      
-      // Kiểm tra nhóm thể chất
-      if (tenNhom.includes('thể chất') || tenNhom.includes('the chat')) {
-        theChat.push(nhom);
-        return;
-      }
-      
       // Kiểm tra nhóm chuyên ngành (có dạng "Tên CN1", "Tên CN2", v.v.)
       const chuyenNganhMatch = nhom.tenNhom?.match(/^(.+\s+CN)\d+$/);
       if (chuyenNganhMatch) {
@@ -1182,7 +1147,6 @@ const NhapKeHoachHocTap: React.FC = () => {
     });
 
     return {
-      theChat,
       chuyenNganh: Array.from(chuyenNganhGroups.entries()),
       other
     };
@@ -1392,487 +1356,475 @@ const NhapKeHoachHocTap: React.FC = () => {
       <>
           {/* Tab Navigation */}
           <div className="flex flex-wrap justify-between items-start gap-2 mb-6">
-            {/* Left side tabs */}
-            <div className="flex flex-wrap gap-2">
-              <TabButton 
-                tab="select" 
-                isActive={activeTab === "select"}
-                icon={<CirclePlus className="h-5 w-5" />}
-              >
-                Chọn học phần
-              </TabButton>
-              
-              {/* Tab Đại cương */}
-              <TabButton 
-                tab="daiCuong" 
-                isActive={activeTab === "daiCuong"}
-                icon={<BookOpen className="h-5 w-5" />}
-                count={filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)}
-              >
-                Đại cương
-              </TabButton>
-              
-              {/* Tab Cơ sở ngành */}
-              <TabButton 
-                tab="coSoNganh" 
-                isActive={activeTab === "coSoNganh"}
-                icon={<SquareLibrary className="h-5 w-5" />}
-                count={filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)}
-              >
-                Cơ sở ngành
-              </TabButton>
-              
-              {/* Tab Chuyên ngành (từ API + nhóm tự chọn) */}
-              <TabButton 
-                tab="chuyenNganh2" 
-                isActive={activeTab === "chuyenNganh2"}
-                icon={<Users className="h-5 w-5" />}
-                count={filteredHocPhanChuyenNganh.length + hocPhanTuChonChuyenNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0) + categorizeNhomHocPhan.chuyenNganh.reduce((total, [, nhomList]) => total + nhomList.reduce((sum, nhom) => sum + nhom.hocPhanTuChonList.length, 0), 0)}
-              >
-                Chuyên ngành
-              </TabButton>
-              
-              {/* Tab nhóm thể chất */}
-              {categorizeNhomHocPhan.theChat.length > 0 && (
-                <TabButton 
-                  tab="theChat" 
-                  isActive={activeTab === "theChat"}
-                  icon={<Dumbbell className="h-5 w-5" />}
-                >
-                  Thể chất
-                </TabButton>
-              )}
-            </div>
+          {/* Left side tabs */}
+          <div className="flex flex-wrap gap-2">
+            <TabButton 
+              tab="select" 
+              isActive={activeTab === "select"}
+              icon={<CirclePlus className="h-5 w-5" />}
+            >
+              Chọn học phần
+            </TabButton>
             
-            {/* Right side tab */}
-            <div className="flex">
+            {/* Tab Đại cương */}
+            <TabButton 
+              tab="daiCuong" 
+              isActive={activeTab === "daiCuong"}
+              icon={<BookOpen className="h-5 w-5" />}
+              count={filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)}
+            >
+              Đại cương
+            </TabButton>
+            
+            {/* Tab Cơ sở ngành */}
+            <TabButton 
+              tab="coSoNganh" 
+              isActive={activeTab === "coSoNganh"}
+              icon={<SquareLibrary className="h-5 w-5" />}
+              count={filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)}
+            >
+              Cơ sở ngành
+            </TabButton>
+            
+            {/* Tab Chuyên ngành (từ API + nhóm tự chọn) */}
+            <TabButton 
+              tab="chuyenNganh2" 
+              isActive={activeTab === "chuyenNganh2"}
+              icon={<Users className="h-5 w-5" />}
+              count={filteredHocPhanChuyenNganh.length + hocPhanTuChonChuyenNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0) + categorizeNhomHocPhan.chuyenNganh.reduce((total, [, nhomList]) => total + nhomList.reduce((sum, nhom) => sum + nhom.hocPhanTuChonList.length, 0), 0)}
+            >
+              Chuyên ngành
+            </TabButton>
+
+            {/* Tab Tình trạng hoàn thành */}
+            <TabButton 
+              tab="completionStatus" 
+              isActive={activeTab === "completionStatus"}
+              icon={<BarChart3 className="h-5 w-5" />}
+            >
+              Tình trạng hoàn thành
+            </TabButton>
+            
+            {/* Tab nhóm thể chất */}
+            {/* Removed as per user request */}
+            {/* {categorizeNhomHocPhan.theChat.length > 0 && (
               <TabButton 
-                tab="selected" 
-                isActive={activeTab === "selected"}
-                icon={<SquareLibrary className="h-5 w-5" />}
-                count={selectedHocPhan.length}
+                tab="theChat" 
+                isActive={activeTab === "theChat"}
+                icon={<Dumbbell className="h-5 w-5" />}
               >
-                Học phần đã chọn
+                Thể chất
               </TabButton>
-            </div>
+            )} */}
           </div>
+          
+          {/* Right side tab */}
+          <div className="flex">
+            <TabButton 
+              tab="selected" 
+              isActive={activeTab === "selected"}
+              icon={<SquareLibrary className="h-5 w-5" />}
+              count={selectedHocPhan.length}
+            >
+              Học phần đã chọn
+            </TabButton>
+          </div>
+        </div>
 
-          {/* Completion Status Summary */}
-          <CompletionStatusSummary completionStatus={completionStatus} />
+        {/* Tab Content */}
+        {activeTab === "select" ? (
+          <div className="space-y-6">
+            {/* Available học phần table */}
+            <KeHoachHocTapTable
+              name="Danh sách học phần có thể thêm"
+              data={filteredAvailableHocPhan}
+              columns={availableColumns}
+              initialExpanded={true}
+              loading={false}
+            />
+            
+            {/* Bảng học phần gợi ý */}
+            {filteredHocPhanGoiY && filteredHocPhanGoiY.length > 0 && (
+              <div className="space-y-2">
+                <SectionHeader
+                  title="Học phần gợi ý"
+                  description={`Các học phần phù hợp với tiến độ học tập của bạn - Có ${filteredHocPhanGoiY.length} môn được gợi ý`}
+                  icon={
+                    <div className="flex items-center space-x-3">
+                      <StatusBadge color="emerald">{filteredHocPhanGoiY.length} môn học</StatusBadge>
+                      <StatusBadge color="blue">Được gợi ý</StatusBadge>
+                    </div>
+                  }
+                  colorScheme="emerald"
+                />
+                <KeHoachHocTapTable
+                  name="Học phần được gợi ý"
+                  data={filteredHocPhanGoiY}
+                  columns={availableColumns}
+                  initialExpanded={false}
+                  loading={false}
+                />
+              </div>
+            )}
 
-          {/* Tab Content */}
-          {activeTab === "select" ? (
-            <div className="space-y-6">
-              {/* Available học phần table */}
-              <KeHoachHocTapTable
-                name="Danh sách học phần có thể thêm"
-                data={filteredAvailableHocPhan}
-                columns={availableColumns}
-                initialExpanded={true}
-                loading={false}
-              />
-              
-              {/* Bảng học phần gợi ý */}
-              {filteredHocPhanGoiY && filteredHocPhanGoiY.length > 0 && (
-                <div className="space-y-2">
-                  <SectionHeader
-                    title="Học phần gợi ý"
-                    description={`Các học phần phù hợp với tiến độ học tập của bạn - Có ${filteredHocPhanGoiY.length} môn được gợi ý`}
-                    icon={
-                      <div className="flex items-center space-x-3">
-                        <StatusBadge color="emerald">{filteredHocPhanGoiY.length} môn học</StatusBadge>
-                        <StatusBadge color="blue">Được gợi ý</StatusBadge>
-                      </div>
-                    }
-                    colorScheme="emerald"
-                  />
-                  <KeHoachHocTapTable
-                    name="Học phần được gợi ý"
-                    data={filteredHocPhanGoiY}
-                    columns={availableColumns}
-                    initialExpanded={false}
-                    loading={false}
-                  />
-                </div>
-              )}
-
-              {/* Bảng học phần cải thiện */}
-              {filteredHocPhanCaiThien && filteredHocPhanCaiThien.length > 0 && (
-                <div className="space-y-2">
-                  <SectionHeader
-                    title="Học phần cải thiện"
-                    description={`Các học phần có điểm chưa đạt cần cải thiện - Có ${filteredHocPhanCaiThien.length} môn có thể cải thiện`}
-                    icon={
-                      <div className="flex items-center space-x-3">
-                        <StatusBadge color="orange">{filteredHocPhanCaiThien.length} môn học</StatusBadge>
-                        <StatusBadge color="red">Cần cải thiện</StatusBadge>
-                      </div>
-                    }
-                    colorScheme="orange"
-                  />
-                  <KeHoachHocTapTable
-                    name="Học phần cần cải thiện"
-                    data={filteredHocPhanCaiThien}
-                    columns={createHocPhanCaiThienColumns()}
-                    initialExpanded={false}
-                    loading={false}
-                  />
-                </div>
-              )}
-            </div>
-          ) : activeTab === "daiCuong" ? (
-            <div className="space-y-6">
-              <SectionHeader
-                title="Học phần Đại cương"
-                description={`Bao gồm cả học phần bắt buộc và tự chọn thuộc nhóm Đại cương${(filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)) > 0 ? ` - Tổng cộng ${filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn học` : ""}${hocPhanTuChonDaiCuong.length > 0 ? ` ✨ Trong đó có ${filteredHocPhanDaiCuong.filter(hp => !hocPhanTuChonDaiCuong.some(group => group.hocPhanTuChonList.some(tc => tc.maHp === hp.maHp))).length} môn bắt buộc và ${hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn tự chọn` : ""}`}
-                icon={<BookOpen className="h-8 w-8" />}
-                colorScheme="blue"
-                loading={loadingLoaiHp["Đại Cương"]}
-              />
-              
-              <CourseSection
-                sectionName="Đại cương"
-                mainCourses={filteredHocPhanDaiCuong}
-                electiveGroups={hocPhanTuChonDaiCuong}
-                columns={availableColumns}
-                loading={loadingLoaiHp["Đại Cương"] || false}
-                getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
-                getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
-                selectedHocPhan={selectedHocPhan}
-                onAddHocPhan={addHocPhan}
-                isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
-              />
-            </div>
-          ) : activeTab === "coSoNganh" ? (
-            <div className="space-y-6">
-              <SectionHeader
-                title="Học phần Cơ sở ngành"
-                description={`Bao gồm cả học phần bắt buộc và tự chọn thuộc nhóm Cơ sở ngành${(filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)) > 0 ? ` - Tổng cộng ${filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn học` : ""}${hocPhanTuChonCoSoNganh.length > 0 ? ` ✨ Trong đó có ${filteredHocPhanCoSoNganh.filter(hp => !hocPhanTuChonCoSoNganh.some(group => group.hocPhanTuChonList.some(tc => tc.maHp === hp.maHp))).length} môn bắt buộc và ${hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn tự chọn` : ""}`}
-                icon={<SquareLibrary className="h-8 w-8" />}
-                colorScheme="emerald"
-                loading={loadingLoaiHp["Cơ Sở Ngành"]}
-              />
-              
-              <CourseSection
-                sectionName="Cơ sở ngành"
-                mainCourses={filteredHocPhanCoSoNganh}
-                electiveGroups={hocPhanTuChonCoSoNganh}
-                columns={availableColumns}
-                loading={loadingLoaiHp["Cơ Sở Ngành"] || false}
-                getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
-                getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
-                selectedHocPhan={selectedHocPhan}
-                onAddHocPhan={addHocPhan}
-                isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
-              />
-            </div>
-          ) : activeTab === "chuyenNganh2" ? (
-            <div className="space-y-6">
-              <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-lg p-4 mb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-lg font-semibold text-purple-800 mb-1">
-                      Học phần Chuyên ngành
-                    </h3>
-                    <p className="text-purple-600 text-sm">
-                      Bao gồm học phần bắt buộc, tự chọn và các nhóm chuyên ngành theo lĩnh vực
-                      {filteredHocPhanChuyenNganh.length > 0 && (
-                        <span className="ml-2 text-purple-700">
-                          - Tổng cộng{" "}
-                          <span className="font-medium">
-                            {filteredHocPhanChuyenNganh.length}
-                          </span>{" "}
-                          môn học từ CTDT
-                        </span>
-                      )}
+            {/* Bảng học phần cải thiện */}
+            {filteredHocPhanCaiThien && filteredHocPhanCaiThien.length > 0 && (
+              <div className="space-y-2">
+                <SectionHeader
+                  title="Học phần cải thiện"
+                  description={`Các học phần có điểm chưa đạt cần cải thiện - Có ${filteredHocPhanCaiThien.length} môn có thể cải thiện`}
+                  icon={
+                    <div className="flex items-center space-x-3">
+                      <StatusBadge color="orange">{filteredHocPhanCaiThien.length} môn học</StatusBadge>
+                      <StatusBadge color="red">Cần cải thiện</StatusBadge>
+                    </div>
+                  }
+                  colorScheme="orange"
+                />
+                <KeHoachHocTapTable
+                  name="Học phần cần cải thiện"
+                  data={filteredHocPhanCaiThien}
+                  columns={createHocPhanCaiThienColumns()}
+                  initialExpanded={false}
+                  loading={false}
+                />
+              </div>
+            )}
+          </div>
+        ) : activeTab === "daiCuong" ? (
+          <div className="space-y-6">
+            <SectionHeader
+              title="Học phần Đại cương"
+              description={`Bao gồm cả học phần bắt buộc và tự chọn thuộc nhóm Đại cương${(filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)) > 0 ? ` - Tổng cộng ${filteredHocPhanDaiCuong.length + hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn học` : ""}${hocPhanTuChonDaiCuong.length > 0 ? ` ✨ Trong đó có ${filteredHocPhanDaiCuong.filter(hp => !hocPhanTuChonDaiCuong.some(group => group.hocPhanTuChonList.some(tc => tc.maHp === hp.maHp))).length} môn bắt buộc và ${hocPhanTuChonDaiCuong.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn tự chọn` : ""}`}
+              icon={<BookOpen className="h-8 w-8" />}
+              colorScheme="blue"
+              loading={loadingLoaiHp["Đại Cương"]}
+            />
+            
+            <CourseSection
+              sectionName="Đại cương"
+              mainCourses={filteredHocPhanDaiCuong}
+              electiveGroups={hocPhanTuChonDaiCuong}
+              columns={availableColumns}
+              loading={loadingLoaiHp["Đại Cương"] || false}
+              getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
+              getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
+              selectedHocPhan={selectedHocPhan}
+              onAddHocPhan={addHocPhan}
+              isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
+            />
+          </div>
+        ) : activeTab === "coSoNganh" ? (
+          <div className="space-y-6">
+            <SectionHeader
+              title="Học phần Cơ sở ngành"
+              description={`Bao gồm cả học phần bắt buộc và tự chọn thuộc nhóm Cơ sở ngành${(filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)) > 0 ? ` - Tổng cộng ${filteredHocPhanCoSoNganh.length + hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn học` : ""}${hocPhanTuChonCoSoNganh.length > 0 ? ` ✨ Trong đó có ${filteredHocPhanCoSoNganh.filter(hp => !hocPhanTuChonCoSoNganh.some(group => group.hocPhanTuChonList.some(tc => tc.maHp === hp.maHp))).length} môn bắt buộc và ${hocPhanTuChonCoSoNganh.reduce((total, group) => total + group.hocPhanTuChonList.length, 0)} môn tự chọn` : ""}`}
+              icon={<SquareLibrary className="h-8 w-8" />}
+              colorScheme="emerald"
+              loading={loadingLoaiHp["Cơ Sở Ngành"]}
+            />
+            
+            <CourseSection
+              sectionName="Cơ sở ngành"
+              mainCourses={filteredHocPhanCoSoNganh}
+              electiveGroups={hocPhanTuChonCoSoNganh}
+              columns={availableColumns}
+              loading={loadingLoaiHp["Cơ Sở Ngành"] || false}
+              getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
+              getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
+              selectedHocPhan={selectedHocPhan}
+              onAddHocPhan={addHocPhan}
+              isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
+            />
+          </div>
+        ) : activeTab === "chuyenNganh2" ? (
+          <div className="space-y-6">
+            <div className="bg-gradient-to-r from-purple-50 to-violet-50 border border-purple-200 rounded-lg p-4 mb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-purple-800 mb-1">
+                    Học phần Chuyên ngành
+                  </h3>
+                  <p className="text-purple-600 text-sm">
+                    Bao gồm học phần bắt buộc, tự chọn và các nhóm chuyên ngành theo lĩnh vực
+                    {filteredHocPhanChuyenNganh.length > 0 && (
+                      <span className="ml-2 text-purple-700">
+                        - Tổng cộng{" "}
+                        <span className="font-medium">
+                          {filteredHocPhanChuyenNganh.length}
+                        </span>{" "}
+                        môn học từ CTDT
+                      </span>
+                    )}
+                  </p>
+                  {hocPhanTuChonChuyenNganh.length > 0 && (
+                    <p className="text-purple-500 text-xs mt-1">
+                      ✨ Trong đó có {hocPhanTuChonChuyenNganh.length} môn tự chọn
                     </p>
-                    {hocPhanTuChonChuyenNganh.length > 0 && (
-                      <p className="text-purple-500 text-xs mt-1">
-                        ✨ Trong đó có {hocPhanTuChonChuyenNganh.length} môn tự chọn
-                      </p>
-                    )}
-                    {categorizeNhomHocPhan.chuyenNganh.length > 0 && (
-                      <p className="text-purple-500 text-xs mt-1">
-                        🎯 Và {categorizeNhomHocPhan.chuyenNganh.length} nhóm chuyên ngành tự chọn
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Users className="h-8 w-8 text-purple-600" />
-                    {loadingLoaiHp["Chuyên Ngành"] && (
-                      <div className="flex items-center space-x-2 text-purple-600">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
-                        <span className="text-sm">Đang tải...</span>
-                      </div>
-                    )}
-                  </div>
+                  )}
+                  {categorizeNhomHocPhan.chuyenNganh.length > 0 && (
+                    <p className="text-purple-500 text-xs mt-1">
+                      🎯 Và {categorizeNhomHocPhan.chuyenNganh.length} nhóm chuyên ngành tự chọn
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Users className="h-8 w-8 text-purple-600" />
+                  {loadingLoaiHp["Chuyên Ngành"] && (
+                    <div className="flex items-center space-x-2 text-purple-600">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-600"></div>
+                      <span className="text-sm">Đang tải...</span>
+                    </div>
+                  )}
                 </div>
               </div>
-              
-              {/* Học phần chuyên ngành từ CTDT */}
-              <KeHoachHocTapTable
-                name="Học phần Chuyên ngành (Bắt buộc + Tự chọn)"
-                data={filteredHocPhanChuyenNganh}
-                columns={availableColumns}
-                initialExpanded={true}
-                loading={loadingLoaiHp["Chuyên Ngành"] || false}
-              />
-              
-              {/* Nhóm học phần chuyên ngành tự chọn */}
-              {categorizeNhomHocPhan.chuyenNganh.length > 0 && (
-                <div className="space-y-6 mt-8">
-                  <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-indigo-800 mb-1">
-                          Nhóm học phần chuyên ngành tự chọn
-                        </h3>
-                        <p className="text-indigo-600 text-sm">
-                          Các nhóm học phần chuyên ngành theo từng lĩnh vực
-                        </p>
-                        {/* Hiển thị tổng quan tín chỉ yêu cầu */}
-                        <div className="mt-2 flex flex-wrap gap-1 text-xs">
-                          {categorizeNhomHocPhan.chuyenNganh.map(([baseName, nhomList]) => {
-                            const hasCompleted = nhomList.some(nhom => {
-                              const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
-                              return tinChiDaChon >= nhom.tinChiYeuCau;
-                            });
-                            return (
-                              <span 
-                                key={baseName}
-                                className={`inline-flex items-center px-2 py-1 rounded-full font-medium ${
-                                  hasCompleted 
-                                    ? "bg-green-100 text-green-800" 
-                                    : "bg-indigo-100 text-indigo-800"
-                                }`}
-                              >
-                                {baseName}: {nhomList.length} nhóm
-                                {hasCompleted && <span className="ml-1">✓</span>}
-                              </span>
-                            );
-                          })}
-                        </div>
-                        <div className="mt-2 p-2 bg-indigo-100 rounded-lg">
-                          <p className="text-xs text-indigo-700 font-medium">
-                            💡 <strong>Lưu ý quan trọng:</strong> Đối với các nhóm có đánh số (ví dụ: CN1, CN2, CN3...), 
-                            bạn chỉ cần hoàn thành <strong>một trong các nhóm</strong> là đủ. 
-                            Khi một nhóm đã hoàn thành, toàn bộ nhóm chuyên ngành đó sẽ được đánh dấu là hoàn thành.
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <Users className="h-8 w-8 text-indigo-600" />
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {categorizeNhomHocPhan.chuyenNganh.map(([baseName, nhomList]) => {
-                    // Tính trạng thái hoàn thành cho nhóm chuyên ngành này dựa trên maHocPhanInKHHT
-                    // Chỉ cần 1 trong các nhóm con (CN1, CN2, ...) hoàn thành là đủ
-                    const hasCompletedGroup = nhomList.some(nhom => {
-                      const tinChiDaHoanThanh = nhom.hocPhanTuChonList
-                        .filter(hp => maHocPhanInKHHT.includes(hp.maHp))
-                        .reduce((total, hp) => total + hp.tinChi, 0);
-                      return tinChiDaHoanThanh >= nhom.tinChiYeuCau;
-                    });
-
-                    // Tìm nhóm con đã hoàn thành (nếu có)
-                    const completedSubgroup = nhomList.find(nhom => {
-                      const tinChiDaHoanThanh = nhom.hocPhanTuChonList
-                        .filter(hp => maHocPhanInKHHT.includes(hp.maHp))
-                        .reduce((total, hp) => total + hp.tinChi, 0);
-                      return tinChiDaHoanThanh >= nhom.tinChiYeuCau;
-                    });
-
-                    return (
-                      <div key={baseName} className="space-y-2">
-                        <div className={`bg-gradient-to-r border rounded-lg p-3 ${
-                          hasCompletedGroup 
-                            ? "from-green-50 to-emerald-50 border-green-200" 
-                            : "from-violet-50 to-purple-50 border-violet-200"
-                        }`}>
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h4 className={`text-md font-semibold ${
-                                hasCompletedGroup ? "text-green-800" : "text-violet-800"
-                              }`}>
-                                {baseName}
-                              </h4>
-                              <p className={`text-sm ${
-                                hasCompletedGroup ? "text-green-600" : "text-violet-600"
-                              }`}>
-                                {hasCompletedGroup 
-                                  ? `Đã hoàn thành qua ${completedSubgroup?.tenNhom} - Bạn có thể chọn thêm môn khác hoặc để như vậy`
-                                  : "Chọn một trong các nhóm sau (chỉ cần hoàn thành 1 nhóm)"
-                                }
-                              </p>
-                              {/* Hiển thị số tín chỉ yêu cầu cho từng nhóm con */}
-                              <div className="mt-2 flex flex-wrap gap-2">
-                                {nhomList.map(nhom => {
-                                  const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
-                                  const isCompleted = tinChiDaChon >= nhom.tinChiYeuCau;
-                                  return (
-                                    <span 
-                                      key={nhom.id} 
-                                      className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                                        isCompleted 
-                                          ? "bg-green-100 text-green-800" 
-                                          : "bg-gray-100 text-gray-700"
-                                      }`}
-                                    >
-                                      {nhom.tenNhom}: {tinChiDaChon}/{nhom.tinChiYeuCau} TC
-                                      {isCompleted && <span className="ml-1">✓</span>}
-                                    </span>
-                                  );
-                                })}
-                              </div>
-                            </div>
-                            {hasCompletedGroup && (
-                              <div className="flex items-center space-x-2">
-                                <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                                  <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                  </svg>
-                                  Đã hoàn thành
-                                </span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <NhomHocPhanTuChonTable
-                          nhomHocPhanTuChon={nhomList}
-                          selectedHocPhan={selectedHocPhan}
-                          onAddHocPhan={addHocPhan}
-                          getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
-                          getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
-                          isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
-                        />
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
-          ) : activeTab === "theChat" ? (
-            <div className="space-y-6">
-              <SectionHeader
-                title="Nhóm học phần thể chất"
-                description="Các môn thể chất cần thiết cho chương trình đào tạo"
-                icon={<Dumbbell className="h-8 w-8" />}
-                colorScheme="green"
-              >
-                <CreditProgress 
-                  groups={categorizeNhomHocPhan.theChat} 
-                  getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom} 
-                />
-              </SectionHeader>
-              <NhomHocPhanTuChonTable
-                nhomHocPhanTuChon={categorizeNhomHocPhan.theChat}
-                selectedHocPhan={selectedHocPhan}
-                onAddHocPhan={addHocPhan}
-                getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
-                getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
-                isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
-              />
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* Selected học phần table */}
-              {selectedHocPhan.length > 0 ? (
-                <>
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-semibold text-blue-800 mb-1">
-                          Kế hoạch học tập
-                        </h3>
-                        <p className="text-blue-600 text-sm">
-                          Bạn đã chọn {selectedHocPhan.length} học phần
-                          <span className="ml-2 text-blue-700">
-                            - Tổng tín chỉ:{" "}
-                            <span className="font-medium">
-                              {selectedHocPhan.reduce((total, hp) => total + hp.tinChi, 0)}
+            
+            {/* Học phần chuyên ngành từ CTDT */}
+            <KeHoachHocTapTable
+              name="Học phần Chuyên ngành (Bắt buộc + Tự chọn)"
+              data={filteredHocPhanChuyenNganh}
+              columns={availableColumns}
+              initialExpanded={true}
+              loading={loadingLoaiHp["Chuyên Ngành"] || false}
+            />
+            
+            {/* Nhóm học phần chuyên ngành tự chọn */}
+            {categorizeNhomHocPhan.chuyenNganh.length > 0 && (
+              <div className="space-y-6 mt-8">
+                <div className="bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-indigo-800 mb-1">
+                        Nhóm học phần chuyên ngành tự chọn
+                      </h3>
+                      <p className="text-indigo-600 text-sm">
+                        Các nhóm học phần chuyên ngành theo từng lĩnh vực
+                      </p>
+                      {/* Hiển thị tổng quan tín chỉ yêu cầu */}
+                      <div className="mt-2 flex flex-wrap gap-1 text-xs">
+                        {categorizeNhomHocPhan.chuyenNganh.map(([baseName, nhomList]) => {
+                          const hasCompleted = nhomList.some(nhom => {
+                            const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
+                            return tinChiDaChon >= nhom.tinChiYeuCau;
+                          });
+                          return (
+                            <span 
+                              key={baseName}
+                              className={`inline-flex items-center px-2 py-1 rounded-full font-medium ${
+                                hasCompleted 
+                                  ? "bg-green-100 text-green-800" 
+                                  : "bg-indigo-100 text-indigo-800"
+                              }`}
+                            >
+                              {baseName}: {nhomList.length} nhóm
+                              {hasCompleted && <span className="ml-1">✓</span>}
                             </span>
-                          </span>
+                          );
+                        })}
+                      </div>
+                      <div className="mt-2 p-2 bg-indigo-100 rounded-lg">
+                        <p className="text-xs text-indigo-700 font-medium">
+                          💡 <strong>Lưu ý quan trọng:</strong> Đối với các nhóm có đánh số (ví dụ: CN1, CN2, CN3...), 
+                          bạn chỉ cần hoàn thành <strong>một trong các nhóm</strong> là đủ. 
+                          Khi một nhóm đã hoàn thành, toàn bộ nhóm chuyên ngành đó sẽ được đánh dấu là hoàn thành.
                         </p>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {selectedHocPhan.length} môn học
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <Users className="h-8 w-8 text-indigo-600" />
+                    </div>
+                  </div>
+                </div>
+                
+                {categorizeNhomHocPhan.chuyenNganh.map(([baseName, nhomList]) => {
+                  // Tính trạng thái hoàn thành cho nhóm chuyên ngành này dựa trên maHocPhanInKHHT
+                  // Chỉ cần 1 trong các nhóm con (CN1, CN2, ...) hoàn thành là đủ
+                  const hasCompletedGroup = nhomList.some(nhom => {
+                    const tinChiDaHoanThanh = nhom.hocPhanTuChonList
+                      .filter(hp => maHocPhanInKHHT.includes(hp.maHp))
+                      .reduce((total, hp) => total + hp.tinChi, 0);
+                    return tinChiDaHoanThanh >= nhom.tinChiYeuCau;
+                  });
+
+                  // Tìm nhóm con đã hoàn thành (nếu có)
+                  const completedSubgroup = nhomList.find(nhom => {
+                    const tinChiDaHoanThanh = nhom.hocPhanTuChonList
+                      .filter(hp => maHocPhanInKHHT.includes(hp.maHp))
+                      .reduce((total, hp) => total + hp.tinChi, 0);
+                    return tinChiDaHoanThanh >= nhom.tinChiYeuCau;
+                  });
+
+                  return (
+                    <div key={baseName} className="space-y-2">
+                      <div className={`bg-gradient-to-r border rounded-lg p-3 ${
+                        hasCompletedGroup 
+                          ? "from-green-50 to-emerald-50 border-green-200" 
+                          : "from-violet-50 to-purple-50 border-violet-200"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className={`text-md font-semibold ${
+                              hasCompletedGroup ? "text-green-800" : "text-violet-800"
+                            }`}>
+                              {baseName}
+                            </h4>
+                            <p className={`text-sm ${
+                              hasCompletedGroup ? "text-green-600" : "text-violet-600"
+                            }`}>
+                              {hasCompletedGroup 
+                                ? `Đã hoàn thành qua ${completedSubgroup?.tenNhom} - Bạn có thể chọn thêm môn khác hoặc để như vậy`
+                                : "Chọn một trong các nhóm sau (chỉ cần hoàn thành 1 nhóm)"
+                              }
+                            </p>
+                            {/* Hiển thị số tín chỉ yêu cầu cho từng nhóm con */}
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {nhomList.map(nhom => {
+                                const tinChiDaChon = getTinChiDaChonTrongNhom(nhom);
+                                const isCompleted = tinChiDaChon >= nhom.tinChiYeuCau;
+                                return (
+                                  <span 
+                                    key={nhom.id} 
+                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                                      isCompleted 
+                                        ? "bg-green-100 text-green-800" 
+                                        : "bg-gray-100 text-gray-700"
+                                    }`}
+                                  >
+                                    {nhom.tenNhom}: {tinChiDaChon}/{nhom.tinChiYeuCau} TC
+                                    {isCompleted && <span className="ml-1">✓</span>}
+                                  </span>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          {hasCompletedGroup && (
+                            <div className="flex items-center space-x-2">
+                              <span className="inline-flex items-center px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                                <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                                Đã hoàn thành
+                              </span>
+                            </div>
+                          )}
                         </div>
-                        <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
-                          {selectedHocPhan.reduce((total, hp) => total + hp.tinChi, 0)} tín chỉ
-                        </div>
+                      </div>
+                      
+                      <NhomHocPhanTuChonTable
+                        nhomHocPhanTuChon={nhomList}
+                        selectedHocPhan={selectedHocPhan}
+                        onAddHocPhan={addHocPhan}
+                        getTinChiDaChonTrongNhom={getTinChiDaChonTrongNhom}
+                        getChuyenNganhCompletionStatus={getChuyenNganhCompletionStatus}
+                        isHocPhanAlreadyAdded={isHocPhanAlreadyAdded}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )  : activeTab === "completionStatus" ? (
+          <CompletionStatusSummary completionStatus={completionStatus} />
+        ) : (
+          <div className="space-y-6">
+            {/* Selected học phần table */}
+            {selectedHocPhan.length > 0 ? (
+              <>
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold text-blue-800 mb-1">
+                        Kế hoạch học tập
+                      </h3>
+                      <p className="text-blue-600 text-sm">
+                        Bạn đã chọn {selectedHocPhan.length} học phần
+                        <span className="ml-2 text-blue-700">
+                          - Tổng tín chỉ:{" "}
+                          <span className="font-medium">
+                            {selectedHocPhan.reduce((total, hp) => total + hp.tinChi, 0)}
+                          </span>
+                        </span>
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-3">
+                      <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {selectedHocPhan.length} môn học
+                      </div>
+                      <div className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
+                        {selectedHocPhan.reduce((total, hp) => total + hp.tinChi, 0)} tín chỉ
                       </div>
                     </div>
                   </div>
-                  
-                  <KeHoachHocTapTable
-                    name="Học phần đã chọn"
-                    data={selectedHocPhan}
-                    columns={selectedColumns}
-                    initialExpanded={true}
-                    loading={false}
-                  />
-                  
-                  {/* Action buttons */}
-                  <div className="flex justify-end gap-2">
-                    <button
-                      onClick={() => setSelectedHocPhan([])}
-                      className="px-6 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    >
-                      Hủy tất cả
-                    </button>
-                    <button
-                      disabled={fetchLoading}
-                      onClick={handleSaveKHHT}
-                      className={`px-6 py-2 rounded-xl text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${
-                        fetchLoading
-                          ? "cursor-not-allowed opacity-50 bg-gray-400"
-                          : "bg-green-500 hover:bg-green-600"
-                      }`}
-                    >
-                      {fetchLoading ? "Đang lưu..." : "Lưu kế hoạch học tập"}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-12">
-                  <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
-                    <CirclePlus className="h-10 w-10 text-gray-400" />
-                  </div>
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">
-                    Chưa có học phần nào được chọn
-                  </h3>
-                  <p className="text-gray-500 mb-4">
-                    Hãy chuyển sang tab "Chọn học phần" để thêm các môn học vào kế hoạch
-                  </p>
+                </div>
+                
+                <KeHoachHocTapTable
+                  name="Học phần đã chọn"
+                  data={selectedHocPhan}
+                  columns={selectedColumns}
+                  initialExpanded={true}
+                  loading={false}
+                />
+                
+                {/* Action buttons */}
+                <div className="flex justify-end gap-2">
                   <button
-                    onClick={() => setActiveTab("select")}
-                    className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
+                    onClick={() => setSelectedHocPhan([])}
+                    className="px-6 py-2 bg-gray-400 hover:bg-gray-500 text-white rounded-xl transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
                   >
-                    <CirclePlus className="h-4 w-4 mr-2" />
-                    Chọn học phần
+                    Hủy tất cả
+                  </button>
+                  <button
+                    disabled={fetchLoading}
+                    onClick={handleSaveKHHT}
+                    className={`px-6 py-2 rounded-xl text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-green-300 ${
+                      fetchLoading
+                        ? "cursor-not-allowed opacity-50 bg-gray-400"
+                        : "bg-green-500 hover:bg-green-600"
+                    }`}
+                  >
+                    {fetchLoading ? "Đang lưu..." : "Lưu kế hoạch học tập"}
                   </button>
                 </div>
-              )}
-            </div>
-          )}
-          {/* Success/Error modals */}
-          {success && (
-            <ErrorMessageModal
-              isOpen={!!success}
-              onClose={() => setSuccess(null)}
-              message={success}
-            />
-          )}
+              </>
+            ) : (
+              <div className="text-center py-12">
+                <div className="bg-gray-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                  <CirclePlus className="h-10 w-10 text-gray-400" />
+                </div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Chưa có học phần nào được chọn
+                </h3>
+                <p className="text-gray-500 mb-4">
+                  Hãy chuyển sang tab "Chọn học phần" để thêm các môn học vào kế hoạch
+                </p>
+                <button
+                  onClick={() => setActiveTab("select")}
+                  className="inline-flex items-center px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
+                >
+                  <CirclePlus className="h-4 w-4 mr-2" />
+                  Chọn học phần
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+        {/* Success/Error modals */}
+        {success && (
           <ErrorMessageModal
-            isOpen={!!combinedError}
-            onClose={clearCombinedError}
-            message={combinedError || "Đã xảy ra lỗi. Vui lòng thử lại."}
+            isOpen={!!success}
+            onClose={() => setSuccess(null)}
+            message={success}
           />
-        </>
+        )}
+        <ErrorMessageModal
+          isOpen={!!combinedError}
+          onClose={clearCombinedError}
+          message={combinedError || "Đã xảy ra lỗi. Vui lòng thử lại."}
+        />
+      </>
+
     </div>
   );
 };
