@@ -92,7 +92,7 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
   });
  
 
-  // Create unified course groups
+  // Tạo nhóm học phần từ các khóa học bắt buộc và tự chọn
   const courseGroupsResult = useMemo((): CourseGroupResult => {
     const groups: CourseGroup[] = [];
 

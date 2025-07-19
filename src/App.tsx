@@ -27,6 +27,7 @@ import CertificateManagement from "./pages/Profile/CertificateManangement";
 import ProfileLayout from "./pages/Profile/ProfileLayout";
 import PDFExportExample from "./components/PDFExportExample";
 import PDFExportPaginationTest from "./components/PDFExportPaginationTest";
+import ThemKeHoachHocTapMau from "./pages/KeHoachHocTapMau/ThemKeHoachHocTapMau";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -97,8 +98,9 @@ function App() {
             <Route index element={<KeHoachHocTapMau />} />
             <Route path="create" element={<ThemKHHTMau />} />
             <Route path="add/:maNganh/:khoaHoc" element={<ChinhSuaKHHTMau />} />
-            <Route path="edit/:maNganh/:khoaHoc" element={<ChinhSuaKHHTMau />} />
+            <Route path="edit/:maNganh/:khoaHoc" element={<ThemKeHoachHocTapMau />} />
             <Route path=":maNganh/:khoaHoc" element={<KeHoachHocTapMauDetail />} />
+            <Route path="add" element={<ThemKeHoachHocTapMau />} />
           </Route>
         </Route>
       </Route>
