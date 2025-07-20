@@ -28,6 +28,7 @@ import ProfileLayout from "./pages/Profile/ProfileLayout";
 import PDFExportExample from "./components/PDFExportExample";
 import PDFExportPaginationTest from "./components/PDFExportPaginationTest";
 import ThemKeHoachHocTapMau from "./pages/KeHoachHocTapMau/ThemKeHoachHocTapMau";
+import KeHoachHocTapDetail from "./pages/KeHoachHocTap/KeHoachHocTapDetail";
 
 const ROLES = {
   SINHVIEN: "SINHVIEN",
@@ -62,6 +63,7 @@ function App() {
             <Route path="chung" element={<KeHoachHocTapPage />} />
             <Route path="detail" element={<KeHoachHocTapUnified />} />
             <Route path="add" element={<NhapKeHoachHocTap />} />
+            <Route path="chitiet" element={<KeHoachHocTapDetail />} />
           </Route>
           
           {/* Ket Qua Hoc Tap routes */}
