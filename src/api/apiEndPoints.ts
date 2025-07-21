@@ -25,6 +25,7 @@ export const USER_SERVICE = {
   LOGOUT: USER_SERIVCE_URL + "/api/auth/logout",
 };
 export const PROFILE_SERVICE = {
+  GET_SINHVIEN_PREVIEW_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/thongke/:maSo",
   GET_PREVIEW_PROFILE: PROFILE_SERVICE_URL + "/api/profile/lop/preview/:maLop", // Return Object
   UPDATE_SINHVIEN_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/update", // RequestBody: Sinh viên tự cập nhật
   UPDATE_AVATAR: PROFILE_SERVICE_URL + "/api/profile/sinhvien/update/avatar", // RequestBody: FormData
@@ -55,6 +56,7 @@ export const HOCPHAN_SERVICE = {
   CTDT_BY_LOAI_HP: HOCPHAN_SERVICE_URL + "/api/ctdt/hocphan/by_loai_hp", // RequestBody 
   HOCPHAN_TUCHON_BY_LOAI_HP: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/by_loai_hp", // RequestBody
   HOCPHAN_THECHAT: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/the_chat", // No Parameters, return list
+  HOCKY_HIEN_TAI: HOCPHAN_SERVICE_URL + "/api/hocky/current", // NO pârameters, return list
 };
 
 export const KHHT_SERVICE = {
@@ -73,6 +75,7 @@ export const KHHT_SERVICE = {
     KHHT_SERVICE_URL + "/api/khht/sinhvien/hoc_phan_in_ke_hoach_by_ma_so/:maSo", // lấy mã học phần trong kế hoạch học tập
   CREATE: KHHT_SERVICE_URL + "/api/khht/creates",
   LIST: KHHT_SERVICE_URL + "/api/khht/list",
+  KHHT_DETAIL: KHHT_SERVICE_URL + "/api/khht/sinhvien/detail/:maSo", // lấy chi tiết kế hoạch học tập theo maSo
   KHHT_SINHVIEN: KHHT_SERVICE_URL + "/api/khht/sinhvien/detail/page", // phân trang: ?maSo=xxx&page=0&size=20
   KHHT_SINHVIEN_BY_LOAI_HP:
     KHHT_SERVICE_URL + "/api/khht/sinhvien/hocphan/by_loai_hp",
@@ -89,6 +92,7 @@ export const KHHT_SERVICE = {
 };
 
 export const KQHT_SERVICE = {
+  GET_THONGKE_TINCHI: KQHT_SERVICE_URL + "/api/kqht/thong-ke/:maSo", //Thong Ke tin chi tihc luy qua tung hoc ky
   GET_HOCKY: KQHT_SERVICE_URL + "/api/kqht/hoc-ky/:maSo",
   GET_KETQUA: KQHT_SERVICE_URL + "/api/kqht/detail/page", // phân trang: ?maSo=xxx&page=0&size=20
   GET_KETQUA_BY_HOCKY: KQHT_SERVICE_URL + "/api/kqht/detail", // theo học kỳ: ?maSo=xxx&maHocKy=yyy

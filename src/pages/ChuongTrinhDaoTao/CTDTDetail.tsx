@@ -116,7 +116,6 @@ const CTDTDetail = () => {
     if (activeTab === "tatca") {
       return allGroups;
     }
-    
     // Filter groups that have courses of the selected type
     return allGroups.filter(nhom => 
       nhom.hocPhanTuChonList?.some(hp => hp.loaiHp === activeTab)

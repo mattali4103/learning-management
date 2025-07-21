@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useMemo } from "react";
 import useAuth from "../hooks/useAuth";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
@@ -10,7 +11,7 @@ import Loading from "../components/Loading";
 import TinChiChart from "../components/chart/TinChiChart";
 import GPAChart from "../components/chart/GPAChart";
 import CreditProgressCard from "../components/progress/CreditProgressCard";
-import MiniDualGPAChart from "../components/chart/MiniDualGPAChart";
+import CombinedCreditGPAChart from "../components/chart/CombinedCreditGPAChart";
 import {
   User,
   Calendar,
@@ -19,6 +20,7 @@ import {
   Clock,
   Target,
 } from "lucide-react";
+import type { HocKy } from "../types/HocKy";
 
 interface UserInfo {
   maSo: string;
@@ -31,9 +33,9 @@ interface UserInfo {
   avatarUrl?: string;
 }
 interface ThongKeTinChiByHocKy {
-  hocKy: any;
-  soTinChiCaiThien: number;
-  soTinChiDangKy: number;
+  hocKy: HocKy;
+  soTinChiTichLuy: number;
+  soTinChiRot: number;
 }
 interface ThongKeTinChi {
   tongSoTinChi: number;
@@ -57,6 +59,8 @@ interface DiemTrungBinhHocKy {
   diemTrungBinhTichLuy: number;
 }
 const Dashboard = () => {
+  // ...existing code...
+
   // Get user info from auth context
   const { auth } = useAuth();
   // Custom hook to handle private axios requests
@@ -140,7 +144,7 @@ const Dashboard = () => {
     };
     const fetchTinChiTichLuy = async () => {
       try {
-        const url = KHHT_SERVICE.COUNT_TINCHI_GROUP_BY_HOCKY.replace(
+        const url = KQHT_SERVICE.GET_THONGKE_TINCHI.replace(
           ":maSo",
           auth.user?.maSo || ""
         );
@@ -195,16 +199,17 @@ const Dashboard = () => {
     fetchTinChiTichLuy();
     fetchDiemTrungBinh();
   }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc, auth.user?.maNganh]); // Tính toán thống kê từ dữ liệu thực
+
+  // ...existing code...
+  // Tính toán thống kê từ dữ liệu thực
   const statistics = useMemo(() => {
     const { tongSoTinChi, soTinChiTichLuy, soTinChiCaiThien } = thongKeTinChi;
     const tinChiConLai = Math.max(0, tongSoTinChi - soTinChiTichLuy);
-
     // Tính điểm TB tích lũy từ dữ liệu GPA cuối cùng
     const latestGPA =
       diemTrungBinhHocKy.length > 0
         ? diemTrungBinhHocKy[diemTrungBinhHocKy.length - 1].diemTrungBinhTichLuy
         : 0;
-
     return {
       tongSoTinChi,
       soTinChiTichLuy,
@@ -214,6 +219,42 @@ const Dashboard = () => {
       diemTBTichLuy: latestGPA,
     };
   }, [thongKeTinChi, diemTrungBinhHocKy]);
+
+  // --- Progress Status State ---
+  const [progressState, setProgressState] = useState({
+    status: "Chưa có dữ liệu",
+    color: "text-gray-600",
+    bg: "bg-gray-50",
+    avg: null as number | null,
+    totalCredits: 0,
+    totalSemesters: 0,
+  });
+
+  useEffect(() => {
+    const totalCredits = typeof statistics.soTinChiTichLuy === 'number' ? statistics.soTinChiTichLuy : 0;
+    const totalSemesters = Array.isArray(tinChiTichLuy) ? tinChiTichLuy.length : 0;
+    let status = "Chưa có dữ liệu";
+    let color = "text-gray-600";
+    let bg = "bg-gray-50";
+    let avg: number | null = null;
+    if (totalSemesters > 0) {
+      avg = totalCredits / totalSemesters;
+      if (avg < 10) {
+        status = "Trễ tiến độ";
+        color = "text-red-600";
+        bg = "bg-red-50";
+      } else if (avg > 20) {
+        status = "Vượt tiến độ";
+        color = "text-green-600";
+        bg = "bg-green-50";
+      } else {
+        status = "Kịp tiến độ";
+        color = "text-blue-600";
+        bg = "bg-blue-50";
+      }
+    }
+    setProgressState({ status, color, bg, avg, totalCredits, totalSemesters });
+  }, [statistics.soTinChiTichLuy, tinChiTichLuy]);
   // Lấy thời gian hiện tại để chào hỏi
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -301,20 +342,26 @@ const Dashboard = () => {
           {/* Biểu đồ cột đôi cho điểm trung bình */}
           <div className="lg:col-span-2">
             {(() => {
-              const mappedData =
-                diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0
-                  ? diemTrungBinhHocKy.map((item) => ({
-                      diemTrungBinh: item.diemTrungBinh,
-                      diemTrungBinhTichLuy: item.diemTrungBinhTichLuy,
-                      soTinChi: 0,
-                      hocKy: item.hocKy,
-                    }))
-                  : [];
+              // Combine data from tinChiTichLuy and diemTrungBinhHocKy by index
+              const combinedData = [];
+              const maxLength = Math.max(tinChiTichLuy.length, diemTrungBinhHocKy.length);
+              for (let i = 0; i < maxLength; i++) {
+                const tinChiItem = tinChiTichLuy[i] || null;
+                const diemItem = diemTrungBinhHocKy[i] || null;
+                combinedData.push({
+                  hocKy: diemItem?.hocKy || tinChiItem?.hocKy || null,
+                  name: `Học kỳ ${i + 1}`,
+                  soTinChiRot: tinChiItem?.soTinChiRot || 0,
+                  soTinChiTichLuy: tinChiItem?.soTinChiTichLuy || 0,
+                  diemTrungBinhTichLuy: diemItem?.diemTrungBinhTichLuy || 0,
+                  diemTrungBinh: diemItem?.diemTrungBinh || 0,
+                });
+              }
               return (
-                <MiniDualGPAChart
-                  rawData={mappedData}
-                  title="Điểm TB học kỳ & tích lũy"
-                  height={160}
+                <CombinedCreditGPAChart
+                  data={combinedData}
+                  title="Tín chỉ & Điểm trung bình theo học kỳ"
+                  height={300}
                 />
               );
             })()}
@@ -322,7 +369,13 @@ const Dashboard = () => {
         </div>
 
         {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
+          {/* Tiến độ học tập */}
+          <div className={`text-center p-4 rounded-lg hover:bg-opacity-80 transition-colors ${progressState.bg}`}>
+            <Target className={`w-8 h-8 mx-auto mb-2 ${progressState.color}`} />
+            <p className="text-sm text-gray-600 mb-2">Tiến độ học tập</p>
+            <p className={`text-xl font-bold ${progressState.color}`}>{progressState.status}</p>
+          </div>
           <div className="text-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
             <BookOpen className="w-8 h-8 text-blue-600 mx-auto mb-2" />
             <p className="text-2xl font-bold text-blue-600">
@@ -409,8 +462,9 @@ const Dashboard = () => {
 
                       return {
                         name: `Học kỳ ${index + 1}`,
-                        tinChiTichLuy: item.soTinChiDangKy || 0,
-                        tinChiCaiThien: item.soTinChiCaiThien || 0,
+                        tinChiTichLuy: item.soTinChiTichLuy || 0,
+                        tinChiRot: item.soTinChiRot || 0,
+                        tinChiCaiThien: 0,
                         hocKyId,
                         namHocId,
                       };

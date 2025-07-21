@@ -17,33 +17,12 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE, PROFILE_SERVICE } from "../../api/apiEndPoints";
 import PageHeader from "../../components/PageHeader";
 import { StudentTable } from "../../components/table/StudentTable";
-import StudentClassificationPieChart from "../../components/chart/XepLoaiSinhVienPieChart";
+import StudentClassificationPieChart, { type PreviewProfile } from "../../components/chart/XepLoaiSinhVienPieChart";
 import AccumulatedCreditBarChart from "../../components/chart/AccumulatedCreditBarChart";
 import StudentTooltip from "../../components/tooltips/StudentTooltip";
 import { useTablePDFExport } from "../../hooks/useTablePDFExport";
 import ExportModal from "../../components/modals/ExportModal";
 
-interface CanhBaoHocVu{
-  maSo: string;
-  lyDo: string;
-}
-interface PreviewProfile {
-  canhBaoHocVu: CanhBaoHocVu;
-  avatarUrl: string;
-  maSo: string;
-  hoTen: string;
-  maLop: string;
-  tenNganh: string;
-  xepLoaiHocLuc: string;
-  diemTrungBinhTichLuy: number;
-  soTinChiTichLuy: number;
-  soTinChiCaiThien: number;
-  soTinChiDangKyHienTai: number;
-  khoaHoc: string;
-  maNganh: string;
-  ngaySinh: Date;
-  gioiTinh: boolean;
-}
 
 interface ThongKeKHHTLOP {
   maSo: string;
@@ -494,11 +473,15 @@ const ThongTinLopHoc = () => {
 
       {/* Statistics Charts */}
       {previewProfiles && previewProfiles.length > 0 && activeTab === "statistics" && (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 flex-1 overflow-y-auto">
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <StudentClassificationPieChart students={getProcessedStudentsForCharts()} />
-              <AccumulatedCreditBarChart students={getProcessedStudentsForCharts()} />
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
+          <div className="p-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-96">
+              <div className="h-80">
+                <StudentClassificationPieChart students={getProcessedStudentsForCharts()} />
+              </div>
+              <div className="h-80">
+                <AccumulatedCreditBarChart students={getProcessedStudentsForCharts()} />
+              </div>
             </div>
           </div>
         </div>

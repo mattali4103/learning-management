@@ -3,7 +3,7 @@ import Header from "./Header";
 import { useNavigate } from "react-router-dom";
 import ErrorMesssageModal from "./modals/ErrorMessageModal";
 import {
-  KHHT_SERVICE,
+  HOCPHAN_SERVICE,
   PROFILE_SERVICE,
   USER_SERVICE,
 } from "../api/apiEndPoints";
@@ -23,10 +23,10 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   // Fetching hocKy data when the component mounts
-  const fetchHocKy = async (maSo: string) => {
+  const fetchHocKy = async () => {
     try {
       const response = await axios.get(
-        KHHT_SERVICE.GET_HOCKY.replace(":maSo", maSo),
+        HOCPHAN_SERVICE.HOCKY_HIEN_TAI,
         {
           headers: {
             "Content-Type": "application/json",
@@ -34,7 +34,7 @@ const Login: React.FC = () => {
           withCredentials: true,
         }
       );
-      localStorage.setItem("hocKy", JSON.stringify(response.data.data));
+      localStorage.setItem("hocKyHienTai", JSON.stringify(response.data));
     } catch (error) {
       console.error("Error fetching hoc ky:", error);
       setError("Không thể lấy thông tin học kỳ. Vui lòng thử lại.");
@@ -108,7 +108,7 @@ const Login: React.FC = () => {
             maKhoa: userInfo.maKhoa,
           },
         });
-        fetchHocKy(maSo);
+        fetchHocKy();
         setMaSo("");
         setPassword("");
         if (decodedToken.scope === "GIANGVIEN" || decodedToken.scope === "ADMIN") {

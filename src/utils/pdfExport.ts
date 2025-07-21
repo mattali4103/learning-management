@@ -520,7 +520,7 @@ export const exportKeHoachHocTapToPDF = async (data: any[], title: string = 'Káº
     title,
     columns,
     data,
-    filename: 'ke-hoach-hoc-tap.pdf',
+    filename: `${title}.pdf`,
     pageOrientation: 'portrait'
   });
 };

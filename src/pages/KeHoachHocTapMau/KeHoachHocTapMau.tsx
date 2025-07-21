@@ -223,11 +223,10 @@ const KeHoachHocTapMau = () => {
           }
           icon={FileText}
           colorScheme="blue"
-          size="lg"
+          size="md"
           style="modern"
         />
       </div>
-
       {/* Templates List */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
         {keHoachHocTapList.length === 0 ? (

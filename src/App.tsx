@@ -103,7 +103,7 @@ function App() {
             <Route path="edit/:maNganh/:khoaHoc" element={<ThemKeHoachHocTapMau />} />
             <Route path=":maNganh/:khoaHoc" element={<KeHoachHocTapMauDetail />} />
             <Route path="add" element={<ThemKeHoachHocTapMau />} />
-          </Route>
+          </Route>    
         </Route>
       </Route>
     </Routes>

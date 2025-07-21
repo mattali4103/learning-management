@@ -10,7 +10,7 @@ interface StatisticsCardProps {
   subtitle?: string;
   subtitleIcon?: LucideIcon;
   colorScheme?: "blue" | "green" | "orange" | "purple" | "red";
-  size?: "sm" | "md" | "lg";
+  size?: "sm" | "md";
   style?: "modern" | "classic";
 }
 
@@ -106,18 +106,6 @@ export default function StatisticsCard({
       decorationLargeOffset: "-translate-y-10 translate-x-10",
       decorationSmallOffset: "translate-y-8 -translate-x-8",
     },
-    lg: {
-      padding: "p-8",
-      titleSize: "text-sm",
-      valueSize: "text-4xl",
-      subtitleSize: "text-sm",
-      iconContainer: "w-16 h-16",
-      iconSize: "w-8 h-8",
-      decorationLarge: "w-32 h-32",
-      decorationSmall: "w-24 h-24",
-      decorationLargeOffset: "-translate-y-16 translate-x-16",
-      decorationSmallOffset: "translate-y-12 -translate-x-12",
-    },
   };
 
   // Use classic style if gradient, textColor, and iconColor are provided
@@ -151,10 +139,6 @@ export default function StatisticsCard({
     <div className={`bg-gradient-to-br ${colors.background} rounded-2xl shadow-lg ${sizeConfig.padding} ${colors.border} relative overflow-hidden`}>
       {/* Background decorations */}
       <div className={`absolute top-0 right-0 ${sizeConfig.decorationLarge} bg-gradient-to-br ${colors.decorationColor} rounded-full ${sizeConfig.decorationLargeOffset} opacity-30`}></div>
-      {size === "lg" && (
-        <div className={`absolute bottom-0 left-0 ${sizeConfig.decorationSmall} bg-gradient-to-tr ${colors.decorationSecondary} rounded-full ${sizeConfig.decorationSmallOffset} opacity-30`}></div>
-      )}
-
       <div className="relative z-10 flex items-center justify-between">
         <div>
           <p className={`${sizeConfig.titleSize} font-semibold ${colors.titleColor} mb-2 uppercase tracking-wide`}>

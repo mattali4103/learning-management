@@ -9,28 +9,12 @@ import {
 } from "recharts";
 import { Award } from "lucide-react";
 import { useMemo } from "react";
+import type { PreviewProfile } from "./AccumulatedCreditBarChart";
 
 interface XepLoaiSinhVien {
   xepLoai: string;
   soLuong: number;
   sinhVien: string[];
-}
-
-interface PreviewProfile {
-  avatarUrl: string;
-  maSo: string;
-  hoTen: string;
-  maLop: string;
-  tenNganh: string;
-  xepLoaiHocLuc: string;
-  diemTrungBinhTichLuy: number;
-  soTinChiTichLuy: number;
-  soTinChiCaiThien: number;
-  soTinChiDangKyHienTai: number;
-  khoaHoc: string;
-  maNganh: string;
-  ngaySinh: Date;
-  gioiTinh: boolean;
 }
 
 interface XepLoaiSinhVienPieChartProps {

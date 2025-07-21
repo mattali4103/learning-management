@@ -83,33 +83,39 @@ const KeHoachHocTapDetail = () => {
   const [errorMessage, setErrorMessage] = useState<string>("");
   const [showAddModal, setShowAddModal] = useState(false);
   const [saving, setSaving] = useState(false);
-
+  const hocKyHienTai : HocKy = useMemo(() => {
+    const storedHocKy = localStorage.getItem("hocKyHienTai");
+    return storedHocKy ? JSON.parse(storedHocKy) : null;
+  }, []);
   // Available academic years for navigation
   const availableNamHoc = useMemo(() => {
     const years = new Map<number, { id: number; tenNh: string }>();
     danhSachHocKy.forEach((hk) => {
       if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        years.set(hk.namHoc.id, {
-          id: hk.namHoc.id,
-          tenNh: `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`,
-        });
+        // Chỉ lấy năm học có học kỳ <= hocKyHienTai?.maHocKy
+        if (hocKyHienTai && hk.maHocKy <= hocKyHienTai.maHocKy) {
+          years.set(hk.namHoc.id, {
+            id: hk.namHoc.id,
+            tenNh: `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`,
+          });
+        }
       }
     });
     return Array.from(years.values()).sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy]);
+  }, [danhSachHocKy, hocKyHienTai]);
 
   // Available semesters for selected academic year
   const availableHocKy = useMemo(() => {
     if (!selectedTabNamHoc) return [];
     return danhSachHocKy
-      .filter(item => item.namHoc?.id === selectedTabNamHoc)
+      .filter(item => item.namHoc?.id === selectedTabNamHoc && (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy))
       .map(item => ({
         id: item.maHocKy,
         ten: item.tenHocKy,
         namHoc: item.namHoc
       }))
       .sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, selectedTabNamHoc]);
+  }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai]);
 
   // Credit statistics for chart
   const creditStatistics = useMemo(() => {
@@ -225,27 +231,7 @@ const KeHoachHocTapDetail = () => {
       setLoading(true);
       setError(null);
 
-      const [daiCuongResponse, coSoResponse, chuyenNganhResponse] = await Promise.all([
-        axiosPrivate.post<any>(KHHT_SERVICE.KHHT_SINHVIEN_BY_LOAI_HP, {
-          maSo: maSo,
-          khoaHoc: khoaHoc,
-          maNganh: maNganh,
-          loaiHp: "Đại cương",
-        }),
-        axiosPrivate.post<any>(KHHT_SERVICE.KHHT_SINHVIEN_BY_LOAI_HP, {
-          maSo: maSo,
-          khoaHoc: khoaHoc,
-          maNganh: maNganh,
-          loaiHp: "Cơ sở ngành",
-        }),
-        axiosPrivate.post<any>(KHHT_SERVICE.KHHT_SINHVIEN_BY_LOAI_HP, {
-          maSo: maSo,
-          khoaHoc: khoaHoc,
-          maNganh: maNganh,
-          loaiHp: "Chuyên ngành",
-        }),
-      ]);
-
+      const response = await axiosPrivate.get(KHHT_SERVICE.KHHT_DETAIL.replace(":maSo", maSo || ""));
       const processResponse = (response: any): KeHoachHocTap[] => {
         if (response.status === 200 && response.data?.code === 200) {
           return response.data.data.map((item: any) => ({
@@ -263,21 +249,15 @@ const KeHoachHocTapDetail = () => {
         }
         return [];
       };
-
-      const allHocPhan = [
-        ...processResponse(daiCuongResponse),
-        ...processResponse(coSoResponse),
-        ...processResponse(chuyenNganhResponse),
-      ];
-
-      setAllData(allHocPhan);
+      const processedData = processResponse(response);
+      setAllData(processedData);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Có lỗi xảy ra");
       console.error("Lỗi khi lấy dữ liệu:", error);
     } finally {
       setLoading(false);
     }
-  }, [axiosPrivate, maSo, khoaHoc, maNganh]);
+  }, [axiosPrivate, maSo]);
 
   // Fetch available subjects that are not in current study plan
   const fetchAvailableHocPhansNotInKHHT = useCallback(async () => {
@@ -988,7 +968,7 @@ const KeHoachHocTapDetail = () => {
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                   }`}
                 >
-                  {namHoc.tenNh} ({allData.filter(item => item.namHocId === namHoc.id).length})
+                  {namHoc.tenNh} ({allData.filter(item => item.namHocId === namHoc.id && (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy)).length})
                 </button>
               ))}
             </div>
@@ -1010,7 +990,7 @@ const KeHoachHocTapDetail = () => {
                         : "bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600"
                     }`}
                   >
-                    {hocKy.ten} ({allData.filter(item => item.maHocKy === hocKy.id).length})
+                    {hocKy.ten} ({allData.filter(item => item.maHocKy === hocKy.id && (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy)).length})
                   </button>
                 ))}
               </div>
@@ -1148,7 +1128,7 @@ const KeHoachHocTapDetail = () => {
                 >
                   <option value="">Chọn học kỳ</option>
                   {danhSachHocKy
-                    .filter((hk) => hk.namHoc?.id === selectedFilterNamHoc)
+                    .filter((hk) => hk.namHoc?.id === selectedFilterNamHoc && (!hocKyHienTai || hk.maHocKy <= hocKyHienTai.maHocKy))
                     .map((item) => (
                       <option key={item.maHocKy} value={item.maHocKy}>
                         {item.tenHocKy}

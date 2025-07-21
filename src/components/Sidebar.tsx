@@ -58,8 +58,7 @@ export default function Sidebar() {
             to: "/khht",
             children: [
               { name: "Tổng quan KHHT", to: "/khht/chung" },
-              { name: "Xem KHHT đã nhập", to: "/khht/detail" },
-              { name: "Thêm KHHT", to: "/khht/add" },
+              { name: "Cập nhật KHHT", to: "/khht/chitiet" },
             ],
           },
           {

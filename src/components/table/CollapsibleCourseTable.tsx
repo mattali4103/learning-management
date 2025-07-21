@@ -24,16 +24,7 @@ import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
 import { KeHoachHocTapExportButton } from "../PDFExportButton";
 import type { HocPhan } from "../../types/HocPhan";
-
-interface HocPhanTuChon {
-  id: number;
-  tenNhom: string;
-  tinChiYeuCau: number;
-  khoaHoc: string;
-  maNganh: number;
-  hocPhanTuChonList: HocPhan[];
-}
-
+import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 interface CollapsibleCourseTableProps {
   name: string;
   requiredCourses: HocPhan[];
@@ -59,6 +50,7 @@ interface CourseGroup {
   totalCredits: number;
   requiredCredits?: number;
   colorScheme: string;
+  groupType?: string; // Added optional groupType for sorting elective groups
 }
 
 interface CourseWithGroup extends HocPhan {
@@ -82,6 +74,17 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
   emptyStateTitle,
   emptyStateDescription,
 }) => {
+  // Remove duplicate courses by maHp (course code) in requiredCourses
+  const uniqueRequiredCourses = useMemo(() => {
+    const seen = new Set();
+    return requiredCourses.filter((course) => {
+      if (!course.maHp) return false;
+      if (seen.has(course.maHp)) return false;
+      seen.add(course.maHp);
+      return true;
+    });
+  }, [requiredCourses]);
+
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
@@ -94,7 +97,22 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
 
   // Tạo nhóm học phần từ các khóa học bắt buộc và tự chọn
   const courseGroupsResult = useMemo((): CourseGroupResult => {
-    const groups: CourseGroup[] = [];
+    // Define the desired order for required course types
+    const requiredOrder = [
+      "Anh văn",
+      "chính trị",
+      "thể chất",
+      "Đại cương",
+      "Cơ sở ngành",
+      "Chuyên ngành",
+    ];
+
+    // Define the desired order for elective group types by matching course types inside them
+    const electiveOrder = [
+      "Đại cương",
+      "Cơ sở ngành",
+      "Chuyên ngành",
+    ];
 
     // Get all course codes that exist in elective groups to avoid duplication
     const electiveCourseCodes = new Set(
@@ -104,7 +122,7 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
     );
 
     // Filter required courses based on activeTab and exclude those already in elective groups
-    let filteredRequiredCourses = requiredCourses.filter(course => 
+    let filteredRequiredCourses = uniqueRequiredCourses.filter(course => 
       course.maHp && !electiveCourseCodes.has(course.maHp)
     );
 
@@ -126,13 +144,14 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
     }, {} as Record<string, HocPhan[]>);
 
     // Create groups for each course type
+    const requiredGroups: CourseGroup[] = [];
     Object.entries(requiredCoursesByType).forEach(([courseType, courses]) => {
       if (courses.length > 0) {
         const totalCredits = courses.reduce((sum, course) => sum + (course.tinChi || 0), 0);
         
         // Determine color scheme based on course type
         let colorScheme = 'blue';
-        if (courseType.includes('Đại cương') || courseType.includes('Anh văn') || courseType.includes('chính trị')) {
+        if (courseType.includes('Đại cương') || courseType.includes('Anh văn') || courseType.includes('chính trị') || courseType.includes('thể chất')) {
           colorScheme = 'purple';
         } else if (courseType.includes('Cơ sở ngành')) {
           colorScheme = 'blue';
@@ -140,7 +159,7 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
           colorScheme = 'orange';
         }
 
-        groups.push({
+        requiredGroups.push({
           id: `required-${courseType.replace(/\s+/g, '-').toLowerCase()}`,
           type: 'required',
           title: `Học phần ${courseType}`,
@@ -152,7 +171,18 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
       }
     });
 
+    // Sort required groups by the defined order
+    requiredGroups.sort((a, b) => {
+      const aIndex = requiredOrder.findIndex(order => a.title.includes(order));
+      const bIndex = requiredOrder.findIndex(order => b.title.includes(order));
+      if (aIndex === -1 && bIndex === -1) return 0;
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
+
     // Add elective course groups (keep as groups)
+    const electiveGroupsFiltered: CourseGroup[] = [];
     electiveGroups.forEach((group, index) => {
       const coursesInGroup = activeTab === "tatca" 
         ? group.hocPhanTuChonList || []
@@ -160,7 +190,17 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
 
       if (coursesInGroup.length > 0) {
         const totalCredits = coursesInGroup.reduce((sum, course) => sum + (course.tinChi || 0), 0);
-        groups.push({
+
+        // Determine the type of elective group by checking course types inside
+        let groupType = "Khác";
+        for (const orderType of electiveOrder) {
+          if (coursesInGroup.some(c => c.loaiHp === orderType)) {
+            groupType = orderType;
+            break;
+          }
+        }
+
+        electiveGroupsFiltered.push({
           id: `elective-${group.id}-${index}`,
           type: 'elective',
           title: `Nhóm tự chọn: ${group.tenNhom}`,
@@ -168,13 +208,59 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
           courses: coursesInGroup,
           totalCredits,
           requiredCredits: group.tinChiYeuCau,
-          colorScheme: 'green'
+          colorScheme: 'green',
+          groupType: groupType,
         });
       }
     });
 
-    return { groups, uniqueRequiredCourses: [] }; // No longer showing individual required courses
-  }, [requiredCourses, electiveGroups, activeTab]);
+    // Sort elective groups by the defined order
+    electiveGroupsFiltered.sort((a, b) => {
+      const aIndex = electiveOrder.findIndex(order => a.groupType?.includes(order));
+      const bIndex = electiveOrder.findIndex(order => b.groupType?.includes(order));
+      if (aIndex === -1 && bIndex === -1) return 0;
+      if (aIndex === -1) return 1;
+      if (bIndex === -1) return -1;
+      return aIndex - bIndex;
+    });
+
+    // Combine groups in the requested order:
+    // Anh văn, chính trị, thể chất, đại cương,
+    // nhóm học phần tự chọn đại cương,
+    // cơ sở ngành, nhóm học phần tự chọn cơ sở ngành,
+    // chuyên ngành, nhóm học phần tự chọn chuyên ngành
+
+    const combinedGroups: CourseGroup[] = [];
+
+    // Add required groups in order
+    requiredOrder.forEach(orderType => {
+      requiredGroups.forEach(group => {
+        if (group.title.includes(orderType)) {
+          combinedGroups.push(group);
+        }
+      });
+      // Add elective groups of this type after required group
+      electiveGroupsFiltered.forEach(group => {
+        if (group.groupType === orderType) {
+          combinedGroups.push(group);
+        }
+      });
+    });
+
+    // Add any remaining groups not in order arrays
+    requiredGroups.forEach(group => {
+      if (!combinedGroups.includes(group)) {
+        combinedGroups.push(group);
+      }
+    });
+    electiveGroupsFiltered.forEach(group => {
+      if (!combinedGroups.includes(group)) {
+        combinedGroups.push(group);
+      }
+    });
+
+    return { groups: combinedGroups, uniqueRequiredCourses: [] }; // No longer showing individual required courses
+  }, [uniqueRequiredCourses, electiveGroups, activeTab]);
 
   const courseGroups = courseGroupsResult.groups;
 
@@ -571,21 +657,6 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
           >
             <ChevronsRight className="w-4 h-4" />
           </button>
-        </div>
-
-        <div className="flex items-center space-x-1 ml-4">
-          <span className="text-sm text-gray-700">Đến trang:</span>
-          <input
-            type="number"
-            min="1"
-            max={paginationInfo.totalPages}
-            defaultValue={paginationInfo.currentPage}
-            onChange={e => {
-              const page = e.target.value ? Number(e.target.value) - 1 : 0;
-              setPagination(prev => ({ ...prev, pageIndex: Math.max(0, Math.min(page, paginationInfo.totalPages - 1)) }));
-            }}
-            className="w-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
         </div>
       </div>
     </div>
