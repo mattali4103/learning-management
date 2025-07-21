@@ -19,26 +19,20 @@ import {
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
+  Trash2,
 } from "lucide-react";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
 import { KeHoachHocTapExportButton } from "../PDFExportButton";
 import type { HocPhan } from "../../types/HocPhan";
-import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
-interface CollapsibleCourseTableProps {
+
+interface AllCoursesCollapsibleTableProps {
   name: string;
-  requiredCourses: HocPhan[];
-  electiveGroups: HocPhanTuChon[];
-  activeTab: string;
+  allData: HocPhan[];
   loading?: boolean;
   emptyStateTitle?: string;
   emptyStateDescription?: string;
-  onCopyToClipboard?: (text: string) => void;
-}
-
-interface CourseGroupResult {
-  groups: CourseGroup[];
-  uniqueRequiredCourses: HocPhan[];
+  onDelete?: (maHp: string) => void;
 }
 
 interface CourseGroup {
@@ -50,7 +44,6 @@ interface CourseGroup {
   totalCredits: number;
   requiredCredits?: number;
   colorScheme: string;
-  groupType?: string; // Added optional groupType for sorting elective groups
 }
 
 interface CourseWithGroup extends HocPhan {
@@ -62,80 +55,42 @@ interface CourseWithGroup extends HocPhan {
   groupTotalCredits?: number;
   groupRequiredCredits?: number;
   colorScheme?: string;
-  type?: 'direct-required' | 'elective';
 }
 
-export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
+export const AllCoursesCollapsibleTable: React.FC<
+  AllCoursesCollapsibleTableProps
+> = ({
   name,
-  requiredCourses,
-  electiveGroups,
-  activeTab,
+  allData,
   loading = false,
   emptyStateTitle,
   emptyStateDescription,
+  onDelete,
 }) => {
-  // Remove duplicate courses by maHp (course code) in requiredCourses
-  const uniqueRequiredCourses = useMemo(() => {
-    const seen = new Set();
-    return requiredCourses.filter((course) => {
-      if (!course.maHp) return false;
-      if (seen.has(course.maHp)) return false;
-      seen.add(course.maHp);
-      return true;
-    });
-  }, [requiredCourses]);
-
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
+    new Set()
+  );
   const [pagination, setPagination] = useState({
     pageIndex: 0,
-    pageSize: 7,
+    pageSize: 10,
   });
- 
 
-  // Tạo nhóm học phần từ các khóa học bắt buộc và tự chọn
-  const courseGroupsResult = useMemo((): CourseGroupResult => {
-    // Define the desired order for required course types
+  const courseGroups = useMemo((): CourseGroup[] => {
     const requiredOrder = [
+      "Quốc Phòng",
       "Anh văn",
-      "chính trị",
-      "thể chất",
+      "Chính Trị",
+      "Thể Chất",
       "Đại cương",
       "Cơ sở ngành",
       "Chuyên ngành",
     ];
 
-    // Define the desired order for elective group types by matching course types inside them
-    const electiveOrder = [
-      "Đại cương",
-      "Cơ sở ngành",
-      "Chuyên ngành",
-    ];
-
-    // Get all course codes that exist in elective groups to avoid duplication
-    const electiveCourseCodes = new Set(
-      electiveGroups.flatMap(group => 
-        (group.hocPhanTuChonList || []).map(course => course.maHp)
-      ).filter(Boolean)
-    );
-
-    // Filter required courses based on activeTab and exclude those already in elective groups
-    let filteredRequiredCourses = uniqueRequiredCourses.filter(course => 
-      course.maHp && !electiveCourseCodes.has(course.maHp)
-    );
-
-    // Apply activeTab filter to required courses
-    if (activeTab !== "tatca") {
-      filteredRequiredCourses = filteredRequiredCourses.filter(course => 
-        course.loaiHp === activeTab
-      );
-    }
-
-    // Group required courses by loaiHp (course type)
-    const requiredCoursesByType = filteredRequiredCourses.reduce((acc, course) => {
-      const type = course.loaiHp || 'Khác';
+    const coursesByType = allData.reduce((acc, course) => {
+      const type = course.loaiHp || "Khác";
       if (!acc[type]) {
         acc[type] = [];
       }
@@ -143,13 +98,12 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
       return acc;
     }, {} as Record<string, HocPhan[]>);
 
-    // Create groups for each course type
-    const requiredGroups: CourseGroup[] = [];
-    Object.entries(requiredCoursesByType).forEach(([courseType, courses]) => {
-      if (courses.length > 0) {
-        const totalCredits = courses.reduce((sum, course) => sum + (course.tinChi || 0), 0);
-        
-        // Determine color scheme based on course type
+    const groups: CourseGroup[] = Object.entries(coursesByType).map(
+      ([courseType, courses]) => {
+        const totalCredits = courses.reduce(
+          (sum, course) => sum + (course.tinChi || 0),
+          0
+        );
         let colorScheme = 'blue';
         if (courseType.includes('Đại cương') || courseType.includes('Anh văn') || courseType.includes('chính trị') || courseType.includes('thể chất')) {
           colorScheme = 'purple';
@@ -159,149 +113,66 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
           colorScheme = 'orange';
         }
 
-        requiredGroups.push({
-          id: `required-${courseType.replace(/\s+/g, '-').toLowerCase()}`,
-          type: 'required',
+        return {
+          id: `group-${courseType.replace(/\s+/g, "-").toLowerCase()}`,
+          type: 'required', // Assuming all are required for now
           title: `Học phần ${courseType}`,
           subtitle: `${courses.length} học phần • ${totalCredits} tín chỉ`,
           courses: courses,
           totalCredits,
-          colorScheme
-        });
+          colorScheme,
+        };
       }
-    });
+    );
 
-    // Sort required groups by the defined order
-    requiredGroups.sort((a, b) => {
-      const aIndex = requiredOrder.findIndex(order => a.title.includes(order));
-      const bIndex = requiredOrder.findIndex(order => b.title.includes(order));
+    groups.sort((a, b) => {
+      const aIndex = requiredOrder.findIndex((order) =>
+        a.title.includes(order)
+      );
+      const bIndex = requiredOrder.findIndex((order) =>
+        b.title.includes(order)
+      );
       if (aIndex === -1 && bIndex === -1) return 0;
       if (aIndex === -1) return 1;
       if (bIndex === -1) return -1;
       return aIndex - bIndex;
     });
 
-    // Add elective course groups (keep as groups)
-    const electiveGroupsFiltered: CourseGroup[] = [];
-    electiveGroups.forEach((group, index) => {
-      const coursesInGroup = activeTab === "tatca" 
-        ? group.hocPhanTuChonList || []
-        : (group.hocPhanTuChonList || []).filter(hp => hp.loaiHp === activeTab);
+    return groups;
+  }, [allData]);
 
-      if (coursesInGroup.length > 0) {
-        const totalCredits = coursesInGroup.reduce((sum, course) => sum + (course.tinChi || 0), 0);
-
-        // Determine the type of elective group by checking course types inside
-        let groupType = "Khác";
-        for (const orderType of electiveOrder) {
-          if (coursesInGroup.some(c => c.loaiHp === orderType)) {
-            groupType = orderType;
-            break;
-          }
-        }
-
-        electiveGroupsFiltered.push({
-          id: `elective-${group.id}-${index}`,
-          type: 'elective',
-          title: `Nhóm tự chọn: ${group.tenNhom}`,
-          subtitle: `${coursesInGroup.length} học phần • Yêu cầu: ${group.tinChiYeuCau} tín chỉ`,
-          courses: coursesInGroup,
-          totalCredits,
-          requiredCredits: group.tinChiYeuCau,
-          colorScheme: 'green',
-          groupType: groupType,
-        });
-      }
-    });
-
-    // Sort elective groups by the defined order
-    electiveGroupsFiltered.sort((a, b) => {
-      const aIndex = electiveOrder.findIndex(order => a.groupType?.includes(order));
-      const bIndex = electiveOrder.findIndex(order => b.groupType?.includes(order));
-      if (aIndex === -1 && bIndex === -1) return 0;
-      if (aIndex === -1) return 1;
-      if (bIndex === -1) return -1;
-      return aIndex - bIndex;
-    });
-
-    // Combine groups in the requested order:
-    // Anh văn, chính trị, thể chất, đại cương,
-    // nhóm học phần tự chọn đại cương,
-    // cơ sở ngành, nhóm học phần tự chọn cơ sở ngành,
-    // chuyên ngành, nhóm học phần tự chọn chuyên ngành
-
-    const combinedGroups: CourseGroup[] = [];
-
-    // Add required groups in order
-    requiredOrder.forEach(orderType => {
-      requiredGroups.forEach(group => {
-        if (group.title.includes(orderType)) {
-          combinedGroups.push(group);
-        }
-      });
-      // Add elective groups of this type after required group
-      electiveGroupsFiltered.forEach(group => {
-        if (group.groupType === orderType) {
-          combinedGroups.push(group);
-        }
-      });
-    });
-
-    // Add any remaining groups not in order arrays
-    requiredGroups.forEach(group => {
-      if (!combinedGroups.includes(group)) {
-        combinedGroups.push(group);
-      }
-    });
-    electiveGroupsFiltered.forEach(group => {
-      if (!combinedGroups.includes(group)) {
-        combinedGroups.push(group);
-      }
-    });
-
-    return { groups: combinedGroups, uniqueRequiredCourses: [] }; // No longer showing individual required courses
-  }, [uniqueRequiredCourses, electiveGroups, activeTab]);
-
-  const courseGroups = courseGroupsResult.groups;
-
-  // Auto-expand only the first group when courseGroups change
   useEffect(() => {
     if (courseGroups.length > 0) {
-      const firstGroupId = courseGroups[0].id;
-      setExpandedGroups(new Set([firstGroupId]));
+      const allGroupIds = new Set(courseGroups.map((g) => g.id));
+      setExpandedGroups(allGroupIds);
     } else {
       setExpandedGroups(new Set());
     }
   }, [courseGroups]);
 
-  // Toggle group expansion
-  const toggleGroup = useCallback((groupId: string) => {
-    const newExpanded = new Set(expandedGroups);
-    if (newExpanded.has(groupId)) {
-      newExpanded.delete(groupId);
-    } else {
-      newExpanded.add(groupId);
-    }
-    setExpandedGroups(newExpanded);
-  }, [expandedGroups]);
+  const toggleGroup = useCallback(
+    (groupId: string) => {
+      const newExpanded = new Set(expandedGroups);
+      if (newExpanded.has(groupId)) {
+        newExpanded.delete(groupId);
+      } else {
+        newExpanded.add(groupId);
+      }
+      setExpandedGroups(newExpanded);
+    },
+    [expandedGroups]
+  );
 
-  // Get all courses for filtering and table setup, including all groups
-  const allCourses = useMemo(() => {
-    return courseGroups.flatMap(group => group.courses);
-  }, [courseGroups]);
-
-  // Create flattened data structure - group headers with their courses directly below
   const flattenedData = useMemo((): CourseWithGroup[] => {
     const result: CourseWithGroup[] = [];
-    // Add each group header followed immediately by its courses
-    courseGroups.forEach(group => {
-      // Add group header
+
+    courseGroups.forEach((group) => {
       result.push({
         maHp: `group-header-${group.id}`,
         tenHp: group.title,
         tinChi: 0,
-        loaiHp: group.type,
-        hocPhanTienQuyet: '',
+        loaiHp: "group",
+        hocPhanTienQuyet: "",
         groupId: group.id,
         groupType: group.type,
         isGroupHeader: true,
@@ -309,44 +180,41 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
         groupSubtitle: group.subtitle,
         groupTotalCredits: group.totalCredits,
         groupRequiredCredits: group.requiredCredits,
-        colorScheme: group.colorScheme
+        colorScheme: group.colorScheme,
       } as CourseWithGroup);
-      
-      // Add courses immediately after the header if group is expanded
+
       if (expandedGroups.has(group.id)) {
-        group.courses.forEach(course => {
+        group.courses.forEach((course) => {
           result.push({
             ...course,
             groupId: group.id,
             groupType: group.type,
             isGroupHeader: false,
-            colorScheme: group.colorScheme
+            colorScheme: group.colorScheme,
           } as CourseWithGroup);
         });
       }
     });
-    
+
     return result;
   }, [courseGroups, expandedGroups]);
 
-  // Filter data based on global filter (apply to both headers and courses)
   const filteredData = useMemo(() => {
     let filtered = flattenedData;
     if (globalFilter) {
+      const lowercasedFilter = globalFilter.toLowerCase();
       filtered = flattenedData.filter((item) => {
         if (item.isGroupHeader) {
-          // For group headers, search in group title and subtitle
           return (
-            item.groupTitle?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            item.groupSubtitle?.toLowerCase().includes(globalFilter.toLowerCase())
+            item.groupTitle?.toLowerCase().includes(lowercasedFilter) ||
+            item.groupSubtitle?.toLowerCase().includes(lowercasedFilter)
           );
         } else {
-          // For courses, search in course properties
           return (
-            item.maHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            item.tenHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            item.loaiHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            item.hocPhanTienQuyet?.toLowerCase().includes(globalFilter.toLowerCase())
+            item.maHp?.toLowerCase().includes(lowercasedFilter) ||
+            item.tenHp?.toLowerCase().includes(lowercasedFilter) ||
+            item.loaiHp?.toLowerCase().includes(lowercasedFilter) ||
+            item.hocPhanTienQuyet?.toLowerCase().includes(lowercasedFilter)
           );
         }
       });
@@ -354,150 +222,167 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
     return filtered;
   }, [flattenedData, globalFilter]);
 
-  // Use filteredData directly for display with pagination
   const displayData = useMemo((): CourseWithGroup[] => {
     return filteredData;
   }, [filteredData]);
 
-  // Columns definition
   const columns = useMemo<ColumnDef<CourseWithGroup>[]>(
     () => [
-      {
-        id: "stt",
-        header: "STT",
-        cell: ({ row, table }) => {
-          const item = row.original;
-          if (item.isGroupHeader) {
-            return null; // No STT for group headers
-          }
-          
-          // Calculate STT for courses only
-          const allRows = table.getFilteredRowModel().rows;
-          let courseIndex = 0;
-          
-          // Count courses up to current row
-          for (let i = 0; i <= row.index; i++) {
-            const currentRow = allRows[i];
-            if (currentRow && !currentRow.original.isGroupHeader) {
-              courseIndex++;
-            }
-          }
-          
-          return (
-            <div className="text-center">
-              <span className="text-sm font-medium text-gray-600">
-                {courseIndex}
-              </span>
-            </div>
-          );
-        },
-        size: 80,
-        enableSorting: false,
-      },
-      {
-        id: "maHp",
-        accessorKey: "maHp",
-        header: "Mã học phần",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (item.isGroupHeader) {
-            return null; // Group headers are handled separately
-          }
-          return item.maHp || '';
-        },
-        size: 140,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "tenHp",
-        accessorKey: "tenHp",
-        header: "Tên học phần",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (item.isGroupHeader) {
-            return null; // Group header content is handled in maHp column
-          }
-          return (
-            <div className="max-w-xs">
-              <div className="font-semibold text-gray-900 text-sm leading-tight">
-                {item.tenHp || "Chưa có tên"}
-              </div>
-            </div>
-          );
-        },
-        size: 300,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "tinChi",
-        accessorKey: "tinChi",
-        header: "Tín chỉ",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (item.isGroupHeader) {
-            return null;
-          }
-          return (
-            <div className="text-center">
-              <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-blue-700">
-                {item.tinChi || 0}
-              </span>
-            </div>
-          );
-        },
-        size: 100,
-        enableSorting: true,
-        sortingFn: "basic",
-      },
-      {
-        id: "loaiHp",
-        accessorKey: "loaiHp",
-        header: "Loại học phần",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (item.isGroupHeader) {
-            return null;
-          }
-          return (
-            <div className="text-center">
-              <span className="text-sm text-gray-600">
-                {item.loaiHp || "N/A"}
-              </span>
-            </div>
-          );
-        },
-        size: 120,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
-      {
-        id: "hocPhanTienQuyet",
-        accessorKey: "hocPhanTienQuyet",
-        header: "Tiên quyết",
-        cell: ({ row }) => {
-          const item = row.original;
-          if (item.isGroupHeader) {
-            return null;
-          }
-          return (
-            <div className="text-center">
-              <span className="text-sm text-gray-600">
-                {item.hocPhanTienQuyet || "-"}
-              </span>
-            </div>
-          );
-        },
-        size: 150,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
-      },
+        {
+            id: "stt",
+            header: "STT",
+            cell: ({ row, table }) => {
+              const item = row.original;
+              if (item.isGroupHeader) {
+                return null; 
+              }
+              
+              const allRows = table.getFilteredRowModel().rows;
+              let courseIndex = 0;
+              
+              for (let i = 0; i <= row.index; i++) {
+                const currentRow = allRows[i];
+                if (currentRow && !currentRow.original.isGroupHeader) {
+                  courseIndex++;
+                }
+              }
+              
+              return (
+                <div className="text-center">
+                  <span className="text-sm font-medium text-gray-600">
+                    {courseIndex}
+                  </span>
+                </div>
+              );
+            },
+            size: 80,
+            enableSorting: false,
+          },
+          {
+            id: "maHp",
+            accessorKey: "maHp",
+            header: "Mã học phần",
+            cell: ({ row }) => {
+              const item = row.original;
+              if (item.isGroupHeader) {
+                return null;
+              }
+              return item.maHp || '';
+            },
+            size: 140,
+            enableSorting: true,
+            sortingFn: "alphanumeric",
+          },
+          {
+            id: "tenHp",
+            accessorKey: "tenHp",
+            header: "Tên học phần",
+            cell: ({ row }) => {
+              const item = row.original;
+              if (item.isGroupHeader) {
+                return null;
+              }
+              return (
+                <div className="max-w-xs">
+                  <div className="font-semibold text-gray-900 text-sm leading-tight">
+                    {item.tenHp || "Chưa có tên"}
+                  </div>
+                </div>
+              );
+            },
+            size: 300,
+            enableSorting: true,
+            sortingFn: "alphanumeric",
+          },
+          {
+            id: "tinChi",
+            accessorKey: "tinChi",
+            header: "Tín chỉ",
+            cell: ({ row }) => {
+              const item = row.original;
+              if (item.isGroupHeader) {
+                return null;
+              }
+              return (
+                <div className="text-center">
+                  <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-blue-700">
+                    {item.tinChi || 0}
+                  </span>
+                </div>
+              );
+            },
+            size: 100,
+            enableSorting: true,
+            sortingFn: "basic",
+          },
+          {
+            id: "loaiHp",
+            accessorKey: "loaiHp",
+            header: "Loại học phần",
+            cell: ({ row }) => {
+              const item = row.original;
+              if (item.isGroupHeader) {
+                return null;
+              }
+              return (
+                <div className="text-center">
+                  <span className="text-sm text-gray-600">
+                    {item.loaiHp || "N/A"}
+                  </span>
+                </div>
+              );
+            },
+            size: 120,
+            enableSorting: true,
+            sortingFn: "alphanumeric",
+          },
+          {
+            id: "hocPhanTienQuyet",
+            accessorKey: "hocPhanTienQuyet",
+            header: "Tiên quyết",
+            cell: ({ row }) => {
+              const item = row.original;
+              if (item.isGroupHeader) {
+                return null;
+              }
+              return (
+                <div className="text-center">
+                  <span className="text-sm text-gray-600">
+                    {item.hocPhanTienQuyet || "-"}
+                  </span>
+                </div>
+              );
+            },
+            size: 150,
+            enableSorting: true,
+            sortingFn: "alphanumeric",
+          },
+          {
+            id: "action",
+            header: "",
+            cell: ({ row }) => {
+              const item = row.original;
+              if (item.isGroupHeader || !onDelete) {
+                return null;
+              }
+              return (
+                <div className="flex items-center justify-center">
+                  <button
+                    className="text-red-600 hover:text-red-800 p-2 rounded-lg transition-colors duration-200"
+                    onClick={() => onDelete(item.maHp)}
+                    title="Xóa khỏi kế hoạch"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+              );
+            },
+            size: 80,
+          },
     ],
-    []
+    [onDelete]
   );
 
-  // Create table instance - use standard setup but handle pagination display manually
   const table = useReactTable({
     data: displayData,
     columns: columns,
@@ -512,25 +397,18 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
     getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    // Don't use built-in pagination for display
     manualPagination: false,
   });
 
-  // Custom pagination logic for display
   const displayRows = useMemo(() => {
     const allRows = table.getFilteredRowModel().rows;
-    
-    // Apply pagination to all filtered data
     const { pageIndex, pageSize } = pagination;
     const pageStart = pageIndex * pageSize;
     const pageEnd = pageStart + pageSize;
-    
     return allRows.slice(pageStart, pageEnd);
   }, [table, pagination]);
 
-  // Custom pagination info
   const paginationInfo = useMemo(() => {
-    // Count only courses for pagination info (excluding group headers)
     const coursesCount = filteredData.filter(item => !item.isGroupHeader).length;
     const totalPages = Math.ceil(filteredData.length / pagination.pageSize);
     const currentPage = pagination.pageIndex + 1;
@@ -584,7 +462,6 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
     return schemes[colorScheme as keyof typeof schemes] || schemes.blue;
   };
 
-  // Handle empty state
   if (courseGroups.length === 0 && !loading) {
     return (
       <div className="overflow-x-auto rounded-lg shadow-xl bg-gray-200">
@@ -603,10 +480,9 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
     );
   }
 
-  const totalCourses = allCourses.length;
-  const totalCredits = allCourses.reduce((sum, course) => sum + (course.tinChi || 0), 0);
+  const totalCourses = allData.length;
+  const totalCredits = allData.reduce((sum, course) => sum + (course.tinChi || 0), 0);
 
-  // Pagination component with custom logic
   const PaginationControls = () => (
     <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
       <div className="flex items-center space-x-2 text-sm text-gray-700">
@@ -685,10 +561,9 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
           )}
         </div>
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-          {/* PDF Export Button */}
           {totalCourses > 0 && (
             <KeHoachHocTapExportButton
-              data={allCourses}
+              data={allData}
               title={name}
               variant="minimal"
               size="sm"
@@ -782,7 +657,6 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
                   </td>
                 </tr>
               ) : (
-                // Show paginated rows with group headers and courses
                 displayRows.map((row) => {
                   const item = row.original;
                   
@@ -867,7 +741,6 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
             </tbody>
           </table>
 
-          {/* Pagination Controls */}
           {!loading && displayRows.length > 0 && (
             <PaginationControls />
           )}

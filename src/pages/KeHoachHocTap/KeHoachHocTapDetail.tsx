@@ -34,6 +34,7 @@ import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import { GroupedTable } from "../../components/table/GroupedTable";
 import type { ColumnDef } from "@tanstack/react-table";
+import { AllCoursesCollapsibleTable } from "../../components/table/AllCoursesCollapsibleTable";
 
 interface CreditStatData {
   tenHocKy: string;
@@ -384,18 +385,13 @@ const KeHoachHocTapDetail = () => {
 
     setSaving(true);
     try {
-      // Create học phần one by one
-      for (const item of validItems) {
-        const payload = {
-          maSo: maSo,
-          khoaHoc: khoaHoc,
-          maNganh: maNganh,
-          maHocKy: item.hocKy!.maHocKy,
-          maHocPhan: item.hocPhan.maHp,
-        };
+      const payload = validItems.map(item => ({
+        maSo: maSo,
+        maHocKy: item.hocKy!.maHocKy,
+        maHocPhan: item.hocPhan.maHp,
+      }));
 
-        await axiosPrivate.post(KHHT_SERVICE.CREATE, payload);
-      }
+      await axiosPrivate.post(KHHT_SERVICE.CREATE, payload);
 
       setSuccessMessage(`Đã thêm thành công ${validItems.length} học phần vào kế hoạch học tập!`);
       setShowSuccessModal(true);
@@ -412,6 +408,7 @@ const KeHoachHocTapDetail = () => {
             error.message ||
             "Lỗi không xác định")
       );
+      console.log(error)
       setShowErrorModal(true);
     } finally {
       setSaving(false);
@@ -840,6 +837,13 @@ const KeHoachHocTapDetail = () => {
     [availableNamHoc, danhSachHocKy, handleUpdatePending, handleRemoveFromPending]
   );
 
+  const handleDeleteFromAllTable = useCallback((maHp: string) => {
+    const hocPhan = allData.find(hp => hp.maHp === maHp);
+    if (hocPhan) {
+      handleDeleteClick(hocPhan);
+    }
+  }, [allData, handleDeleteClick]);
+
   // Effects
   useEffect(() => {
     fetchDanhSachHocKy();
@@ -1007,29 +1011,10 @@ const KeHoachHocTapDetail = () => {
               </h4>
 
               {allData.length > 0 ? (
-                <GroupedTable
+                <AllCoursesCollapsibleTable
                   name="Tất cả học phần"
-                  data={allData}
-                  columns={editModeColumns}
-                  groupByKey="tenHocKy"
-                  groupDisplayName={(groupKey: string) => groupKey || "Chưa xác định học kỳ"}
-                  groupColorScheme={(groupKey: string) => {
-                    const colors = [
-                      "bg-blue-50 border-blue-200 text-blue-700",
-                      "bg-green-50 border-green-200 text-green-700", 
-                      "bg-purple-50 border-purple-200 text-purple-700",
-                      "bg-orange-50 border-orange-200 text-orange-700",
-                      "bg-pink-50 border-pink-200 text-pink-700",
-                    ];
-                    const hashCode = groupKey ? groupKey.split('').reduce((a: number, b: string) => {
-                      a = ((a << 5) - a) + b.charCodeAt(0);
-                      return a & a;
-                    }, 0) : 0;
-                    return colors[Math.abs(hashCode) % colors.length];
-                  }}
-                  initialExpanded={true}  
-                  enablePagination={true}
-                  pageSize={7}
+                  allData={allData}
+                  onDelete={handleDeleteFromAllTable}
                   emptyStateTitle="Chưa có học phần nào"
                   emptyStateDescription="Nhấn 'Thêm học phần' để bắt đầu"
                 />
