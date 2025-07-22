@@ -1,13 +1,11 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   BookOpen,
   GraduationCap,
   ArrowLeft,
-  Save,
   Plus,
   BarChart3,
-  Search,
   X,
   Calendar,
   Users,
@@ -75,13 +73,17 @@ const ThemKeHoachHocTapMau = () => {
   const { auth } = useAuth();
 
   // Check if this is edit mode (only for /edit/ route, not /add/ route)
-  const isEditMode = Boolean(params.maNganh && params.khoaHoc && location.pathname.includes('/edit/'));
-  const isAddMode = Boolean(params.maNganh && params.khoaHoc && location.pathname.includes('/add/'));
+  const isEditMode = Boolean(
+    params.maNganh && params.khoaHoc && location.pathname.includes("/edit/")
+  );
+  const isAddMode = Boolean(
+    params.maNganh && params.khoaHoc && location.pathname.includes("/add/")
+  );
   const initialMaNganh = params.maNganh || "";
   const initialKhoaHoc = params.khoaHoc || "";
 
   // Ref for available subjects section
-  const availableSubjectsRef = useRef<HTMLDivElement>(null);
+  // const availableSubjectsRef = useRef<HTMLDivElement>(null);
 
   // States
   const [loading, setLoading] = useState(false);
@@ -96,16 +98,17 @@ const ThemKeHoachHocTapMau = () => {
   const [availableHocPhans, setAvailableHocPhans] = useState<HocPhan[]>([]);
   const [danhSachHocKy, setDanhSachHocKy] = useState<HocKy[]>([]);
   const [khoaHocOptions, setKhoaHocOptions] = useState<string[]>([]);
-  const [saving, setSaving] = useState(false);
 
   // UI States
   const [activeTab, setActiveTab] = useState<string>("all");
-  const [selectedTabNamHoc, setSelectedTabNamHoc] = useState<number | null>(null);
+  const [selectedTabNamHoc, setSelectedTabNamHoc] = useState<number | null>(
+    null
+  );
   const [selectedHocKyChart, setSelectedHocKyChart] = useState<number | null>(
     null
   );
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
+
+  // const [showAddModal, setShowAddModal] = useState(false);
   const [pendingHocPhans, setPendingHocPhans] = useState<KeHoachHocTapDetail[]>(
     []
   );
@@ -123,7 +126,8 @@ const ThemKeHoachHocTapMau = () => {
   const [showAddSubjectForm, setShowAddSubjectForm] = useState(false);
   const [formNamHoc, setFormNamHoc] = useState<number | null>(null);
   const [formHocKy, setFormHocKy] = useState<number | null>(null);
-
+  const [showAvailableSubjectsModal, setShowAvailableSubjectsModal] =
+    useState(false);
   // Error and success modals
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -156,11 +160,11 @@ const ThemKeHoachHocTapMau = () => {
   const availableHocKy = useMemo(() => {
     if (!selectedTabNamHoc) return [];
     return danhSachHocKy
-      .filter(item => item.namHoc?.id === selectedTabNamHoc)
-      .map(item => ({
+      .filter((item) => item.namHoc?.id === selectedTabNamHoc)
+      .map((item) => ({
         id: item.maHocKy,
         ten: item.tenHocKy,
-        namHoc: item.namHoc
+        namHoc: item.namHoc,
       }))
       .sort((a, b) => a.id - b.id);
   }, [danhSachHocKy, selectedTabNamHoc]);
@@ -194,8 +198,6 @@ const ThemKeHoachHocTapMau = () => {
     });
   }, [selectedHocPhans]);
 
-
-
   // Selected semester data for table
   const selectedSemesterData = useMemo(() => {
     if (!selectedHocKyChart) return [];
@@ -206,20 +208,11 @@ const ThemKeHoachHocTapMau = () => {
 
   // Filtered available subjects
   const filteredAvailableHocPhans = useMemo(() => {
-    let filtered = availableHocPhans.filter(
+    const filtered = availableHocPhans.filter(
       (hp) => !selectedHocPhans.some((item) => item.hocPhan.maHp === hp.maHp)
     );
-
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (hp) =>
-          hp.tenHp.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          hp.maHp.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-
     return filtered;
-  }, [availableHocPhans, selectedHocPhans, searchTerm]);
+  }, [availableHocPhans, selectedHocPhans]);
 
   // Get current filter values (either from manual filter or from active tab)
   const currentFilterNamHoc = useMemo(() => {
@@ -239,7 +232,7 @@ const ThemKeHoachHocTapMau = () => {
   }, [activeTab, selectedFilterHocKy]);
 
   // Show filter section only when on "all" tab
-  const showFilterSection = activeTab === "all";
+  // const showFilterSection = activeTab === "all";
 
   // Fetch functions
   const fetchDanhSachNganh = useCallback(async () => {
@@ -284,7 +277,7 @@ const ThemKeHoachHocTapMau = () => {
           selectedNganh
         )
       );
-
+      console.log("Chuong trinh dao tao:", response);
       if (response.data.code === 200 && response.data.data) {
         const chuongTrinhData = response.data.data;
         const chuongTrinh = Array.isArray(chuongTrinhData)
@@ -381,6 +374,9 @@ const ThemKeHoachHocTapMau = () => {
     if (data && data.activePayload && data.activePayload[0]) {
       const clickedData = data.activePayload[0].payload as CreditStatData;
       setSelectedHocKyChart(clickedData.hocKyId);
+      setSelectedFilterNamHoc(clickedData.namHocId);
+      setSelectedFilterHocKy(clickedData.hocKyId);
+      setSelectedTabNamHoc(clickedData.namHocId);
       setActiveTab(`semester-${clickedData.hocKyId}`);
 
       //Tự động điền thông tin năm học và học kỳ
@@ -402,6 +398,7 @@ const ThemKeHoachHocTapMau = () => {
     } else {
       // Set selected year and reset other selections
       setSelectedTabNamHoc(namHocId);
+      setSelectedFilterNamHoc(namHocId);
       setActiveTab("all");
     }
     setSelectedHocKyChart(null);
@@ -411,6 +408,7 @@ const ThemKeHoachHocTapMau = () => {
 
   const handleHocKyTabClick = (hocKyId: number) => {
     setSelectedHocKyChart(hocKyId);
+    setSelectedFilterHocKy(hocKyId);
     setActiveTab(`semester-${hocKyId}`);
 
     // Auto-set form data for the selected semester
@@ -431,13 +429,7 @@ const ThemKeHoachHocTapMau = () => {
   };
 
   const handleAddHocPhanClick = () => {
-    // Scroll to available subjects section
-    setTimeout(() => {
-      availableSubjectsRef.current?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }, 100);
+    setShowAvailableSubjectsModal(true);
   };
 
   const handleAddToPending = useCallback(
@@ -503,7 +495,7 @@ const ThemKeHoachHocTapMau = () => {
       return;
     }
 
-    setSaving(true);
+
     try {
       // Prepare payload for new items only
       const newItemsPayload: KHHTMauCreatePayload[] = validItems.map(
@@ -528,7 +520,7 @@ const ThemKeHoachHocTapMau = () => {
 
         // Clear pending and close modal
         setPendingHocPhans([]);
-        setShowAddModal(false);
+        setShowAvailableSubjectsModal(false);
 
         setSuccessMessage("Đã thêm học phần vào kế hoạch học tập thành công!");
         setShowSuccessModal(true);
@@ -548,7 +540,7 @@ const ThemKeHoachHocTapMau = () => {
       );
       setShowErrorModal(true);
     } finally {
-      setSaving(false);
+      setShowAvailableSubjectsModal(false);
     }
   };
 
@@ -845,14 +837,11 @@ const ThemKeHoachHocTapMau = () => {
   }, [selectedNganh, fetchKhoaHoc, isEditMode, isAddMode]);
 
   useEffect(() => {
-    if (selectedNganh && selectedKhoaHoc && !isEditMode && !isAddMode) {
-      // Reset when khoa hoc changes in create mode
-      setHasCheckedExistingPlan(false);
-      setSelectedHocPhans([]);
-      // Only auto-fetch available subjects, don't check existing plan automatically
+    // Luôn gọi fetchChuongTrinhDaoTao khi thay đổi ngành hoặc khóa học
+    if (selectedNganh && selectedKhoaHoc) {
       fetchChuongTrinhDaoTao();
     }
-  }, [selectedNganh, selectedKhoaHoc, fetchChuongTrinhDaoTao, isEditMode, isAddMode]);
+  }, [selectedNganh, selectedKhoaHoc, fetchChuongTrinhDaoTao]);
 
   useEffect(() => {
     const fetchExistingPlan = async () => {
@@ -1036,17 +1025,6 @@ const ThemKeHoachHocTapMau = () => {
             <ArrowLeft className="w-5 h-5 text-gray-600" />
           </button>
         }
-        actions={
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => handleAddHocPhanClick()}
-              className="flex items-center px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-lg"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm học phần
-            </button>
-          </div>
-        }
       />
 
       {/* Credit Statistics Chart */}
@@ -1173,17 +1151,17 @@ const ThemKeHoachHocTapMau = () => {
                   Tất cả học phần đã thêm
                 </h4>
                 <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <span>Tổng: {selectedHocPhans.length} học phần</span>
-                  <span>
-                    Tổng tín chỉ:{" "}
-                    {selectedHocPhans.reduce(
-                      (sum, item) => sum + item.hocPhan.tinChi,
-                      0
-                    )}
-                  </span>
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleAddHocPhanClick()}
+                      className="flex items-center px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-lg"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Thêm học phần
+                    </button>
+                  </div>
                 </div>
               </div>
-
               {selectedHocPhans.length > 0 ? (
                 <div>
                   <GroupedTable
@@ -1220,24 +1198,21 @@ const ThemKeHoachHocTapMau = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-lg font-semibold text-gray-800">
-                  Học phần của{" "}
+                  Học phần của
                   {
                     creditStatistics.find(
                       (s) => s.hocKyId === selectedHocKyChart
                     )?.tenHocKy
                   }
                 </h4>
-                <div className="flex items-center space-x-4">
-                  <div className="text-sm text-gray-600">
-                    Số học phần: {selectedSemesterData.length}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    Tổng tín chỉ:{" "}
-                    {selectedSemesterData.reduce(
-                      (sum, item) => sum + item.hocPhan.tinChi,
-                      0
-                    )}
-                  </div>
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => handleAddHocPhanClick()}
+                    className="flex items-center px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors shadow-lg"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Thêm học phần
+                  </button>
                 </div>
               </div>
 
@@ -1283,194 +1258,11 @@ const ThemKeHoachHocTapMau = () => {
           )}
         </div>
       </div>
-
-      {/* Available Subjects Section - Always shown at bottom */}
-      <div ref={availableSubjectsRef} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h4 className="text-lg font-semibold text-gray-800">
-            Học phần có thể thêm
-            {activeTab.startsWith("semester-") && (
-              <span className="ml-2 text-sm font-normal text-blue-600">
-                -{" "}
-                {
-                  creditStatistics.find((s) => s.hocKyId === currentFilterHocKy)
-                    ?.tenHocKy
-                }
-              </span>
-            )}
-          </h4>
-          <span className="text-sm text-gray-600">
-            {filteredAvailableHocPhans.length} học phần
-          </span>
-        </div>
-
-        {/* Filter Section - Only show when on "all" tab */}
-        {showFilterSection && (
-          <div className="bg-gray-50 p-4 rounded-lg mb-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Năm học
-                </label>
-                <select
-                  value={selectedFilterNamHoc || ""}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      ? parseInt(e.target.value)
-                      : null;
-                    setSelectedFilterNamHoc(value);
-                    setSelectedFilterHocKy(null); // Reset học kỳ khi thay đổi năm học
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                  <option value="">Chọn năm học</option>
-                  {availableNamHoc.map((nh) => (
-                    <option key={nh.id} value={nh.id}>
-                      {nh.tenNh}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Học kỳ
-                </label>
-                <select
-                  value={selectedFilterHocKy || ""}
-                  onChange={(e) => {
-                    const value = e.target.value
-                      ? parseInt(e.target.value)
-                      : null;
-                    setSelectedFilterHocKy(value);
-                  }}
-                  disabled={!selectedFilterNamHoc}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">
-                    {!selectedFilterNamHoc
-                      ? "Chọn năm học trước"
-                      : "Chọn học kỳ"}
-                  </option>
-                  {selectedFilterNamHoc &&
-                    danhSachHocKy
-                      .filter((hk) => hk.namHoc?.id === selectedFilterNamHoc)
-                      .map((hk) => (
-                        <option key={hk.maHocKy} value={hk.maHocKy}>
-                          {hk.tenHocKy}
-                        </option>
-                      ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tìm kiếm
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm học phần..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Search Section - Always show for specific semester tabs */}
-        {!showFilterSection && (
-          <div className="bg-gray-50 p-4 rounded-lg mb-4">
-            <div className="grid grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Tìm kiếm
-                </label>
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <input
-                    type="text"
-                    placeholder="Tìm kiếm học phần..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Content based on filter selection */}
-        {showFilterSection && (!currentFilterNamHoc || !currentFilterHocKy) ? (
-          <div className="text-center py-12 text-gray-500">
-            <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">Chọn năm học và học kỳ</p>
-            <p className="text-sm">
-              Vui lòng chọn năm học và học kỳ để xem danh sách học phần có thể
-              thêm
-            </p>
-          </div>
-        ) : loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
-              <p className="text-gray-500">Đang tải...</p>
-            </div>
-          </div>
-        ) : filteredAvailableHocPhans.length === 0 ? (
-          <div className="text-center py-12 text-gray-500">
-            <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-            <p className="text-lg font-medium">Không có học phần</p>
-            <p className="text-sm">
-              {searchTerm
-                ? "Thử tìm kiếm với từ khóa khác"
-                : "Tất cả học phần đã được thêm"}
-            </p>
-          </div>
-        ) : (
-          <GroupedTable
-            name="Học phần có thể thêm"
-            data={filteredAvailableHocPhans}
-            columns={availableColumnsForMain}
-            groupByKey="loaiHp"
-            groupDisplayName={(groupKey) => `Học phần ${groupKey || "Khác"}`}
-            groupColorScheme={(groupKey) => {
-              // Phân màu theo loại học phần
-              if (
-                groupKey?.includes("Đại cương") ||
-                groupKey?.includes("Anh văn") ||
-                groupKey?.includes("Chính trị")
-              )
-                return "purple";
-              if (groupKey?.includes("Cơ sở ngành")) return "blue";
-              if (groupKey?.includes("Chuyên ngành")) return "orange";
-              if (groupKey?.includes("Thể chất")) return "green";
-              return "gray";
-            }}
-            initialExpanded={true}
-            enablePagination={true}
-            pageSize={10}
-            emptyStateTitle="Không có học phần"
-            emptyStateDescription={
-              searchTerm
-                ? "Thử tìm kiếm với từ khóa khác"
-                : "Tất cả học phần đã được thêm"
-            }
-            emptyStateIcon={BookOpen}
-          />
-        )}
-      </div>
-
       {/* Fixed Floating Button for Pending Subjects */}
       {pendingHocPhans.length > 0 && (
         <div className="fixed right-6 bottom-1.5 transform -translate-y-1/2 z-40">
           <button
-            onClick={() => setShowAddModal(true)}
+            onClick={() => setShowAvailableSubjectsModal(true)}
             className={`relative flex items-center px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 ${
               pendingHocPhans.length > 0
                 ? "bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 animate-pulse"
@@ -1490,8 +1282,11 @@ const ThemKeHoachHocTapMau = () => {
         </div>
       )}
 
-      {/* Add Subject Modal */}
-      {showAddModal && <AddSubjectModal />}
+      {/* Combined Modal with Tabs */}
+      {showAvailableSubjectsModal && <AvailableSubjectsModal />}
+
+      {/* Remove separate AddSubjectModal rendering */}
+      {/* {showAddModal && <AddSubjectModal />} */}
 
       {/* Delete Confirmation Modal */}
       <DeleteModal
@@ -1518,421 +1313,430 @@ const ThemKeHoachHocTapMau = () => {
     </div>
   );
 
-  // Add Subject Modal Component
-  function AddSubjectModal() {
-    // Pending subjects table columns - moved outside conditional
-    const pendingColumns = useMemo<ColumnDef<KeHoachHocTapDetail>[]>(
-      () => [
-        {
-          id: "stt",
-          header: "STT",
-          cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
-          size: 80,
-        },
-        {
-          id: "maHp",
-          accessorKey: "hocPhan.maHp",
-          header: "Mã học phần",
-          cell: ({ getValue }) => {
-            const maHp = getValue() as string;
-            return (
-              <div className="text-center">
-                <button
-                  onClick={() => copyToClipboard(maHp)}
-                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors cursor-pointer"
-                  title={`Nhấn để sao chép: ${maHp}`}
-                >
-                  {maHp}
-                </button>
-              </div>
-            );
-          },
-          size: 120,
-        },
-        {
-          id: "tenHp",
-          accessorKey: "hocPhan.tenHp",
-          header: "Tên học phần",
-          cell: ({ getValue }) => (
-            <div className="text-left">{getValue() as string}</div>
-          ),
-          size: 200,
-        },
-        {
-          id: "soTinChi",
-          accessorKey: "hocPhan.tinChi",
-          header: "Tín chỉ",
-          cell: ({ getValue }) => (
-            <div className="text-center">{getValue() as number}</div>
-          ),
-          size: 80,
-        },
-        {
-          id: "namHoc",
-          header: "Năm học",
-          cell: ({ row }) => {
-            const detail = row.original;
-            return (
-              <div className="text-center">
-                <select
-                  value={detail.namHoc || ""}
-                  onChange={(e) => {
-                    const newNamHocId = parseInt(e.target.value) || undefined;
-                    handleUpdatePending(detail.id, {
-                      namHoc: newNamHocId,
-                      hocKy: null,
-                    });
-                  }}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Chọn năm học</option>
-                  {availableNamHoc.map((nh) => (
-                    <option key={nh.id} value={nh.id}>
-                      {nh.tenNh}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            );
-          },
-          size: 120,
-        },
-        {
-          id: "hocKy",
-          header: "Học kỳ",
-          cell: ({ row }) => {
-            const detail = row.original;
-            const filteredHocKy = danhSachHocKy.filter(
-              (hk) => hk.namHoc?.id === detail.namHoc
-            );
+  // Available Subjects Modal Component
+  function AvailableSubjectsModal() {
+    const [activeTab, setActiveTab] = useState<"available" | "add">("available");
 
-            return (
-              <div className="text-center">
-                <select
-                  value={detail.hocKy?.maHocKy || ""}
-                  onChange={(e) => {
-                    const selectedHk = danhSachHocKy.find(
-                      (hk) => hk.maHocKy === parseInt(e.target.value)
-                    );
-                    handleUpdatePending(detail.id, {
-                      hocKy: selectedHk || null,
-                    });
-                  }}
-                  disabled={!detail.namHoc}
-                  className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                >
-                  <option value="">
-                    {!detail.namHoc ? "Chọn năm học trước" : "Chọn học kỳ"}
-                  </option>
-                  {filteredHocKy.map((hk) => (
-                    <option key={hk.maHocKy} value={hk.maHocKy}>
-                      {hk.tenHocKy}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            );
-          },
-          size: 100,
-        },
-        {
-          id: "actions",
-          header: "Thao tác",
-          cell: ({ row }) => {
-            const detail = row.original;
-            return (
-              <div className="flex items-center justify-center">
-                <button
-                  onClick={() => handleRemoveFromPending(detail.id)}
-                  className="p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200 hover:scale-105"
-                  title="Xóa khỏi danh sách"
-                >
-                  <Trash2 className="w-3 h-3" />
-                </button>
-              </div>
-            );
-          },
-          size: 80,
-        },
-      ],
-      []
-    );
+    // Tab button classes
+    const tabButtonClass = (tab: "available" | "add") =>
+      `px-4 py-2 font-semibold text-sm rounded-t-lg cursor-pointer ${
+        activeTab === tab
+          ? "bg-white border-t border-x border-gray-300 text-gray-900"
+          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+      }`;
 
-    // Check if we need to show the form first
-    const needsForm = !formNamHoc || !formHocKy;
-
-    // If form is needed and we're showing the form
-    if (needsForm && showAddSubjectForm) {
-      return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            {/* Form Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <div className="flex items-center">
-                <Calendar className="w-6 h-6 text-blue-600 mr-3" />
-                <div>
-                  <h2 className="text-xl font-bold text-gray-800">
-                    Chọn học kỳ
-                  </h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Chọn năm học và học kỳ để thêm học phần
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setShowAddSubjectForm(false);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-            </div>
-
-            {/* Form Content */}
-            <div className="p-6">
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Năm học
-                  </label>
-                  <select
-                    value={formNamHoc || ""}
-                    onChange={(e) => {
-                      const value = e.target.value
-                        ? parseInt(e.target.value)
-                        : null;
-                      setFormNamHoc(value);
-                      setFormHocKy(null); // Reset học kỳ khi thay đổi năm học
-                    }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Chọn năm học</option>
-                    {availableNamHoc.map((nh) => (
-                      <option key={nh.id} value={nh.id}>
-                        {nh.tenNh}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Học kỳ
-                  </label>
-                  <select
-                    value={formHocKy || ""}
-                    onChange={(e) => {
-                      const value = e.target.value
-                        ? parseInt(e.target.value)
-                        : null;
-                      setFormHocKy(value);
-                    }}
-                    disabled={!formNamHoc}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  >
-                    <option value="">
-                      {!formNamHoc ? "Chọn năm học trước" : "Chọn học kỳ"}
-                    </option>
-                    {formNamHoc &&
-                      danhSachHocKy
-                        .filter((hk) => hk.namHoc?.id === formNamHoc)
-                        .map((hk) => (
-                          <option key={hk.maHocKy} value={hk.maHocKy}>
-                            {hk.tenHocKy}
-                          </option>
-                        ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Form Footer */}
-            <div className="flex items-center justify-end p-6 border-t border-gray-200 space-x-3">
-              <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setShowAddSubjectForm(false);
-                }}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={() => {
-                  if (formNamHoc && formHocKy) {
-                    setShowAddSubjectForm(false);
-                    // Modal will now show the pending subjects interface
-                  }
-                }}
-                disabled={!formNamHoc || !formHocKy}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Tiếp tục
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-4/5 flex flex-col">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div className="flex items-center">
-              <BookOpen className="w-6 h-6 text-orange-600 mr-3" />
-              <div>
-                <h2 className="text-xl font-bold text-gray-800">
-                  Học phần chuẩn bị thêm
-                </h2>
-                <p className="text-sm text-gray-600 mt-1">
-                  {formNamHoc && formHocKy
-                    ? `${availableNamHoc.find((nh) => nh.id === formNamHoc)?.tenNh} - ${danhSachHocKy.find((hk) => hk.maHocKy === formHocKy)?.tenHocKy}`
-                    : "Quản lý danh sách học phần trước khi thêm vào kế hoạch"}
-                </p>
-              </div>
+        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[90vw] h-[90vh] flex flex-col">
+          {/* Modal Header with Tabs */}
+          <div className="flex items-center justify-between border-b border-gray-200">
+            <div className="flex space-x-2 px-3 py-2">
+              <button
+                className={tabButtonClass("available")}
+                onClick={() => setActiveTab("available")}
+              >
+                Học phần có thể thêm
+              </button>
+              <button
+                className={tabButtonClass("add")}
+                onClick={() => setActiveTab("add")}
+              >
+                Học phần chuẩn bị thêm
+              </button>
             </div>
             <button
-              onClick={() => {
-                setShowAddModal(false);
-                setShowAddSubjectForm(false);
-              }}
+              onClick={() => setShowAvailableSubjectsModal(false)}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              title="Đóng"
             >
               <X className="w-5 h-5 text-gray-600" />
             </button>
           </div>
 
           {/* Modal Content */}
-          <div className="flex-1 overflow-hidden p-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-4">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  Danh sách học phần ({pendingHocPhans.length})
-                </h3>
-                <div className="text-sm text-gray-600">
-                  Tổng tín chỉ:{" "}
-                  {pendingHocPhans.reduce(
-                    (sum, item) => sum + item.hocPhan.tinChi,
-                    0
-                  )}
-                </div>
-              </div>
-
-              {pendingHocPhans.length > 0 && (
-                <button
-                  onClick={() => {
-                    setPendingHocPhans([]);
-                  }}
-                  className="flex items-center px-3 py-1.5 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 transition-colors text-sm"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Xóa tất cả
-                </button>
-              )}
-            </div>
-
-            <div className="flex-1 overflow-hidden">
-              {pendingHocPhans.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  <div className="text-center">
-                    <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                    <p className="text-lg font-medium">Chưa có học phần nào</p>
+          <div className="flex-1 overflow-y-auto p-6">
+            {activeTab === "available" ? (
+              <>
+                {!selectedFilterNamHoc || !selectedFilterHocKy ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">Chọn năm học và học kỳ</p>
                     <p className="text-sm">
-                      Học phần được thêm từ bảng "Học phần có thể thêm" ở phía
-                      dưới sẽ hiển thị ở đây
+                      Vui lòng chọn năm học và học kỳ để xem danh sách học phần có
+                      thể thêm
                     </p>
-                    <button
-                      onClick={() => {
-                        setShowAddModal(false);
-                        setShowAddSubjectForm(false);
-                      }}
-                      className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                      Đóng và chọn học phần
-                    </button>
                   </div>
-                </div>
-              ) : (
-                <GroupedTable
-                  name="Danh sách chuẩn bị thêm"
-                  data={pendingHocPhans}
-                  columns={pendingColumns}
-                  groupByKey="hocKy.tenHocKy"
-                  groupDisplayName={(groupKey) =>
-                    groupKey || "Chưa chọn học kỳ"
-                  }
-                  groupColorScheme={(groupKey) => {
-                    // Phân màu theo học kỳ
-                    if (groupKey.includes("1")) return "blue";
-                    if (groupKey.includes("2")) return "green";
-                    if (groupKey.includes("3")) return "orange";
-                    return "purple";
-                  }}
-                  initialExpanded={true}
-                  enablePagination={true}
-                  pageSize={5}
-                  emptyStateTitle="Chưa có học phần nào"
-                  emptyStateDescription="Học phần được thêm từ bảng sẽ hiển thị ở đây"
-                />
-              )}
-            </div>
-          </div>
+                ) : loading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                      <p className="text-gray-500">Đang tải...</p>
+                    </div>
+                  </div>
+                ) : filteredAvailableHocPhans.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg font-medium">Không có học phần</p>
+                  </div>
+                ) : (
+                  <GroupedTable
+                    name="Học phần có thể thêm"
+                    data={filteredAvailableHocPhans}
+                    columns={availableColumnsForMain}
+                    groupByKey="loaiHp"
+                    groupDisplayName={(groupKey) =>
+                      `Học phần ${groupKey || "Khác"}`
+                    }
+                    groupColorScheme={(groupKey) => {
+                      if (
+                        groupKey?.includes("Đại cương") ||
+                        groupKey?.includes("Anh văn") ||
+                        groupKey?.includes("Chính trị")
+                      )
+                        return "purple";
+                      if (groupKey?.includes("Cơ sở ngành")) return "blue";
+                      if (groupKey?.includes("Chuyên ngành")) return "orange";
+                      if (groupKey?.includes("Thể chất")) return "green";
+                      return "gray";
+                    }}
+                    initialExpanded={true}
+                    enablePagination={true}
+                    pageSize={10}
+                    emptyStateTitle="Không có học phần"
+                    emptyStateDescription={"Tất cả học phần đã được thêm"}
+                    emptyStateIcon={BookOpen}
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                {/* AddSubjectModal content moved here */}
+                {/* Pending subjects table columns - moved outside conditional */}
+                {(() => {
+                  const pendingColumns = [
+                    {
+                      id: "stt",
+                      header: "STT",
+                      cell: ({ row }: any) => (
+                        <div className="text-center">{row.index + 1}</div>
+                      ),
+                      size: 80,
+                    },
+                    {
+                      id: "maHp",
+                      accessorKey: "hocPhan.maHp",
+                      header: "Mã học phần",
+                      cell: ({ getValue }: any) => {
+                        const maHp = getValue() as string;
+                        return (
+                          <div className="text-center">
+                            <button
+                              onClick={() => copyToClipboard(maHp)}
+                              className="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors cursor-pointer"
+                              title={`Nhấn để sao chép: ${maHp}`}
+                            >
+                              {maHp}
+                            </button>
+                          </div>
+                        );
+                      },
+                      size: 120,
+                    },
+                    {
+                      id: "tenHp",
+                      accessorKey: "hocPhan.tenHp",
+                      header: "Tên học phần",
+                      cell: ({ getValue }: any) => (
+                        <div className="text-left">{getValue() as string}</div>
+                      ),
+                      size: 200,
+                    },
+                    {
+                      id: "soTinChi",
+                      accessorKey: "hocPhan.tinChi",
+                      header: "Tín chỉ",
+                      cell: ({ getValue }: any) => (
+                        <div className="text-center">{getValue() as number}</div>
+                      ),
+                      size: 80,
+                    },
+                    {
+                      id: "namHoc",
+                      header: "Năm học",
+                      cell: ({ row }: any) => {
+                        const detail = row.original;
+                        return (
+                          <div className="text-center">
+                            <select
+                              value={detail.namHoc || ""}
+                              onChange={(e) => {
+                                const newNamHocId = parseInt(e.target.value) || undefined;
+                                handleUpdatePending(detail.id, {
+                                  namHoc: newNamHocId,
+                                  hocKy: null,
+                                });
+                              }}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
+                            >
+                              <option value="">Chọn năm học</option>
+                              {availableNamHoc.map((nh) => (
+                                <option key={nh.id} value={nh.id}>
+                                  {nh.tenNh}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      },
+                      size: 120,
+                    },
+                    {
+                      id: "hocKy",
+                      header: "Học kỳ",
+                      cell: ({ row }: any) => {
+                        const detail = row.original;
+                        const filteredHocKy = danhSachHocKy.filter(
+                          (hk) => hk.namHoc?.id === detail.namHoc
+                        );
 
+                        return (
+                          <div className="text-center">
+                            <select
+                              value={detail.hocKy?.maHocKy || ""}
+                              onChange={(e) => {
+                                const selectedHk = danhSachHocKy.find(
+                                  (hk) => hk.maHocKy === parseInt(e.target.value)
+                                );
+                                handleUpdatePending(detail.id, {
+                                  hocKy: selectedHk || null,
+                                });
+                              }}
+                              disabled={!detail.namHoc}
+                              className="w-full px-2 py-1 border border-gray-300 rounded text-xs focus:ring-1 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                            >
+                              <option value="">
+                                {!detail.namHoc ? "Chọn năm học trước" : "Chọn học kỳ"}
+                              </option>
+                              {filteredHocKy.map((hk) => (
+                                <option key={hk.maHocKy} value={hk.maHocKy}>
+                                  {hk.tenHocKy}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        );
+                      },
+                      size: 100,
+                    },
+                    {
+                      id: "actions",
+                      header: "Thao tác",
+                      cell: ({ row }: any) => {
+                        const detail = row.original;
+                        return (
+                          <div className="flex items-center justify-center">
+                            <button
+                              onClick={() => handleRemoveFromPending(detail.id)}
+                              className="p-1 bg-red-600 text-white rounded-full hover:bg-red-700 transition-all duration-200 hover:scale-105"
+                              title="Xóa khỏi danh sách"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          </div>
+                        );
+                      },
+                      size: 80,
+                    },
+                  ];
+
+                  // Check if we need to show the form first
+                  const needsForm = !formNamHoc || !formHocKy;
+
+                  if (needsForm && showAddSubjectForm) {
+                    return (
+                      <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+                          {/* Form Header */}
+                          <div className="flex items-center justify-between px-6 border-b border-gray-200">
+                            <div className="flex items-center">
+                              <Calendar className="w-6 h-6 text-blue-600 mr-3" />
+                              <div>
+                                <h2 className="text-xl font-bold text-gray-800">
+                                  Chọn học kỳ
+                                </h2>
+                                <p className="text-sm text-gray-600 mt-1">
+                                  Chọn năm học và học kỳ để thêm học phần
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setShowAvailableSubjectsModal(false);
+                                setShowAddSubjectForm(false);
+                              }}
+                              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                            >
+                              <X className="w-5 h-5 text-gray-600" />
+                            </button>
+                          </div>
+
+                          {/* Form Content */}
+                          <div className="p-6">
+                            <div className="space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Năm học
+                                </label>
+                                <select
+                                  value={formNamHoc || ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                      ? parseInt(e.target.value)
+                                      : null;
+                                    setFormNamHoc(value);
+                                    setFormHocKy(null); // Reset học kỳ khi thay đổi năm học
+                                  }}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                >
+                                  <option value="">Chọn năm học</option>
+                                  {availableNamHoc.map((nh) => (
+                                    <option key={nh.id} value={nh.id}>
+                                      {nh.tenNh}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  Học kỳ
+                                </label>
+                                <select
+                                  value={formHocKy || ""}
+                                  onChange={(e) => {
+                                    const value = e.target.value
+                                      ? parseInt(e.target.value)
+                                      : null;
+                                    setFormHocKy(value);
+                                  }}
+                                  disabled={!formNamHoc}
+                                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                >
+                                  <option value="">
+                                    {!formNamHoc ? "Chọn năm học trước" : "Chọn học kỳ"}
+                                  </option>
+                                  {formNamHoc &&
+                                    danhSachHocKy
+                                      .filter((hk) => hk.namHoc?.id === formNamHoc)
+                                      .map((hk) => (
+                                        <option key={hk.maHocKy} value={hk.maHocKy}>
+                                          {hk.tenHocKy}
+                                        </option>
+                                      ))}
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Form Footer */}
+                          <div className="flex items-center justify-end p-6 border-t border-gray-200 space-x-3">
+                            <button
+                              onClick={() => {
+                                setShowAvailableSubjectsModal(false);
+                                setShowAddSubjectForm(false);
+                              }}
+                              className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                              Hủy
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (formNamHoc && formHocKy) {
+                                  setShowAddSubjectForm(false);
+                                  // Modal will now show the pending subjects interface
+                                }
+                              }}
+                              disabled={!formNamHoc || !formHocKy}
+                              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Tiếp tục
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <>
+                      {pendingHocPhans.length === 0 ? (
+                        <div className="flex items-center justify-center h-full text-gray-500">
+                          <div className="text-center">
+                            <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                            <p className="text-lg font-medium">Chưa có học phần nào</p>
+                            <p className="text-sm">
+                              Học phần được thêm từ bảng "Học phần có thể thêm" ở phía
+                              dưới sẽ hiển thị ở đây
+                            </p>
+                            <button
+                              onClick={() => {
+                                setShowAvailableSubjectsModal(false);
+                                setShowAddSubjectForm(false);
+                              }}
+                              className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                            >
+                              Đóng và chọn học phần
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <GroupedTable
+                          name="Danh sách chuẩn bị thêm"
+                          data={pendingHocPhans}
+                          columns={pendingColumns}
+                          groupByKey="hocKy.tenHocKy"
+                          groupDisplayName={(groupKey) =>
+                            groupKey || "Chưa chọn học kỳ"
+                          }
+                          groupColorScheme={(groupKey) => {
+                            if (groupKey.includes("1")) return "blue";
+                            if (groupKey.includes("2")) return "green";
+                            if (groupKey.includes("3")) return "orange";
+                            return "purple";
+                          }}
+                          initialExpanded={true}
+                          enablePagination={true}
+                          pageSize={5}
+                          emptyStateTitle="Chưa có học phần nào"
+                          emptyStateDescription="Học phần được thêm từ bảng sẽ hiển thị ở đây"
+                        />
+                      )}
+                    </>
+                  );
+                })()}
+              </>
+            )}
+          </div>
           {/* Modal Footer */}
-          <div className="flex items-center justify-between p-6 border-t border-gray-200">
-            <div className="text-sm text-gray-600">
-              {pendingHocPhans.length > 0 && (
-                <span>
-                  Đã chọn {pendingHocPhans.length} học phần (
-                  {pendingHocPhans.reduce(
-                    (sum, item) => sum + item.hocPhan.tinChi,
-                    0
-                  )}{" "}
-                  tín chỉ)
-                </span>
-              )}
-            </div>
-            <div className="flex items-center space-x-3">
+          { activeTab === "add" && (
+            <div className="flex items-center justify-end p-6 border-t border-gray-200">
               <button
-                onClick={() => {
-                  setShowAddModal(false);
-                  setShowAddSubjectForm(false);
-                }}
-                disabled={saving}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => setShowAvailableSubjectsModal(false)}
+                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Đóng
               </button>
               <button
-                onClick={handleSavePending}
-                disabled={
-                  saving ||
-                  pendingHocPhans.length === 0 ||
-                  pendingHocPhans.some((item) => !item.hocKy)
-                }
-                className="flex items-center px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => handleSavePending()}
+                className="ml-2 px-4 py-2 text-gray-600 bg-green-100 rounded-lg hover:bg-green-200 transition-colors"
               >
-                {saving ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Đang lưu...
-                  </>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-2" />
-                    Lưu vào kế hoạch
-                  </>
-                )}
+                Lưu
               </button>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
   }
-};
-
+}
 export default ThemKeHoachHocTapMau;
