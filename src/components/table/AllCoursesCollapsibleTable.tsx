@@ -3,6 +3,7 @@ import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
   type ColumnDef,
@@ -25,10 +26,12 @@ import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
 import { KeHoachHocTapExportButton } from "../PDFExportButton";
 import type { HocPhan } from "../../types/HocPhan";
+import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 
 interface AllCoursesCollapsibleTableProps {
   name: string;
   allData: HocPhan[];
+  nhomHocPhanTuChon?: HocPhanTuChon[];
   loading?: boolean;
   emptyStateTitle?: string;
   emptyStateDescription?: string;
@@ -37,7 +40,7 @@ interface AllCoursesCollapsibleTableProps {
 
 interface CourseGroup {
   id: string;
-  type: 'required' | 'elective';
+  type: "required" | "elective";
   title: string;
   subtitle: string;
   courses: HocPhan[];
@@ -48,7 +51,7 @@ interface CourseGroup {
 
 interface CourseWithGroup extends HocPhan {
   groupId: string;
-  groupType: 'required' | 'elective';
+  groupType: "required" | "elective";
   isGroupHeader?: boolean;
   groupTitle?: string;
   groupSubtitle?: string;
@@ -62,6 +65,7 @@ export const AllCoursesCollapsibleTable: React.FC<
 > = ({
   name,
   allData,
+  nhomHocPhanTuChon = [],
   loading = false,
   emptyStateTitle,
   emptyStateDescription,
@@ -70,85 +74,167 @@ export const AllCoursesCollapsibleTable: React.FC<
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
-  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
-    new Set()
-  );
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [pagination, setPagination] = useState({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 7,
   });
 
   const courseGroups = useMemo((): CourseGroup[] => {
-    const requiredOrder = [
-      "Quốc Phòng",
-      "Anh văn",
-      "Chính Trị",
-      "Thể Chất",
-      "Đại cương",
-      "Cơ sở ngành",
-      "Chuyên ngành",
-    ];
+    const allDataMaHpSet = new Set(allData.map((hp) => hp.maHp));
+    const electiveCourseMaHpSet = new Set<string>();
 
-    const coursesByType = allData.reduce((acc, course) => {
-      const type = course.loaiHp || "Khác";
-      if (!acc[type]) {
-        acc[type] = [];
-      }
-      acc[type].push(course);
-      return acc;
-    }, {} as Record<string, HocPhan[]>);
+    // 1. Create groups for elective courses (HocPhanTuChon)
+    const electiveGroups: CourseGroup[] = nhomHocPhanTuChon
+      .map((nhom) => {
+        const coursesInGroup = nhom.hocPhanTuChonList.filter((hp) =>
+          allDataMaHpSet.has(hp.maHp)
+        );
 
-    const groups: CourseGroup[] = Object.entries(coursesByType).map(
+        if (coursesInGroup.length === 0) {
+          return null;
+        }
+
+        coursesInGroup.forEach((hp) => electiveCourseMaHpSet.add(hp.maHp));
+
+        const totalCredits = coursesInGroup.reduce(
+          (sum, course) => sum + (course.tinChi || 0),
+          0
+        );
+
+        return {
+          id: `group-elective-${nhom.id}`,
+          type: "elective",
+          title: nhom.tenNhom,
+          subtitle: `${coursesInGroup.length} học phần • ${totalCredits} / ${nhom.tinChiYeuCau} tín chỉ`,
+          courses: coursesInGroup,
+          totalCredits,
+          requiredCredits: nhom.tinChiYeuCau,
+          colorScheme: "green",
+        } as CourseGroup;
+      })
+      .filter((g): g is CourseGroup => g !== null);
+
+    // 2. Create groups for regular courses (not part of any elective group)
+    const regularCourses = allData.filter(
+      (hp) => !electiveCourseMaHpSet.has(hp.maHp)
+    );
+
+    const coursesByType = regularCourses.reduce(
+      (acc, course) => {
+        const type = course.loaiHp || "Khác";
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(course);
+        return acc;
+      },
+      {} as Record<string, HocPhan[]>
+    );
+
+    const regularGroups: CourseGroup[] = Object.entries(coursesByType).map(
       ([courseType, courses]) => {
         const totalCredits = courses.reduce(
           (sum, course) => sum + (course.tinChi || 0),
           0
         );
-        let colorScheme = 'blue';
-        if (courseType.includes('Đại cương') || courseType.includes('Anh văn') || courseType.includes('chính trị') || courseType.includes('thể chất')) {
-          colorScheme = 'purple';
-        } else if (courseType.includes('Cơ sở ngành')) {
-          colorScheme = 'blue';
-        } else if (courseType.includes('Chuyên ngành')) {
-          colorScheme = 'orange';
+
+        if (courseType === "Tự chọn") {
+          return {
+            id: `group-elective-misc`,
+            type: "elective",
+            title: "Tự chọn",
+            subtitle: `${courses.length} học phần • ${totalCredits} tín chỉ`,
+            courses: courses,
+            totalCredits,
+            colorScheme: "green",
+          } as CourseGroup;
+        }
+
+        let colorScheme = "blue";
+        if (
+          courseType.includes("Đại cương") ||
+          courseType.includes("Anh văn") ||
+          courseType.includes("chính trị") ||
+          courseType.includes("thể chất")
+        ) {
+          colorScheme = "purple";
+        } else if (courseType.includes("Cơ sở ngành")) {
+          colorScheme = "blue";
+        } else if (courseType.includes("Chuyên ngành")) {
+          colorScheme = "orange";
         }
 
         return {
-          id: `group-${courseType.replace(/\s+/g, "-").toLowerCase()}`,
-          type: 'required', // Assuming all are required for now
+          id: `group-required-${courseType.replace(/\s+/g, "-").toLowerCase()}`,
+          type: "required",
           title: `Học phần ${courseType}`,
           subtitle: `${courses.length} học phần • ${totalCredits} tín chỉ`,
           courses: courses,
           totalCredits,
           colorScheme,
-        };
+        } as CourseGroup;
       }
     );
 
-    groups.sort((a, b) => {
-      const aIndex = requiredOrder.findIndex((order) =>
-        a.title.includes(order)
-      );
-      const bIndex = requiredOrder.findIndex((order) =>
-        b.title.includes(order)
-      );
-      if (aIndex === -1 && bIndex === -1) return 0;
-      if (aIndex === -1) return 1;
-      if (bIndex === -1) return -1;
-      return aIndex - bIndex;
+    // 3. Combine and sort all groups
+    const allGroups = [...regularGroups, ...electiveGroups];
+
+    const getSortKey = (title: string): [number, number] => {
+      const lowerTitle = title.toLowerCase();
+
+      if (lowerTitle.includes("quốc phòng")) return [0, 0];
+      if (lowerTitle.includes("anh văn")) return [1, 0];
+      if (lowerTitle.includes("chính trị")) return [2, 0];
+      if (lowerTitle.includes("thể chất")) return [3, 0];
+
+      const isElective = lowerTitle.includes("tự chọn");
+
+      if (lowerTitle.includes("đại cương")) {
+        return [4, isElective ? 1 : 0];
+      }
+      if (lowerTitle.includes("cơ sở ngành")) {
+        return [5, isElective ? 1 : 0];
+      }
+      if (lowerTitle.includes("chuyên ngành")) {
+        return [6, isElective ? 1 : 0];
+      }
+
+      if (isElective) {
+        return [7, 0];
+      }
+
+      return [8, 0]; // Default for others
+    };
+
+    allGroups.sort((a, b) => {
+      const [aPrimary, aSecondary] = getSortKey(a.title);
+      const [bPrimary, bSecondary] = getSortKey(b.title);
+
+      if (aPrimary !== bPrimary) {
+        return aPrimary - bPrimary;
+      }
+      if (aSecondary !== bSecondary) {
+        return aSecondary - bSecondary;
+      }
+      return a.title.localeCompare(b.title);
     });
 
-    return groups;
-  }, [allData]);
+    return allGroups;
+  }, [allData, nhomHocPhanTuChon]);
 
   useEffect(() => {
-    if (courseGroups.length > 0) {
+    if (isExpanded && courseGroups.length > 0) {
       const allGroupIds = new Set(courseGroups.map((g) => g.id));
       setExpandedGroups(allGroupIds);
-    } else {
+    } else if (!isExpanded) {
+      // When table is collapsed, clear expanded groups for visual consistency
+      // but don't reset if it's just an empty courseGroups array
+      setExpandedGroups(new Set());
+    } else if (courseGroups.length === 0) {
       setExpandedGroups(new Set());
     }
-  }, [courseGroups]);
+  }, [courseGroups, isExpanded]);
 
   const toggleGroup = useCallback(
     (groupId: string) => {
@@ -222,169 +308,165 @@ export const AllCoursesCollapsibleTable: React.FC<
     return filtered;
   }, [flattenedData, globalFilter]);
 
-  const displayData = useMemo((): CourseWithGroup[] => {
-    return filteredData;
-  }, [filteredData]);
-
   const columns = useMemo<ColumnDef<CourseWithGroup>[]>(
     () => [
-        {
-            id: "stt",
-            header: "STT",
-            cell: ({ row, table }) => {
-              const item = row.original;
-              if (item.isGroupHeader) {
-                return null; 
-              }
-              
-              const allRows = table.getFilteredRowModel().rows;
-              let courseIndex = 0;
-              
-              for (let i = 0; i <= row.index; i++) {
-                const currentRow = allRows[i];
-                if (currentRow && !currentRow.original.isGroupHeader) {
-                  courseIndex++;
-                }
-              }
-              
-              return (
-                <div className="text-center">
-                  <span className="text-sm font-medium text-gray-600">
-                    {courseIndex}
-                  </span>
-                </div>
-              );
-            },
-            size: 80,
-            enableSorting: false,
-          },
-          {
-            id: "maHp",
-            accessorKey: "maHp",
-            header: "Mã học phần",
-            cell: ({ row }) => {
-              const item = row.original;
-              if (item.isGroupHeader) {
-                return null;
-              }
-              return item.maHp || '';
-            },
-            size: 140,
-            enableSorting: true,
-            sortingFn: "alphanumeric",
-          },
-          {
-            id: "tenHp",
-            accessorKey: "tenHp",
-            header: "Tên học phần",
-            cell: ({ row }) => {
-              const item = row.original;
-              if (item.isGroupHeader) {
-                return null;
-              }
-              return (
-                <div className="max-w-xs">
-                  <div className="font-semibold text-gray-900 text-sm leading-tight">
-                    {item.tenHp || "Chưa có tên"}
-                  </div>
-                </div>
-              );
-            },
-            size: 300,
-            enableSorting: true,
-            sortingFn: "alphanumeric",
-          },
-          {
-            id: "tinChi",
-            accessorKey: "tinChi",
-            header: "Tín chỉ",
-            cell: ({ row }) => {
-              const item = row.original;
-              if (item.isGroupHeader) {
-                return null;
-              }
-              return (
-                <div className="text-center">
-                  <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-blue-700">
-                    {item.tinChi || 0}
-                  </span>
-                </div>
-              );
-            },
-            size: 100,
-            enableSorting: true,
-            sortingFn: "basic",
-          },
-          {
-            id: "loaiHp",
-            accessorKey: "loaiHp",
-            header: "Loại học phần",
-            cell: ({ row }) => {
-              const item = row.original;
-              if (item.isGroupHeader) {
-                return null;
-              }
-              return (
-                <div className="text-center">
-                  <span className="text-sm text-gray-600">
-                    {item.loaiHp || "N/A"}
-                  </span>
-                </div>
-              );
-            },
-            size: 120,
-            enableSorting: true,
-            sortingFn: "alphanumeric",
-          },
-          {
-            id: "hocPhanTienQuyet",
-            accessorKey: "hocPhanTienQuyet",
-            header: "Tiên quyết",
-            cell: ({ row }) => {
-              const item = row.original;
-              if (item.isGroupHeader) {
-                return null;
-              }
-              return (
-                <div className="text-center">
-                  <span className="text-sm text-gray-600">
-                    {item.hocPhanTienQuyet || "-"}
-                  </span>
-                </div>
-              );
-            },
-            size: 150,
-            enableSorting: true,
-            sortingFn: "alphanumeric",
-          },
-          {
-            id: "action",
-            header: "",
-            cell: ({ row }) => {
-              const item = row.original;
-              if (item.isGroupHeader || !onDelete) {
-                return null;
-              }
-              return (
-                <div className="flex items-center justify-center">
-                  <button
-                    className="text-red-600 hover:text-red-800 p-2 rounded-lg transition-colors duration-200"
-                    onClick={() => onDelete(item.maHp)}
-                    title="Xóa khỏi kế hoạch"
-                  >
-                    <Trash2 className="h-5 w-5" />
-                  </button>
-                </div>
-              );
-            },
-            size: 80,
-          },
+      {
+        id: "stt",
+        header: "STT",
+        cell: ({ row, table }) => {
+          const item = row.original;
+          if (item.isGroupHeader) {
+            return null;
+          }
+
+          const allRows = table.getFilteredRowModel().rows;
+          let courseIndex = 0;
+
+          for (let i = 0; i <= row.index; i++) {
+            const currentRow = allRows[i];
+            if (currentRow && !currentRow.original.isGroupHeader) {
+              courseIndex++;
+            }
+          }
+
+          return (
+            <div className="text-center">
+              <span className="text-sm font-medium text-gray-600">
+                {courseIndex}
+              </span>
+            </div>
+          );
+        },
+        size: 80,
+        enableSorting: false,
+      },
+      {
+        id: "maHp",
+        accessorKey: "maHp",
+        header: "Mã học phần",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) {
+            return null;
+          }
+          return item.maHp || "";
+        },
+        size: 140,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
+      {
+        id: "tenHp",
+        accessorKey: "tenHp",
+        header: "Tên học phần",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) {
+            return null;
+          }
+          return (
+            <div className="max-w-xs">
+              <div className="font-semibold text-gray-900 text-sm leading-tight">
+                {item.tenHp || "Chưa có tên"}
+              </div>
+            </div>
+          );
+        },
+        size: 300,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
+      {
+        id: "tinChi",
+        accessorKey: "tinChi",
+        header: "Tín chỉ",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) {
+            return null;
+          }
+          return (
+            <div className="text-center">
+              <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-blue-700">
+                {item.tinChi || 0}
+              </span>
+            </div>
+          );
+        },
+        size: 100,
+        enableSorting: true,
+        sortingFn: "basic",
+      },
+      {
+        id: "loaiHp",
+        accessorKey: "loaiHp",
+        header: "Loại học phần",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) {
+            return null;
+          }
+          return (
+            <div className="text-center">
+              <span className="text-sm text-gray-600">
+                {item.loaiHp || "N/A"}
+              </span>
+            </div>
+          );
+        },
+        size: 120,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
+      {
+        id: "hocPhanTienQuyet",
+        accessorKey: "hocPhanTienQuyet",
+        header: "Tiên quyết",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) {
+            return null;
+          }
+          return (
+            <div className="text-center">
+              <span className="text-sm text-gray-600">
+                {item.hocPhanTienQuyet || "-"}
+              </span>
+            </div>
+          );
+        },
+        size: 150,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
+      {
+        id: "action",
+        header: "",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader || !onDelete) {
+            return null;
+          }
+          return (
+            <div className="flex items-center justify-center">
+              <button
+                className="text-red-600 hover:text-red-800 p-2 rounded-lg transition-colors duration-200"
+                onClick={() => onDelete(item.maHp)}
+                title="Xóa khỏi kế hoạch"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            </div>
+          );
+        },
+        size: 80,
+      },
     ],
     [onDelete]
   );
 
   const table = useReactTable({
-    data: displayData,
+    data: filteredData,
     columns: columns,
     state: {
       globalFilter,
@@ -397,24 +479,17 @@ export const AllCoursesCollapsibleTable: React.FC<
     getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    manualPagination: false,
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
-  const displayRows = useMemo(() => {
-    const allRows = table.getFilteredRowModel().rows;
-    const { pageIndex, pageSize } = pagination;
-    const pageStart = pageIndex * pageSize;
-    const pageEnd = pageStart + pageSize;
-    return allRows.slice(pageStart, pageEnd);
-  }, [table, pagination]);
+  const displayRows = table.getRowModel().rows; // Get paginated rows directly from the table
 
   const paginationInfo = useMemo(() => {
     const coursesCount = filteredData.filter(item => !item.isGroupHeader).length;
-    const totalPages = Math.ceil(filteredData.length / pagination.pageSize);
-    const currentPage = pagination.pageIndex + 1;
-    const canPreviousPage = pagination.pageIndex > 0;
-    const canNextPage = pagination.pageIndex < totalPages - 1;
-    
+    const totalPages = table.getPageCount();
+    const currentPage = table.getState().pagination.pageIndex + 1;
+    const canPreviousPage = table.getCanPreviousPage();
+    const canNextPage = table.getCanNextPage();
     return {
       totalPages,
       currentPage,
@@ -422,7 +497,7 @@ export const AllCoursesCollapsibleTable: React.FC<
       canNextPage,
       coursesCount
     };
-  }, [filteredData, pagination]);
+  }, [table, filteredData]);
 
   const getColorClasses = (colorScheme: string) => {
     const schemes = {
@@ -432,7 +507,7 @@ export const AllCoursesCollapsibleTable: React.FC<
         badge: "bg-blue-100 text-blue-800",
         hover: "hover:bg-blue-100",
         header: "from-blue-400 to-blue-500",
-        border: "border-l-blue-500"
+        border: "border-l-blue-500",
       },
       green: {
         bg: "bg-emerald-50",
@@ -440,7 +515,7 @@ export const AllCoursesCollapsibleTable: React.FC<
         badge: "bg-emerald-100 text-emerald-800",
         hover: "hover:bg-emerald-100",
         header: "from-emerald-400 to-emerald-500",
-        border: "border-l-emerald-500"
+        border: "border-l-emerald-500",
       },
       purple: {
         bg: "bg-purple-50",
@@ -448,7 +523,7 @@ export const AllCoursesCollapsibleTable: React.FC<
         badge: "bg-purple-100 text-purple-800",
         hover: "hover:bg-purple-100",
         header: "from-purple-400 to-purple-500",
-        border: "border-l-purple-500"
+        border: "border-l-purple-500",
       },
       orange: {
         bg: "bg-orange-50",
@@ -456,8 +531,8 @@ export const AllCoursesCollapsibleTable: React.FC<
         badge: "bg-orange-100 text-orange-800",
         hover: "hover:bg-orange-100",
         header: "from-orange-400 to-orange-500",
-        border: "border-l-orange-500"
-      }
+        border: "border-l-orange-500",
+      },
     };
     return schemes[colorScheme as keyof typeof schemes] || schemes.blue;
   };
@@ -473,7 +548,9 @@ export const AllCoursesCollapsibleTable: React.FC<
         <div className="p-8">
           <EmptyTableState
             title={emptyStateTitle || "Không có dữ liệu"}
-            description={emptyStateDescription || "Hiện tại chưa có học phần nào"}
+            description={
+              emptyStateDescription || "Hiện tại chưa có học phần nào"
+            }
           />
         </div>
       </div>
@@ -481,13 +558,17 @@ export const AllCoursesCollapsibleTable: React.FC<
   }
 
   const totalCourses = allData.length;
-  const totalCredits = allData.reduce((sum, course) => sum + (course.tinChi || 0), 0);
+  const totalCredits = allData.reduce(
+    (sum, course) => sum + (course.tinChi || 0),
+    0
+  );
 
   const PaginationControls = () => (
     <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
       <div className="flex items-center space-x-2 text-sm text-gray-700">
         <span>
-          Hiển thị {pagination.pageSize} dòng trong tổng số {paginationInfo.coursesCount} học phần
+          Hiển thị {pagination.pageSize} dòng trong tổng số{" "}
+          {paginationInfo.coursesCount} học phần
         </span>
       </div>
 
@@ -495,10 +576,10 @@ export const AllCoursesCollapsibleTable: React.FC<
         <span className="text-sm text-gray-700">
           Trang {paginationInfo.currentPage} / {paginationInfo.totalPages}
         </span>
-        
+
         <div className="flex items-center space-x-1">
           <button
-            onClick={() => setPagination(prev => ({ ...prev, pageIndex: 0 }))}
+            onClick={() => table.setPageIndex(0)}
             disabled={!paginationInfo.canPreviousPage}
             className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Trang đầu"
@@ -507,7 +588,7 @@ export const AllCoursesCollapsibleTable: React.FC<
           </button>
           
           <button
-            onClick={() => setPagination(prev => ({ ...prev, pageIndex: prev.pageIndex - 1 }))}
+            onClick={() => table.previousPage()}
             disabled={!paginationInfo.canPreviousPage}
             className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Trang trước"
@@ -516,7 +597,7 @@ export const AllCoursesCollapsibleTable: React.FC<
           </button>
           
           <button
-            onClick={() => setPagination(prev => ({ ...prev, pageIndex: prev.pageIndex + 1 }))}
+            onClick={() => table.nextPage()}
             disabled={!paginationInfo.canNextPage}
             className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Trang sau"
@@ -525,7 +606,7 @@ export const AllCoursesCollapsibleTable: React.FC<
           </button>
           
           <button
-            onClick={() => setPagination(prev => ({ ...prev, pageIndex: paginationInfo.totalPages - 1 }))}
+            onClick={() => table.setPageIndex(paginationInfo.totalPages - 1)}
             disabled={!paginationInfo.canNextPage}
             className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Trang cuối"
@@ -554,7 +635,7 @@ export const AllCoursesCollapsibleTable: React.FC<
           {totalCourses > 0 && (
             <span className="ml-3 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
               {globalFilter
-                ? `${filteredData.filter(item => !item.isGroupHeader).length}/${totalCourses}`
+                ? `${filteredData.filter((item) => !item.isGroupHeader).length}/${totalCourses}`
                 : `${totalCourses}`}{" "}
               học phần • {totalCredits} tín chỉ
             </span>
@@ -571,7 +652,7 @@ export const AllCoursesCollapsibleTable: React.FC<
               className="text-white hover:bg-white/20 border-white/30"
             />
           )}
-          
+
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="group p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/30 backdrop-blur-sm"
@@ -594,7 +675,9 @@ export const AllCoursesCollapsibleTable: React.FC<
             : "max-h-0 opacity-0 transform -translate-y-2"
         }`}
       >
-        <div className={`transition-all duration-200 ${isExpanded ? "delay-100" : ""}`}>
+        <div
+          className={`transition-all duration-200 ${isExpanded ? "delay-100" : ""}`}
+        >
           <table className="w-full border-collapse">
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
@@ -603,16 +686,18 @@ export const AllCoursesCollapsibleTable: React.FC<
                     <th
                       key={header.id}
                       className={`px-2 py-2 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600 ${
-                        header.column.getCanSort() ? "cursor-pointer select-none" : ""
+                        header.column.getCanSort()
+                          ? "cursor-pointer select-none"
+                          : ""
                       }`}
                       onClick={header.column.getToggleSortingHandler()}
                       title={
                         header.column.getCanSort()
-                          ? header.column.getNextSortingOrder() === 'asc'
-                            ? 'Sắp xếp tăng dần'
-                            : header.column.getNextSortingOrder() === 'desc'
-                              ? 'Sắp xếp giảm dần'
-                              : 'Xóa sắp xếp'
+                          ? header.column.getNextSortingOrder() === "asc"
+                            ? "Sắp xếp tăng dần"
+                            : header.column.getNextSortingOrder() === "desc"
+                              ? "Sắp xếp giảm dần"
+                              : "Xóa sắp xếp"
                           : undefined
                       }
                     >
@@ -624,9 +709,9 @@ export const AllCoursesCollapsibleTable: React.FC<
                           )}
                           {header.column.getCanSort() && (
                             <span className="ml-1">
-                              {header.column.getIsSorted() === 'asc' ? (
+                              {header.column.getIsSorted() === "asc" ? (
                                 <ArrowUp className="w-4 h-4" />
-                              ) : header.column.getIsSorted() === 'desc' ? (
+                              ) : header.column.getIsSorted() === "desc" ? (
                                 <ArrowDown className="w-4 h-4" />
                               ) : (
                                 <ArrowUpDown className="w-4 h-4 opacity-50" />
@@ -659,12 +744,15 @@ export const AllCoursesCollapsibleTable: React.FC<
               ) : (
                 displayRows.map((row) => {
                   const item = row.original;
-                  
+
                   if (item.isGroupHeader) {
-                    const colors = getColorClasses(item.colorScheme || 'blue');
+                    const colors = getColorClasses(item.colorScheme || "blue");
                     return (
-                      <tr key={row.id} className={`${colors.bg} ${colors.hover} cursor-pointer transition-colors border-l-4 ${colors.border}`}>
-                        <td 
+                      <tr
+                        key={row.id}
+                        className={`${colors.bg} ${colors.hover} cursor-pointer transition-colors border-l-4 ${colors.border}`}
+                      >
+                        <td
                           colSpan={columns.length}
                           className="px-4 py-3 border-b border-gray-200"
                           onClick={() => toggleGroup(item.groupId)}
@@ -673,35 +761,53 @@ export const AllCoursesCollapsibleTable: React.FC<
                             <div className="flex items-center space-x-3">
                               <div className="flex items-center justify-center w-6 h-6 rounded transition-transform hover:bg-white/20">
                                 {expandedGroups.has(item.groupId) ? (
-                                  <ChevronDown className={`w-4 h-4 ${colors.text} transition-transform`} />
+                                  <ChevronDown
+                                    className={`w-4 h-4 ${colors.text} transition-transform`}
+                                  />
                                 ) : (
-                                  <ChevronRight className={`w-4 h-4 ${colors.text} transition-transform`} />
+                                  <ChevronRight
+                                    className={`w-4 h-4 ${colors.text} transition-transform`}
+                                  />
                                 )}
                               </div>
                               <div className="flex items-center space-x-3">
-                                <div className={`p-2 rounded-lg ${colors.badge.replace('text-', 'bg-').replace('-800', '-100')}`}>
-                                  {item.groupType === 'required' ? (
-                                    <BookOpen className={`w-4 h-4 ${colors.text}`} />
+                                <div
+                                  className={`p-2 rounded-lg ${colors.badge.replace("text-", "bg-").replace("-800", "-100")}`}
+                                >
+                                  {item.groupType === "required" ? (
+                                    <BookOpen
+                                      className={`w-4 h-4 ${colors.text}`}
+                                    />
                                   ) : (
-                                    <Users className={`w-4 h-4 ${colors.text}`} />
+                                    <Users
+                                      className={`w-4 h-4 ${colors.text}`}
+                                    />
                                   )}
                                 </div>
                                 <div>
-                                  <div className={`font-semibold ${colors.text} text-base leading-tight`}>
+                                  <div
+                                    className={`font-semibold ${colors.text} text-base leading-tight`}
+                                  >
                                     {item.groupTitle}
                                   </div>
-                                  <div className={`text-sm ${colors.text} opacity-75 mt-1`}>
+                                  <div
+                                    className={`text-sm ${colors.text} opacity-75 mt-1`}
+                                  >
                                     {item.groupSubtitle}
                                   </div>
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center space-x-2">
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${colors.badge} border border-current border-opacity-20`}>
+                              <span
+                                className={`px-3 py-1 rounded-full text-xs font-medium ${colors.badge} border border-current border-opacity-20`}
+                              >
                                 {item.groupTotalCredits} TC
                               </span>
                               {item.groupRequiredCredits && (
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300`}>
+                                <span
+                                  className={`px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-300`}
+                                >
                                   Yêu cầu: {item.groupRequiredCredits} TC
                                 </span>
                               )}
@@ -712,7 +818,7 @@ export const AllCoursesCollapsibleTable: React.FC<
                     );
                   } else {
                     return (
-                      <tr 
+                      <tr
                         key={row.id}
                         className="hover:bg-gray-50 transition-colors group"
                       >
@@ -720,17 +826,26 @@ export const AllCoursesCollapsibleTable: React.FC<
                           <td
                             key={cell.id}
                             className={`px-3 py-2 text-center border-b border-gray-100 ${
-                              index === 0 ? 'border-l-4 border-l-transparent group-hover:border-l-gray-300' : ''
+                              index === 0
+                                ? "border-l-4 border-l-transparent group-hover:border-l-gray-300"
+                                : ""
                             }`}
-                            style={index === 0 ? { 
-                              paddingLeft: '2rem',
-                              position: 'relative'
-                            } : undefined}
+                            style={
+                              index === 0
+                                ? {
+                                    paddingLeft: "2rem",
+                                    position: "relative",
+                                  }
+                                : undefined
+                            }
                           >
                             {index === 0 && (
                               <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-px bg-gray-300"></div>
                             )}
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
                           </td>
                         ))}
                       </tr>
@@ -741,9 +856,7 @@ export const AllCoursesCollapsibleTable: React.FC<
             </tbody>
           </table>
 
-          {!loading && displayRows.length > 0 && (
-            <PaginationControls />
-          )}
+          {!loading && displayRows.length > 0 && <PaginationControls />}
         </div>
       </div>
     </div>

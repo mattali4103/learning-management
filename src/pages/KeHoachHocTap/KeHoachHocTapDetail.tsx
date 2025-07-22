@@ -25,6 +25,7 @@ import PageHeader from "../../components/PageHeader";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
 import type { HocPhan } from "../../types/HocPhan";
 import type { HocKy } from "../../types/HocKy";
+import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 import useAuth from "../../hooks/useAuth";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KHHT_SERVICE, HOCPHAN_SERVICE } from "../../api/apiEndPoints";
@@ -65,6 +66,7 @@ const KeHoachHocTapDetail = () => {
   const [availableHocPhans, setAvailableHocPhans] = useState<HocPhan[]>([]);
   const [danhSachHocKy, setDanhSachHocKy] = useState<HocKy[]>([]);
   const [pendingHocPhans, setPendingHocPhans] = useState<KeHoachHocTapDetailItem[]>([]);
+  const [nhomHocPhanTuChon, setNhomHocPhanTuChon] = useState<HocPhanTuChon[]>([]);
 
   // UI States
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -286,6 +288,32 @@ const KeHoachHocTapDetail = () => {
       setAvailableHocPhans([]);
     }
   }, [maNganh, khoaHoc, maSo, axiosPrivate]);
+
+  const fetchNhomHocPhanTuChon = useCallback(async () => {
+    if (!khoaHoc || !maNganh) return;
+    try {
+      const response = await axiosPrivate.get(
+        HOCPHAN_SERVICE.CTDT_HOC_PHAN_TU_CHON_LIST,
+        {
+          params: {
+            khoaHoc: khoaHoc,
+            maNganh: maNganh,
+          },
+        }
+      );
+      if (response.data.code === 200 && response.data.data) {
+        const uniqueNhomHocPhanTuChon = (response.data.data || []).map((nhom: HocPhanTuChon) => ({
+          ...nhom,
+          hocPhanTuChonList: nhom.hocPhanTuChonList.filter((hocPhan, index, self) => 
+            self.findIndex(hp => hp.maHp === hocPhan.maHp) === index
+          )
+        }));
+        setNhomHocPhanTuChon(uniqueNhomHocPhanTuChon);
+      }
+    } catch (err) {
+      console.error("Error fetching NhomHocPhanTuChon:", err);
+    }
+  }, [axiosPrivate, khoaHoc, maNganh]);
 
   // Event handlers
   const handleChartBarClick = (data: any) => {
@@ -853,8 +881,9 @@ const KeHoachHocTapDetail = () => {
     if (maSo && khoaHoc && maNganh) {
       fetchAllData();
       fetchAvailableHocPhansNotInKHHT();
+      fetchNhomHocPhanTuChon();
     }
-  }, [maSo, khoaHoc, maNganh, fetchAllData, fetchAvailableHocPhansNotInKHHT]);
+  }, [maSo, khoaHoc, maNganh, fetchAllData, fetchAvailableHocPhansNotInKHHT, fetchNhomHocPhanTuChon]);
 
   if (loading) {
     return (
@@ -1014,6 +1043,7 @@ const KeHoachHocTapDetail = () => {
                 <AllCoursesCollapsibleTable
                   name="Tất cả học phần"
                   allData={allData}
+                  nhomHocPhanTuChon={nhomHocPhanTuChon}
                   onDelete={handleDeleteFromAllTable}
                   emptyStateTitle="Chưa có học phần nào"
                   emptyStateDescription="Nhấn 'Thêm học phần' để bắt đầu"

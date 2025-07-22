@@ -40,6 +40,14 @@ export interface TableColumn {
 }
 
 // Interface for export options
+export interface SelectionOptions {
+  mode: 'all' | 'selection' | 'page';
+  selectedRows?: number[]; // Used for 'selection' mode
+  currentPage?: number;    // Used for 'page' mode
+  pageSize?: number;       // Used for 'page' mode
+}
+
+// Interface for export options
 export interface ExportOptions {
   title?: string;
   subtitle?: string;
@@ -49,6 +57,7 @@ export interface ExportOptions {
   showIndex?: boolean;
   pageOrientation?: 'portrait' | 'landscape';
   customStyles?: any;
+  selection?: SelectionOptions;
 }
 
 // Helper function to convert ArrayBuffer to Base64
