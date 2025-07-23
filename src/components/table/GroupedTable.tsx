@@ -189,7 +189,7 @@ export const GroupedTable: React.FC<GroupedTableProps> = ({
   
   // For pagination, we need flat data when not showing groups
   const paginatedData = useMemo(() => {
-    if (shouldShowGroups || !enablePagination) return filteredData; // Show all when grouping or pagination disabled
+    if (shouldShowGroups || !enablePagination) return [];
     
     const startIndex = currentPage * pageSize;
     const endIndex = startIndex + pageSize;
