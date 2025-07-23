@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import {
   BookOpen,
@@ -80,6 +80,7 @@ const ThemKeHoachHocTapMau = () => {
 
   // States
   const [checkingExistingPlan, setCheckingExistingPlan] = useState(false);
+  
   const [danhSachNganh, setDanhSachNganh] = useState<Nganh[]>([]);
   const [selectedNganh, setSelectedNganh] = useState<string>(initialMaNganh);
   const [selectedKhoaHoc, setSelectedKhoaHoc] =
@@ -110,6 +111,9 @@ const ThemKeHoachHocTapMau = () => {
   );
   const [showAvailableSubjectsModal, setShowAvailableSubjectsModal] =
     useState(false);
+  const [initialModalTab, setInitialModalTab] = useState<"available" | "add">(
+    "available"
+  );
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -118,6 +122,7 @@ const ThemKeHoachHocTapMau = () => {
   const [hocPhanToDelete, setHocPhanToDelete] =
     useState<KeHoachHocTapDetail | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const tableRef = useRef<HTMLDivElement>(null);
 
   const maKhoa = auth.user?.maKhoa || "";
   const hocKyHienTai: HocKy | null = useMemo(() => {
@@ -157,7 +162,6 @@ const ThemKeHoachHocTapMau = () => {
   }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai]);
 
   const MAX_CREDITS_PER_SEMESTER = 20;
-
   const creditStatistics = useMemo(() => {
     const statsMap = new Map<string, CreditStatData>();
     selectedHocPhans.forEach((item) => {
@@ -328,6 +332,7 @@ const ThemKeHoachHocTapMau = () => {
       setSelectedFilterHocKy(clickedData.hocKyId);
       setSelectedTabNamHoc(clickedData.namHocId);
       setActiveTab(`semester-${clickedData.hocKyId}`);
+      tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   };
 
@@ -360,6 +365,7 @@ const ThemKeHoachHocTapMau = () => {
   };
 
   const handleAddHocPhanClick = () => {
+    setInitialModalTab("available");
     setShowAvailableSubjectsModal(true);
   };
 
@@ -820,7 +826,7 @@ const ThemKeHoachHocTapMau = () => {
             </nav>
           </div>
         )}
-        <div className="p-6">
+        <div className="p-6" ref={tableRef}>
           {activeTab === "all" ? (
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -929,9 +935,12 @@ const ThemKeHoachHocTapMau = () => {
         </div>
       </div>
       {pendingHocPhans.length > 0 && (
-        <div className="fixed right-6 bottom-1.5 transform -translate-y-1/2 z-40">
+        <div className="fixed right-6 bottom-1.5 transform -translate-y-1/2 z-40" id="floating-button">
           <button
-            onClick={() => setShowAvailableSubjectsModal(true)}
+            onClick={() => {
+              setInitialModalTab("add");
+              setShowAvailableSubjectsModal(true);
+            }}
             className={`relative flex items-center px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 ${
               pendingHocPhans.length > 0
                 ? "bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 animate-pulse"
@@ -953,14 +962,16 @@ const ThemKeHoachHocTapMau = () => {
       {showAvailableSubjectsModal && (
         <AvailableSubjectsModal
           isOpen={showAvailableSubjectsModal}
+          currentHocPhans={selectedHocPhans}
           onClose={() => setShowAvailableSubjectsModal(false)}
+          initialTab={initialModalTab}
           pendingHocPhans={pendingHocPhans}
           setPendingHocPhans={setPendingHocPhans}
           selectedNganh={selectedNganh}
           selectedKhoaHoc={selectedKhoaHoc}
           currentFilterNamHoc={selectedFilterNamHoc}
           currentFilterHocKy={selectedFilterHocKy}
-          onSaveSuccess={checkExistingPlan} // Re-fetch selectedHocPhans after save
+          onSaveSuccess={checkExistingPlan} 
         />
       )}
       <DeleteModal
