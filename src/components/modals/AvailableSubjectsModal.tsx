@@ -31,7 +31,6 @@ import { HOCPHAN_SERVICE, KHHT_SERVICE } from "../../api/apiEndPoints";
 
 // Hooks
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
-
 interface AvailableSubjectsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -44,6 +43,8 @@ interface AvailableSubjectsModalProps {
   currentFilterNamHoc: number | null;
   currentFilterHocKy: number | null;
   onSaveSuccess: () => void;
+  initialTab: "available" | "add";
+  currentHocPhans: KeHoachHocTapDetail[]; 
 }
 
 interface KHHTMauCreatePayload {
@@ -125,6 +126,7 @@ const PendingSubjectsTable = ({ data, columns }: PendingSubjectsTableProps) => {
                 {row.getVisibleCells().map((cell) => (
                   <td
                     key={cell.id}
+                    colSpan={cell.column.id === "group" ? table.getAllColumns().length : 1}
                     className="px-4 py-3 whitespace-nowrap text-sm"
                   >
                     {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -157,16 +159,34 @@ type AvailableTableRow = GroupHeaderRow | HocPhanRow;
 interface AvailableSubjectsTableProps {
   hocPhans: HocPhan[];
   onAddToPending: (hocPhan: HocPhan) => void;
+  pendingHocPhans: KeHoachHocTapDetail[];
+  currentHocPhans: KeHoachHocTapDetail[];
 }
 
 const AvailableSubjectsTable = ({
   hocPhans,
   onAddToPending,
+  pendingHocPhans,
+  currentHocPhans,
 }: AvailableSubjectsTableProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
+  // Ensure hocPhans are unique by maHp before grouping
+  const uniqueHocPhans = useMemo(() => {
+    const seenMaHps = new Set<string>();
+    const filteredHocPhans = hocPhans.filter(hp => {
+      if (seenMaHps.has(hp.maHp)) {
+        return false;
+      }
+      seenMaHps.add(hp.maHp);
+      return true;
+    });
+    console.log("Unique Hoc Phans:", filteredHocPhans);
+    return filteredHocPhans;
+  }, [hocPhans]);
+
   const groupedData = useMemo(() => {
-    return hocPhans.reduce(
+    const data = uniqueHocPhans.reduce(
       (acc, hocPhan) => {
         const groupKey = hocPhan.loaiHp || "Chưa phân loại";
         if (!acc[groupKey]) acc[groupKey] = [];
@@ -175,7 +195,9 @@ const AvailableSubjectsTable = ({
       },
       {} as Record<string, HocPhan[]>
     );
-  }, [hocPhans]);
+    console.log("Grouped Data:", data);
+    return data;
+  }, [uniqueHocPhans]);
 
   useEffect(() => {
     setExpandedGroups(new Set(Object.keys(groupedData)));
@@ -192,14 +214,31 @@ const AvailableSubjectsTable = ({
 
   const displayRows = useMemo((): AvailableTableRow[] => {
     const rows: AvailableTableRow[] = [];
+    // Create a set of maHp for quick lookup of pending and current hoc phans
+    const pendingAndCurrentMaHps = new Set([
+      ...pendingHocPhans.map((item) => item.hocPhan.maHp),
+      ...currentHocPhans.map((item) => item.hocPhan.maHp),
+    ]);
+    console.log("Pending and Current MaHps:", pendingAndCurrentMaHps);
+
     Object.entries(groupedData).forEach(([groupName, data]) => {
-      rows.push({ isGroupHeader: true, groupName, count: data.length });
-      if (expandedGroups.has(groupName)) {
-        data.forEach((hp) => rows.push({ isGroupHeader: false, hocPhan: hp }));
+      const filteredSubjects = data.filter((hp) => {
+        const isAlreadyAdded = pendingAndCurrentMaHps.has(hp.maHp);
+        if (isAlreadyAdded) {
+          console.log(`Filtering out ${hp.maHp} - ${hp.tenHp} (already added)`);
+        }
+        return !isAlreadyAdded;
+      });
+
+      if (filteredSubjects.length > 0) {
+        rows.push({ isGroupHeader: true, groupName, count: filteredSubjects.length });
+        if (expandedGroups.has(groupName)) {
+          filteredSubjects.forEach((hp) => rows.push({ isGroupHeader: false, hocPhan: hp }));
+        }
       }
     });
     return rows;
-  }, [groupedData, expandedGroups]);
+  }, [groupedData, expandedGroups, pendingHocPhans, currentHocPhans]);
 
   const columns = useMemo<ColumnDef<AvailableTableRow>[]>(
     () => [
@@ -230,10 +269,41 @@ const AvailableSubjectsTable = ({
       {
         accessorKey: "hocPhan.maHp",
         header: "Mã HP",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) return null;
+          return item.hocPhan.maHp;
+        },
+
       },
       {
         accessorKey: "hocPhan.tinChi",
         header: "Tín chỉ",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) return null;
+          return item.hocPhan.tinChi;
+        },
+      },
+      {
+        accessorKey: "hocPhan.loaiHp",
+        header: "Loại học phần",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) return null;
+          return item.hocPhan.loaiHp;
+        },
+
+      },
+      {
+        accessorKey: "hocPhan.hocPhanTienQuyet",
+        header: "HP Tiên quyết",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) return null;
+          return item.hocPhan.hocPhanTienQuyet || "Không";
+        },
+
       },
       {
         id: "actions",
@@ -262,7 +332,7 @@ const AvailableSubjectsTable = ({
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 15 } },
+    initialState: { pagination: { pageSize: 7 } },
     getRowId: (row) =>
       (row as any).isGroupHeader
         ? (row as GroupHeaderRow).groupName
@@ -279,7 +349,7 @@ const AvailableSubjectsTable = ({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    colSpan={header.colSpan}
+                    colSpan={columns.length}
                     className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
                     {flexRender(
@@ -298,13 +368,10 @@ const AvailableSubjectsTable = ({
                 className={`hover:bg-gray-50 ${(row.original as AvailableTableRow).isGroupHeader ? "bg-gray-50" : ""}`}
               >
                 {row.getVisibleCells().map((cell) => {
-                  const isGroupCell =
-                    cell.column.id === "group" &&
-                    (cell.row.original as AvailableTableRow).isGroupHeader;
                   return (
                     <td
                       key={cell.id}
-                      colSpan={isGroupCell ? 4 : 1}
+                      colSpan={columns.length}
                       className="px-4 py-3 whitespace-nowrap text-sm"
                     >
                       {flexRender(
@@ -334,10 +401,12 @@ const AvailableSubjectsModal = ({
   currentFilterNamHoc,
   currentFilterHocKy,
   onSaveSuccess,
+  initialTab,
+  currentHocPhans,
 }: AvailableSubjectsModalProps) => {
   const axiosPrivate = useAxiosPrivate();
 
-  const [activeTab, setActiveTab] = useState<"available" | "add">("available");
+  const [activeTab, setActiveTab] = useState<"available" | "add">(initialTab);
   const [showAddSubjectForm, setShowAddSubjectForm] = useState(false);
   const [formNamHoc, setFormNamHoc] = useState<number | null>(null);
   const [formHocKy, setFormHocKy] = useState<number | null>(null);
@@ -372,11 +441,7 @@ const AvailableSubjectsModal = ({
     return Array.from(years.values()).sort((a, b) => a.id - b.id);
   }, [danhSachHocKy, hocKyHienTai]);
 
-  const filteredAvailableHocPhans = useMemo(() => {
-    return availableHocPhans.filter(
-      (hp) => !pendingHocPhans.some((item) => item.hocPhan.maHp === hp.maHp)
-    );
-  }, [availableHocPhans, pendingHocPhans]);
+  
 
   // Fetching functions
   const fetchChuongTrinhDaoTao = useCallback(async () => {
@@ -604,23 +669,36 @@ const AvailableSubjectsModal = ({
         header: "Mã học phần",
         cell: ({ row }) => (
           <div className="text-center font-medium">
-            {row.original.hocPhan.maHp}
+            {row.original.hocPhan?.maHp}
           </div>
         ),
-        size: 120,
+        size: 100,
       },
       {
         accessorKey: "hocPhan.tenHp",
         header: "Tên học phần",
-        size: 200,
       },
       {
         accessorKey: "hocPhan.tinChi",
         header: "Tín chỉ",
         cell: ({ row }) => (
-          <div className="text-center">{row.original.hocPhan.tinChi}</div>
+          <div className="text-center">{row.original.hocPhan?.tinChi}</div>
         ),
         size: 80,
+      },
+      {
+        accessorKey: "hocPhan.loaiHp",
+        header: "Loại học phần",
+        cell: ({ row }) => (
+          <div className="text-center">{row.original.hocPhan?.loaiHp}</div>
+        ),
+      },
+      {
+        accessorKey: "hocPhan.hocPhanTienQuyet",
+        header: "HP Tiên quyết",
+        cell: ({ row }) => (
+          <div className="text-center">{row.original.hocPhan?.hocPhanTienQuyet || "Không"}</div>
+        ),
       },
       {
         id: "namHoc",
@@ -650,7 +728,7 @@ const AvailableSubjectsModal = ({
             </div>
           );
         },
-        size: 120,
+        size: 130,
       },
       {
         id: "hocKy",
@@ -688,7 +766,7 @@ const AvailableSubjectsModal = ({
             </div>
           );
         },
-        size: 100,
+        size: 130,
       },
       {
         id: "actions",
@@ -722,7 +800,7 @@ const AvailableSubjectsModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[90vw] h-[90vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] h-[95vh] flex flex-col">
         {/* Modal Header with Tabs */}
         <div className="flex items-center justify-between border-b border-gray-200">
           <div className="flex space-x-2 px-3 py-2">
@@ -871,7 +949,7 @@ const AvailableSubjectsModal = ({
                     <p className="text-gray-500">Đang tải...</p>
                   </div>
                 </div>
-              ) : filteredAvailableHocPhans.length === 0 ? (
+              ) : availableHocPhans.length === 0 ? (
                 <div className="text-center py-12 text-gray-500">
                   <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium">Không có học phần</p>
@@ -882,8 +960,10 @@ const AvailableSubjectsModal = ({
                 </div>
               ) : (
                 <AvailableSubjectsTable
-                  hocPhans={filteredAvailableHocPhans}
+                  hocPhans={availableHocPhans}
                   onAddToPending={handleAddToPending}
+                  pendingHocPhans={pendingHocPhans}
+                  currentHocPhans={currentHocPhans}
                 />
               )}
             </>
