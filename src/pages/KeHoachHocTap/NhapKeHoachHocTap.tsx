@@ -627,9 +627,6 @@ const NhapKeHoachHocTap: React.FC = () => {
       const uniqueMergedCourses = allCourses.filter((hocPhan, index, self) => 
         self.findIndex(hp => hp.maHp === hocPhan.maHp) === index
       );
-      
-      console.log(`Merged courses ${loaiHp}:`, uniqueMergedCourses);
-      
       // Set data theo loại học phần (merged data)
       switch (loaiHp) {
         case "Đại Cương":
@@ -1312,31 +1309,19 @@ const NhapKeHoachHocTap: React.FC = () => {
       chuyenNganhGroups
     });
 
-    // Log kết quả
-    console.log("\n📊 TỔNG KẾT TRẠNG THÁI:");
-    console.log(`✅ Nhóm đã hoàn thành: ${completedGroups.length}`);
-    console.log(`⏳ Nhóm chưa hoàn thành: ${pendingGroups.length}`);
     
     if (completedGroups.length > 0) {
-      console.log("\n✅ CÁC NHÓM ĐÃ HOÀN THÀNH:");
       completedGroups.forEach(group => console.log(`  ${group}`));
     }
-    
     if (pendingGroups.length > 0) {
-      console.log("\n⏳ CÁC NHÓM CHƯA HOÀN THÀNH:");
       pendingGroups.forEach(group => console.log(`  ${group}`));
     }
 
     if (chuyenNganhGroups.size > 0) {
-      console.log("\n🎓 NHÓM CHUYÊN NGÀNH (chỉ cần hoàn thành 1 trong các nhóm cùng tên):");
       chuyenNganhGroups.forEach((info, baseName) => {
-        const status = info.completed ? "✅ ĐÃ HOÀN THÀNH" : "⏳ CHƯA HOÀN THÀNH";
-        console.log(`${baseName}: ${status}`);
         info.details.forEach(detail => console.log(detail));
       });
     }
-
-    console.log("=== KẾT THÚC KIỂM TRA ===\n");
   }, [NhomHocPhanTuChon, maHocPhanInKHHT]);
 
   // Thêm useEffect để kiểm tra trạng thái hoàn thành khi vào trang hoặc khi có thay đổi

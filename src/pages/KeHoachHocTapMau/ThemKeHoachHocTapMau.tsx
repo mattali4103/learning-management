@@ -8,7 +8,6 @@ import {
   BarChart3,
   Calendar,
   Users,
-  Trash2,
 } from "lucide-react";
 import {
   BarChart,
@@ -21,11 +20,10 @@ import {
   type TooltipProps,
   Cell,
 } from "recharts";
-import type { ColumnDef } from "@tanstack/react-table";
 
 // Components
 import PageHeader from "../../components/PageHeader";
-import { GroupedTable } from "../../components/table/GroupedTable";
+import { AllCoursesCollapsibleTable } from "../../components/table/AllCoursesCollapsibleTable";
 import DeleteModal from "../../components/modals/DeleteModal";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
@@ -123,6 +121,8 @@ const ThemKeHoachHocTapMau = () => {
     useState<KeHoachHocTapDetail | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
+  const [hocPhanTuChon, setHocPhanTuChon] = useState([]);
+  const [loading, setLoading] = useState(false);  
 
   const maKhoa = auth.user?.maKhoa || "";
   const hocKyHienTai: HocKy | null = useMemo(() => {
@@ -404,11 +404,6 @@ const ThemKeHoachHocTapMau = () => {
     [axiosPrivate]
   );
 
-  const handleDeleteClick = useCallback((hocPhan: KeHoachHocTapDetail) => {
-    setHocPhanToDelete(hocPhan);
-    setIsDeleteModalOpen(true);
-  }, []);
-
   const handleConfirmDelete = useCallback(() => {
     if (hocPhanToDelete && !isDeleting) {
       fetchDeleteHocPhan(hocPhanToDelete);
@@ -442,69 +437,6 @@ const ThemKeHoachHocTapMau = () => {
     }
     return null;
   };
-
-  const semesterDetailColumns = useMemo<ColumnDef<KeHoachHocTapDetail>[]>(
-    () => [
-      {
-        id: "stt",
-        header: "STT",
-        cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
-        size: 80,
-      },
-      {
-        id: "maHp",
-        accessorKey: "hocPhan.maHp",
-        header: "Mã học phần",
-        cell: ({ getValue }) => {
-          const maHp = getValue() as string;
-          return (
-            <div className="text-center">
-              {maHp}
-            </div>
-          );
-        },
-        size: 140,
-      },
-      {
-        id: "tenHp",
-        accessorKey: "hocPhan.tenHp",
-        header: "Tên học phần",
-        cell: ({ getValue }) => (
-          <div className="text-left">{getValue() as string}</div>
-        ),
-        size: 300,
-      },
-      {
-        id: "soTinChi",
-        accessorKey: "hocPhan.tinChi",
-        header: "Tín chỉ",
-        cell: ({ getValue }) => (
-          <div className="text-center">{getValue() as number}</div>
-        ),
-        size: 100,
-      },
-      {
-        id: "actions",
-        header: "Thao tác",
-        cell: ({ row }) => {
-          const item = row.original;
-          return (
-            <div className="flex items-center justify-center">
-              <button
-                onClick={() => handleDeleteClick(item)}
-                className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors duration-200 group"
-                title="Xóa học phần"
-              >
-                <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
-              </button>
-            </div>
-          );
-        },
-        size: 120,
-      },
-    ],
-    [handleDeleteClick]
-  );
 
   useEffect(() => {
     fetchDanhSachNganh();
@@ -569,6 +501,36 @@ const ThemKeHoachHocTapMau = () => {
       // No need to fetch chuong trinh dao tao here, modal handles it
     }
   }, [isAddMode, selectedNganh, selectedKhoaHoc]);
+
+  // Fetch elective groups (hocPhanTuChon) when selectedNganh and selectedKhoaHoc change
+  useEffect(() => {
+    const fetchHocPhanTuChon = async () => {
+      if (!selectedNganh || !selectedKhoaHoc) {
+        setHocPhanTuChon([]);
+        return;
+      }
+      setLoading(true);
+      try {
+        const response = await axiosPrivate.get(HOCPHAN_SERVICE.CTDT_HOC_PHAN_TU_CHON_LIST, {
+          params: {
+            khoaHoc: selectedKhoaHoc,
+            maNganh: selectedNganh,
+          },
+        });
+        if (response.data.code === 200 && Array.isArray(response.data.data)) {
+          setHocPhanTuChon(response.data.data);
+        } else {
+          setHocPhanTuChon([]);
+        }
+      } catch (error) {
+        console.error("Error fetching hoc phan tu chon:", error);
+        setHocPhanTuChon([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHocPhanTuChon();
+  }, [selectedNganh, selectedKhoaHoc, axiosPrivate]);
 
   if (
     !isEditMode &&
@@ -649,7 +611,6 @@ const ThemKeHoachHocTapMau = () => {
                   const planExists = await checkExistingPlan();
                   if (!planExists) {
                     setSelectedHocPhans([]);
-                    // No need to fetch chuong trinh dao tao here, modal handles it
                   }
                 }
               }}
@@ -846,25 +807,34 @@ const ThemKeHoachHocTapMau = () => {
                 </div>
               </div>
               {selectedHocPhans.length > 0 ? (
-                <GroupedTable
-                  name="Tất cả học phần"
-                  data={selectedHocPhans}
-                  columns={semesterDetailColumns}
-                  groupByKey="hocKy.tenHocKy"
-                  groupDisplayName={(groupKey) =>
-                    groupKey || "Chưa xác định học kỳ"
-                  }
-                  groupColorScheme={(groupKey) => {
-                    if (groupKey.includes("1")) return "blue";
-                    if (groupKey.includes("2")) return "green";
-                    if (groupKey.includes("3")) return "orange";
-                    return "purple";
-                  }}
-                  initialExpanded={true}
-                  enablePagination={true}
-                  pageSize={7}
+                <AllCoursesCollapsibleTable
+                  activeTab={activeTab}
+                  name={activeTab === "all" ? "Tất cả học phần" : `${availableHocKy.find(s => s.id === selectedHocKyChart)?.ten}`}
+                  allData={selectedHocPhans.map((item, idx) => ({
+                    id: idx + 1, // fake id for table
+                    maHp: item.hocPhan.maHp,
+                    tenHp: item.hocPhan.tenHp,
+                    tinChi: item.hocPhan.tinChi,
+                    hocPhanTienQuyet: item.hocPhan.hocPhanTienQuyet,
+                    loaiHp: item.hocPhan.loaiHp,
+                    maHocKy: item.hocKy?.maHocKy || 0,
+                    tenHocKy: item.hocKy?.tenHocKy || "",
+                    namHocId: item.hocKy?.namHoc?.id || 0,
+                    namBdNamKt: item.hocKy?.namHoc?.namBatDau && item.hocKy?.namHoc?.namKetThuc ? `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}` : "",
+                  }))}
+                  nhomHocPhanTuChon={hocPhanTuChon}
+                  loading={loading}
                   emptyStateTitle="Chưa có học phần nào"
                   emptyStateDescription="Nhấn 'Thêm học phần' để bắt đầu"
+                  onDelete={(maHp: string) => {
+                    const hocPhan = selectedHocPhans.find(
+                      (item) => item.hocPhan.maHp === maHp
+                    );
+                    if (hocPhan) {
+                      setHocPhanToDelete(hocPhan);
+                      setIsDeleteModalOpen(true);
+                    }
+                  }}
                 />
               ) : (
                 <div className="text-center py-12 text-gray-500">
@@ -878,12 +848,18 @@ const ThemKeHoachHocTapMau = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-lg font-semibold text-gray-800">
-                  Học phần của
+                  Kế hoạch học tập {" "}
                   {
                     creditStatistics.find(
                       (s) => s.hocKyId === selectedHocKyChart
-                    )?.tenHocKy
+                    )?.tenHocKy 
                   }
+                  - {" "}
+                    {
+                      creditStatistics.find(
+                        (s) => s.hocKyId === selectedHocKyChart
+                      )?.namHoc
+                    }
                 </h4>
                 <div className="flex items-center space-x-3">
                   <button
@@ -896,24 +872,34 @@ const ThemKeHoachHocTapMau = () => {
                 </div>
               </div>
               {selectedSemesterData.length > 0 ? (
-                <GroupedTable
+                <AllCoursesCollapsibleTable
+                  activeTab={activeTab}
                   name="Học phần theo học kỳ"
-                  data={selectedSemesterData}
-                  columns={semesterDetailColumns}
-                  groupByKey="hocPhan.loaiHp"
-                  groupDisplayName={(groupKey) => `Học phần ${groupKey || "Khác"}`}
-                  groupColorScheme={(groupKey) => {
-                    if (groupKey?.includes("Đại cương")) return "purple";
-                    if (groupKey?.includes("Cơ sở ngành")) return "blue";
-                    if (groupKey?.includes("Chuyên ngành")) return "orange";
-                    if (groupKey?.includes("Anh văn")) return "green";
-                    return "gray";
-                  }}
-                  initialExpanded={true}
-                  enablePagination={true}
-                  pageSize={7}
+                  allData={selectedSemesterData.map((item, idx) => ({
+                    id: idx + 1, // fake id for table
+                    maHp: item.hocPhan.maHp,
+                    tenHp: item.hocPhan.tenHp,
+                    tinChi: item.hocPhan.tinChi,
+                    hocPhanTienQuyet: item.hocPhan.hocPhanTienQuyet,
+                    loaiHp: item.hocPhan.loaiHp,
+                    maHocKy: item.hocKy?.maHocKy || 0,
+                    tenHocKy: item.hocKy?.tenHocKy || "",
+                    namHocId: item.hocKy?.namHoc?.id || 0,
+                    namBdNamKt: item.hocKy?.namHoc?.namBatDau && item.hocKy?.namHoc?.namKetThuc ? `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}` : "",
+                  }))}
+                  nhomHocPhanTuChon={hocPhanTuChon}
+                  loading={loading}
                   emptyStateTitle="Chưa có học phần nào trong học kỳ này"
                   emptyStateDescription="Thêm học phần đầu tiên cho học kỳ này"
+                  onDelete={(maHp: string) => {
+                    const hocPhan = selectedHocPhans.find(
+                      (item) => item.hocPhan.maHp === maHp
+                    );
+                    if (hocPhan) {
+                      setHocPhanToDelete(hocPhan);
+                      setIsDeleteModalOpen(true);
+                    }
+                  }}
                 />
               ) : (
                 <div className="text-center py-12 text-gray-500">

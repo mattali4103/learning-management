@@ -46,7 +46,10 @@ const CombinedCreditGPAChart: React.FC<Props> = ({
     <div>
       <h3 className="text-lg font-semibold mb-4">{title}</h3>
       <ResponsiveContainer width="100%" height={height}>
-        <ComposedChart data={data} margin={{ top: 20, right: 50, left: 20, bottom: 20 }}>
+        <ComposedChart
+          data={data}
+          margin={{ top: 20, right: 50, left: 20, bottom: 20 }}
+        >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis
             dataKey="name"
@@ -67,11 +70,26 @@ const CombinedCreditGPAChart: React.FC<Props> = ({
           <YAxis
             yAxisId="right"
             orientation="right"
-            domain={[0, 'dataMax']}
+            domain={[0, "dataMax"]}
             label={{ value: "Số tín chỉ", angle: 90, position: "insideRight" }}
           />
           <Tooltip />
-          <Legend verticalAlign="top" height={60} wrapperStyle={{ top: 0, marginBottom: 10 }} />
+          <Legend
+            verticalAlign="top"
+            height={60}
+            wrapperStyle={{ top: 0, marginBottom: 10 }}
+          />
+          {/* Bar for số tín chỉ tích lũy (accumulated credits) in green */}
+          <Bar
+            yAxisId="right"
+            dataKey="soTinChiTichLuy"
+            name="Số tín chỉ tích lũy"
+            stackId="a"
+            fill="#50C878"
+            maxBarSize={30}
+          >
+            
+          </Bar>
           {/* Bar for số tín chỉ rớt (failed credits) in red */}
           <Bar
             yAxisId="right"
@@ -81,17 +99,7 @@ const CombinedCreditGPAChart: React.FC<Props> = ({
             fill="#ff4d4f"
             maxBarSize={30}
           >
-            <LabelList dataKey="soTinChiRot" position="top" />
-          </Bar>
-          {/* Bar for số tín chỉ tích lũy (accumulated credits) in green */}
-          <Bar
-            yAxisId="right"
-            dataKey="soTinChiTichLuy"
-            name="Số tín chỉ tích lũy"
-            stackId="a"
-            fill="#008000"
-            maxBarSize={30}
-          >
+            {/* <LabelList dataKey="soTinChiRot" position="top" /> */}
             <LabelList dataKey="soTinChiTichLuy" position="top" />
           </Bar>
           {/* Line for điểm trung bình tích lũy (cumulative GPA) */}

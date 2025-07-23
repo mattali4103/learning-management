@@ -33,9 +33,9 @@ import { KeHoachHocTapTable } from "../../components/table/KeHoachHocTapTable";
 import DeleteModal from "../../components/modals/DeleteModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
-import { GroupedTable } from "../../components/table/GroupedTable";
 import type { ColumnDef } from "@tanstack/react-table";
-import { AllCoursesCollapsibleTable } from "../../components/table/AllCoursesCollapsibleTable";
+import { CollapsibleCourseTable } from "../../components/table/CollapsibleCourseTable";
+import { GroupedTable } from "../../components/table/GroupedTable";
 
 interface CreditStatData {
   tenHocKy: string;
@@ -467,10 +467,6 @@ const KeHoachHocTapDetail = () => {
     }
   }, [axiosPrivate, fetchAllData]);
 
-  const handleDeleteClick = useCallback((hocPhan: KeHoachHocTap) => {
-    setHocPhanToDelete(hocPhan);
-    setIsDeleteModalOpen(true);
-  }, []);
 
   const handleConfirmDelete = useCallback(() => {
     if (hocPhanToDelete && !isDeleting) {
@@ -519,135 +515,6 @@ const KeHoachHocTapDetail = () => {
     return null;
   };
 
-  // Table columns for edit mode (with delete action)
-  const editModeColumns = useMemo<ColumnDef<KeHoachHocTap>[]>(
-    () => [
-      {
-        id: "stt",
-        header: "STT",
-        cell: ({ row }) => <div className="text-center">{row.index + 1}</div>,
-        enableSorting: false,
-      },
-      {
-        accessorKey: "maHp",
-        header: "Mã học phần",
-        cell: ({ getValue }) => {
-          const maHp = getValue() as string;
-          return (
-            <div className="text-center">
-              <button
-                onClick={() => copyToClipboard(maHp)}
-                className="text-blue-600 hover:text-blue-800 hover:underline font-medium transition-colors cursor-pointer"
-                title={`Nhấn để sao chép: ${maHp}`}
-              >
-                {maHp}
-              </button>
-            </div>
-          );
-        },
-        enableSorting: true,
-      },
-      {
-        accessorKey: "tenHp",
-        header: "Tên học phần",
-        cell: ({ getValue }) => (
-          <div className="text-left font-semibold text-gray-900 text-sm">
-            {getValue() as string}
-          </div>
-        ),
-        enableSorting: true,
-      },
-      {
-        accessorKey: "tinChi",
-        header: "Tín chỉ",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="inline-flex items-center justify-center w-10 h-10 text-sm font-bold text-emerald-700">
-              {getValue() as number}
-            </span>
-          </div>
-        ),
-        enableSorting: true,
-      },
-      {
-        accessorKey: "loaiHp",
-        header: "Loại học phần",
-        cell: ({ getValue }) => {
-          const loaiHp = getValue() as string;
-          const colorMap: Record<string, string> = {
-            "Đại cương": "bg-blue-100 text-blue-800",
-            "Cơ sở ngành": "bg-green-100 text-green-800",
-            "Chuyên ngành": "bg-purple-100 text-purple-800",
-          };
-          return (
-            <div className="flex justify-center">
-              <span
-                className={`px-2 py-1 rounded-full text-xs font-medium ${colorMap[loaiHp] || "bg-gray-100 text-gray-800"}`}
-              >
-                {loaiHp}
-              </span>
-            </div>
-          );
-        },
-        enableSorting: true,
-      },
-      {
-        id: "maHocKy",
-        accessorKey: "tenHocKy",
-        header: "Học kỳ",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="inline-flex items-center px-3 py-1.5">
-              {getValue() as string}
-            </span>
-          </div>
-        ),
-        enableSorting: true,
-      },
-      {
-        id: "namHocId",
-        accessorKey: "namBdNamKt",
-        header: "Năm học",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="text-sm font-medium text-gray-600">
-              {getValue() as string}
-            </span>
-          </div>
-        ),
-        enableSorting: true,
-      },
-      {
-        accessorKey: "hocPhanTienQuyet",
-        header: "Tiên quyết",
-        cell: ({ getValue }) => (
-          <div className="text-center">
-            <span className="text-sm text-gray-600">
-              {(getValue() as string) || "Không"}
-            </span>
-          </div>
-        ),
-        enableSorting: true,
-      },
-      {
-        id: "actions",
-        header: "Thao tác",
-        cell: ({ row }) => (
-          <div className="flex justify-center">
-            <button
-              onClick={() => handleDeleteClick(row.original)}
-              className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors duration-200 group"
-              title="Xóa học phần"
-            >
-              <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform duration-200" />
-            </button>
-          </div>
-        ),
-        enableSorting: false,
-      },
-    ],
-    [handleDeleteClick]
-  );
 
   // Available subjects table columns
   const availableColumnsForMain = useMemo<ColumnDef<HocPhan>[]>(
@@ -865,13 +732,6 @@ const KeHoachHocTapDetail = () => {
     [availableNamHoc, danhSachHocKy, handleUpdatePending, handleRemoveFromPending]
   );
 
-  const handleDeleteFromAllTable = useCallback((maHp: string) => {
-    const hocPhan = allData.find(hp => hp.maHp === maHp);
-    if (hocPhan) {
-      handleDeleteClick(hocPhan);
-    }
-  }, [allData, handleDeleteClick]);
-
   // Effects
   useEffect(() => {
     fetchDanhSachHocKy();
@@ -1040,11 +900,17 @@ const KeHoachHocTapDetail = () => {
               </h4>
 
               {allData.length > 0 ? (
-                <AllCoursesCollapsibleTable
+                <CollapsibleCourseTable
                   name="Tất cả học phần"
-                  allData={allData}
-                  nhomHocPhanTuChon={nhomHocPhanTuChon}
-                  onDelete={handleDeleteFromAllTable}
+                  requiredCourses={allData.map(item => ({
+                    maHp: item.maHp,
+                    tenHp: item.tenHp,
+                    tinChi: item.tinChi,
+                    loaiHp: item.loaiHp,
+                    hocPhanTienQuyet: item.hocPhanTienQuyet,
+                  }))}
+                  electiveGroups={nhomHocPhanTuChon}
+                  activeTab="tatca"
                   emptyStateTitle="Chưa có học phần nào"
                   emptyStateDescription="Nhấn 'Thêm học phần' để bắt đầu"
                 />
@@ -1063,23 +929,17 @@ const KeHoachHocTapDetail = () => {
               </h4>
 
               {selectedSemesterData.length > 0 ? (
-                <GroupedTable
-                  name="Học phần theo học kỳ"
-                  data={selectedSemesterData}
-                  columns={editModeColumns}
-                  groupByKey="loaiHp"
-                  groupDisplayName={(groupKey: string) => `Học phần ${groupKey || "Khác"}`}
-                  groupColorScheme={(groupKey: string) => {
-                    const colorMap: Record<string, string> = {
-                      "Đại cương": "bg-blue-50 border-blue-200 text-blue-700",
-                      "Cơ sở ngành": "bg-green-50 border-green-200 text-green-700",
-                      "Chuyên ngành": "bg-purple-50 border-purple-200 text-purple-700",
-                    };
-                    return colorMap[groupKey] || "bg-gray-50 border-gray-200 text-gray-700";
-                  }}
-                  initialExpanded={true}
-                  enablePagination={true}
-                  pageSize={7}
+                <CollapsibleCourseTable
+                  name={`Học phần trong học kỳ`}
+                  requiredCourses={selectedSemesterData.map(item => ({
+                    maHp: item.maHp,
+                    tenHp: item.tenHp,
+                    tinChi: item.tinChi,
+                    loaiHp: item.loaiHp,
+                    hocPhanTienQuyet: item.hocPhanTienQuyet,
+                  }))}
+                  electiveGroups={[]}
+                  activeTab="tatca"
                   emptyStateTitle="Chưa có học phần nào trong học kỳ này"
                   emptyStateDescription="Thêm học phần đầu tiên cho học kỳ này"
                 />
@@ -1231,7 +1091,6 @@ const KeHoachHocTapDetail = () => {
                 </button>
               </div>
             </div>
-
             <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto">
               {pendingHocPhans.length > 0 ? (
                 <GroupedTable

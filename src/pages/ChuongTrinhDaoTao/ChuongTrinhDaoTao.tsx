@@ -1,25 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Search } from "lucide-react";
+import { BookOpen, Search, Plus } from "lucide-react"; // Import Plus icon
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import type { Nganh } from "../../types/Nganh";
-import type { HocPhan } from "../../types/HocPhan";
 import type { Khoa } from "../../types/Khoa";
 import Loading from "../../components/Loading";
 
 import { fetchKhoaData } from "../../api/khoaService";
 import useAuth from "../../hooks/useAuth";
 import { HOCPHAN_SERVICE } from "../../api/apiEndPoints";
+import type { ChuongTrinhDaoTao } from "../../types/ChuongTrinhDaoTao";
 
-interface ChuongTrinhDaoTao {
-  id: number;
-  khoaHoc: string;
-  tongSoTinChi: number;
-  tongSoTinChiTuChon: number;
-  nganh: Nganh;
-  hocPhanList: HocPhan[];
-  hocPhanTuChonList: HocPhan[];
-}
+
 const ChuongTrinhDaoTao = () => {
   const navigate = useNavigate();
   const axiosPrivate = useAxiosPrivate();
@@ -35,10 +27,16 @@ const ChuongTrinhDaoTao = () => {
 
   const { auth } = useAuth();
   const maKhoa = auth.user?.maKhoa || "";
+  const isTruongKhoa = auth.user?.roles?.includes("TRUONGKHOA"); // Check for role
 
   // Navigate to CTDT detail
   const handleViewDetail = (maNganh: string | number, khoaHoc: string) => {
-    navigate(`/giangvien/chuongtrinhdaotao/detail/${maNganh}/${khoaHoc}`);
+    navigate(`/giangvien/ctdt/detail/${maNganh}/${khoaHoc}`);
+  };
+
+  // Navigate to Add CTDT page
+  const handleAddCTDT = () => {
+    navigate(`/giangvien/ctdt/them`);
   };
 
   //Fetch Ngành trong khoa
@@ -95,7 +93,6 @@ const ChuongTrinhDaoTao = () => {
         }
       });
       setChuongTrinhDaoTao(allChuongTrinh);
-      console.log("Chương trình đào tạo:", allChuongTrinh);
     } catch (error) {
       setError(error instanceof Error ? error.message : "Lỗi không xác định");
     } finally {
@@ -183,31 +180,42 @@ const ChuongTrinhDaoTao = () => {
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         {/* Filters */}
         <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-wrap gap-4">
-            <div className="flex-1 min-w-64">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <input
-                  type="text"
-                  placeholder="Tìm kiếm chương trình đào tạo..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-                />
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap gap-4 items-center">
+              <div className="flex-1 min-w-64">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <input
+                    type="text"
+                    placeholder="Tìm kiếm chương trình đào tạo..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                  />
+                </div>
               </div>
+              <select
+                value={selectedMajor}
+                onChange={(e) => setSelectedMajor(e.target.value)}
+                className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              >
+                <option value="all">Tất cả ngành</option>
+                {danhSachNganh.map((nganh) => (
+                  <option key={nganh.maNganh} value={nganh.maNganh}>
+                    {nganh.tenNganh}
+                  </option>
+                ))}
+              </select>
             </div>
-            <select
-              value={selectedMajor}
-              onChange={(e) => setSelectedMajor(e.target.value)}
-              className="px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="all">Tất cả ngành</option>
-              {danhSachNganh.map((nganh) => (
-                <option key={nganh.maNganh} value={nganh.maNganh}>
-                  {nganh.tenNganh}
-                </option>
-              ))}
-            </select>
+            {isTruongKhoa && (
+              <button
+                onClick={handleAddCTDT}
+                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <Plus className="w-5 h-5" />
+                Thêm chương trình đào tạo
+              </button>
+            )}
           </div>
         </div>
 

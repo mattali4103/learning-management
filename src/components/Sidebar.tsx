@@ -32,16 +32,16 @@ export default function Sidebar() {
   // Check if user is giangvien or admin
   const isGiangVienOrAdmin =
     auth.user?.roles === "GIANGVIEN" || auth.user?.roles === "ADMIN";
-
+  const isTruongKhoa = auth.user?.roles === "TRUONGKHOA";
   const sidebarItems: SidebarItem[] = [
     // Menu cho sinh viên
     ...(auth.user?.roles === "SINHVIEN"
       ? [
           // Dashboard cho sinh viên
-          { 
-            name: "Trang chủ", 
-            icon: LayoutDashboard, 
-            to: "/" 
+          {
+            name: "Trang chủ",
+            icon: LayoutDashboard,
+            to: "/",
           },
           {
             name: "Thông tin cá nhân",
@@ -72,7 +72,7 @@ export default function Sidebar() {
           },
         ]
       : []),
-      
+
     // Menu cho giảng viên và admin
     ...(isGiangVienOrAdmin
       ? [
@@ -82,18 +82,36 @@ export default function Sidebar() {
             to: "/giangvien/lop",
           },
           {
-            name: "Chương trình Đào tạo",
-            icon: BookOpen,
-            to: "/giangvien/chuongtrinhdaotao",
-          },
-          {
             name: "Kế hoạch học tập mẫu",
             icon: FileText,
             to: "/giangvien/study-plans",
           },
+          {
+            name: "Chương trình Đào tạo",
+            icon: BookOpen,
+            to: "/giangvien/ctdt",
+          },
         ]
       : []),
   ];
+  if (isTruongKhoa) {
+    sidebarItems.push({
+      name: "Quản lý Lớp",
+      icon: Users,
+      to: "/giangvien/lop",
+    });
+    sidebarItems.push({
+      name: "Kế hoạch học tập mẫu",
+      icon: FileText,
+      to: "/giangvien/study-plans",
+    });
+    sidebarItems.push({
+      name: "Chương trình Đào tạo",
+      icon: BookOpen,
+      to: "/giangvien/ctdt",
+    });
+    
+  }
 
   const toggleItem = (index: number) => {
     setExpandedItems((prev) => ({
@@ -109,7 +127,7 @@ export default function Sidebar() {
         item.children.some((child) => child.to === location.pathname)
       );
     }
-    
+
     // Xử lý đặc biệt cho Dashboard
     if (item.name === "Trang chủ") {
       if (isGiangVienOrAdmin) {
@@ -118,7 +136,7 @@ export default function Sidebar() {
         return location.pathname === "/";
       }
     }
-    
+
     return item.to === location.pathname;
   };
   return (
@@ -158,18 +176,20 @@ export default function Sidebar() {
 
           return (
             <div key={index}>
-              {/* Main Item */}{" "}
+              {/* Main Item */}
               {hasChildren ? (
-                <button
-                  onClick={() => toggleItem(index)}
-                  className={`w-full flex items-center px-3 py-2.5 text-left rounded-lg group transition-colors ${
+                <div
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg group transition-colors ${
                     isActive
                       ? "bg-blue-700 text-white border border-blue-600"
                       : "text-blue-100 hover:bg-blue-700 hover:text-white"
                   }`}
-                  title={!isOpen ? item.name : ""}
                 >
-                  <div className="flex items-center flex-1 min-w-0">
+                  <NavLink
+                    to={item.to}
+                    className="flex items-center flex-grow min-w-0"
+                    title={!isOpen ? item.name : ""}
+                  >
                     {createElement(item.icon, {
                       className: `w-5 h-5 flex-shrink-0 ${
                         isActive
@@ -182,17 +202,21 @@ export default function Sidebar() {
                         {item.name}
                       </span>
                     )}
-                  </div>{" "}
+                  </NavLink>
                   {isOpen && (
-                    <div className="ml-auto">
+                    <button
+                      onClick={() => toggleItem(index)}
+                      className="p-1 -ml-1 rounded-md hover:bg-blue-800 flex-shrink-0"
+                      aria-label="Expand section"
+                    >
                       {createElement(isExpanded ? ChevronDown : ChevronRight, {
                         className: `w-4 h-4 transition-transform ${
                           isActive ? "text-white" : "text-blue-200"
                         }`,
                       })}
-                    </div>
+                    </button>
                   )}
-                </button>
+                </div>
               ) : (
                 <NavLink
                   to={item.to}
@@ -206,7 +230,7 @@ export default function Sidebar() {
                         customIsActive = location.pathname === "/";
                       }
                     }
-                    
+
                     return `flex items-center px-3 py-2.5 rounded-lg group transition-colors ${
                       customIsActive
                         ? "bg-blue-700 text-white border border-blue-600"

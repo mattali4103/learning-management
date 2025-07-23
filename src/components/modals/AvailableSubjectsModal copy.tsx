@@ -7,20 +7,14 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  Search,
-  ChevronsLeft,
-  ChevronsRight,
-  Plus,
 } from "lucide-react";
 import {
   useReactTable,
   getCoreRowModel,
   getPaginationRowModel,
-  getFilteredRowModel,
   flexRender,
   type ColumnDef,
   type Table,
-  type SortingState,
 } from "@tanstack/react-table";
 
 // Components
@@ -37,6 +31,7 @@ import { HOCPHAN_SERVICE, KHHT_SERVICE } from "../../api/apiEndPoints";
 
 // Hooks
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+
 interface AvailableSubjectsModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -50,7 +45,6 @@ interface AvailableSubjectsModalProps {
   currentFilterHocKy: number | null;
   onSaveSuccess: () => void;
   initialTab: "available" | "add";
-  currentHocPhans: KeHoachHocTapDetail[];
 }
 
 interface KHHTMauCreatePayload {
@@ -147,437 +141,194 @@ const PendingSubjectsTable = ({ data, columns }: PendingSubjectsTableProps) => {
   );
 };
 
-// --- New Table for Available Subjects (Grouped and Collapsible) ---
-interface SubjectGroup {
-  id: string;
-  title: string;
-  subtitle: string;
-  courses: HocPhan[];
-  totalCredits: number;
-  colorScheme: string;
+// --- Table for Available Subjects (Grouped and Collapsible) ---
+interface GroupHeaderRow {
+  isGroupHeader: true;
+  groupName: string;
+  count: number;
 }
 
-interface SubjectRow extends HocPhan {
-  isGroupHeader: boolean;
-  groupId: string;
-  groupTitle?: string;
-  groupSubtitle?: string;
-  colorScheme?: string;
+interface HocPhanRow {
+  isGroupHeader: false;
+  hocPhan: HocPhan;
 }
 
-const getColorClasses = (colorScheme: string) => {
-  const schemes = {
-    blue: {
-      bg: "bg-blue-50",
-      text: "text-blue-800",
-      badge: "bg-blue-100 text-blue-800",
-      hover: "hover:bg-blue-100",
-      border: "border-l-blue-500",
-    },
-    green: {
-      bg: "bg-emerald-50",
-      text: "text-emerald-800",
-      badge: "bg-emerald-100 text-emerald-800",
-      hover: "hover:bg-emerald-100",
-      border: "border-l-emerald-500",
-    },
-    purple: {
-      bg: "bg-purple-50",
-      text: "text-purple-800",
-      badge: "bg-purple-100 text-purple-800",
-      hover: "hover:bg-purple-100",
-      border: "border-l-purple-500",
-    },
-    orange: {
-      bg: "bg-orange-50",
-      text: "text-orange-800",
-      badge: "bg-orange-100 text-orange-800",
-      hover: "hover:bg-orange-100",
-      border: "border-l-orange-500",
-    },
-  };
-  return schemes[colorScheme as keyof typeof schemes] || schemes.blue;
-};
+type AvailableTableRow = GroupHeaderRow | HocPhanRow;
 
-const CollapsibleSubjectsTable = ({
-  hocPhans,
-  onAddToPending,
-  pendingHocPhans,
-  currentHocPhans,
-}: {
+interface AvailableSubjectsTableProps {
   hocPhans: HocPhan[];
   onAddToPending: (hocPhan: HocPhan) => void;
-  pendingHocPhans: KeHoachHocTapDetail[];
-  currentHocPhans: KeHoachHocTapDetail[];
-}) => {
-  const [globalFilter, setGlobalFilter] = useState<string>("");
-  const [sorting, setSorting] = useState<SortingState>([]);
+  pendingHocPhans: KeHoachHocTapDetail[]; // Add this prop
+}
+
+const AvailableSubjectsTable = ({
+  hocPhans,
+  onAddToPending,
+  pendingHocPhans, // Destructure the new prop
+}: AvailableSubjectsTableProps) => {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 10,
-  });
 
-  const subjectGroups = useMemo((): SubjectGroup[] => {
-    const pendingAndCurrentMaHps = new Set([
-      ...pendingHocPhans.map((item) => item.hocPhan.maHp),
-      ...currentHocPhans.map((item) => item.hocPhan.maHp),
-    ]);
-
-    const availableSubjects = hocPhans.filter(
-      (hp) => !pendingAndCurrentMaHps.has(hp.maHp)
-    );
-
-    const groupedByLoaiHp = availableSubjects.reduce(
-      (acc, course) => {
-        const type = course.loaiHp || "Khác";
-        if (!acc[type]) {
-          acc[type] = [];
-        }
-        acc[type].push(course);
+  const groupedData = useMemo(() => {
+    return hocPhans.reduce(
+      (acc, hocPhan) => {
+        const groupKey = hocPhan.loaiHp || "Chưa phân loại";
+        if (!acc[groupKey]) acc[groupKey] = [];
+        acc[groupKey].push(hocPhan);
         return acc;
       },
       {} as Record<string, HocPhan[]>
     );
-
-    return Object.entries(groupedByLoaiHp).map(([loaiHp, courses]) => {
-      const totalCredits = courses.reduce(
-        (sum, course) => sum + (course.tinChi || 0),
-        0
-      );
-      let colorScheme = "blue";
-      if (loaiHp.includes("Đại cương")) colorScheme = "purple";
-      else if (loaiHp.includes("Cơ sở ngành")) colorScheme = "blue";
-      else if (loaiHp.includes("Chuyên ngành")) colorScheme = "orange";
-
-      return {
-        id: `group-${loaiHp.replace(/\s+/g, "-")}`,
-        title: `Học phần ${loaiHp}`,
-        subtitle: `${courses.length} học phần • ${totalCredits} tín chỉ`,
-        courses,
-        totalCredits,
-        colorScheme,
-      };
-    });
-  }, [hocPhans, pendingHocPhans, currentHocPhans]);
+  }, [hocPhans]);
 
   useEffect(() => {
-    if (subjectGroups.length > 0) {
-      setExpandedGroups(new Set(subjectGroups.map((g) => g.id)));
-    }
-  }, [subjectGroups]);
+    setExpandedGroups(new Set(Object.keys(groupedData)));
+  }, [groupedData]);
 
-  const toggleGroup = useCallback((groupId: string) => {
+  const toggleGroup = useCallback((groupName: string) => {
     setExpandedGroups((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(groupId)) newSet.delete(groupId);
-      else newSet.add(groupId);
+      if (newSet.has(groupName)) newSet.delete(groupName);
+      else newSet.add(groupName);
       return newSet;
     });
   }, []);
 
-  const flattenedData = useMemo((): SubjectRow[] => {
-    const result: SubjectRow[] = [];
-    subjectGroups.forEach((group) => {
-      result.push({
-        maHp: `group-header-${group.id}`,
-        tenHp: group.title,
-        tinChi: 0,
-        loaiHp: "group",
-        hocPhanTienQuyet: "",
-        isGroupHeader: true,
-        groupId: group.id,
-        groupTitle: group.title,
-        groupSubtitle: group.subtitle,
-        colorScheme: group.colorScheme,
-      });
-
-      if (expandedGroups.has(group.id)) {
-        group.courses.forEach((course) => {
-          result.push({
-            ...course,
-            isGroupHeader: false,
-            groupId: group.id,
-            colorScheme: group.colorScheme,
-          });
-        });
+  const displayRows = useMemo((): AvailableTableRow[] => {
+    const rows: AvailableTableRow[] = [];
+    Object.entries(groupedData).forEach(([groupName, data]) => {
+      rows.push({ isGroupHeader: true, groupName, count: data.length });
+      if (expandedGroups.has(groupName)) {
+        // Filter out already pending hoc phans here
+        data
+          .filter(
+            (hp) =>
+              !pendingHocPhans.some((pending) => pending.hocPhan.maHp === hp.maHp)
+          )
+          .forEach((hp) => rows.push({ isGroupHeader: false, hocPhan: hp }));
       }
     });
-    return result;
-  }, [subjectGroups, expandedGroups]);
+    return rows;
+  }, [groupedData, expandedGroups, pendingHocPhans]); // Add pendingHocPhans to dependencies
 
-  const filteredData = useMemo(() => {
-    if (!globalFilter) return flattenedData;
-    const filterValue = globalFilter.toLowerCase();
-
-    const filteredGroups = subjectGroups.filter(
-      (group) =>
-        group.title.toLowerCase().includes(filterValue) ||
-        group.courses.some(
-          (c) =>
-            c.tenHp.toLowerCase().includes(filterValue) ||
-            c.maHp.toLowerCase().includes(filterValue)
-        )
-    );
-
-    const result: SubjectRow[] = [];
-    filteredGroups.forEach((group) => {
-      const matchingCourses = group.courses.filter(
-        (c) =>
-          c.tenHp.toLowerCase().includes(filterValue) ||
-          c.maHp.toLowerCase().includes(filterValue)
-      );
-
-      const isGroupTitleMatch = group.title.toLowerCase().includes(filterValue);
-
-      result.push({
-        maHp: `group-header-${group.id}`,
-        tenHp: group.title,
-        tinChi: 0,
-        loaiHp: "group",
-        hocPhanTienQuyet: "",
-        isGroupHeader: true,
-        groupId: group.id,
-        groupTitle: group.title,
-        groupSubtitle: group.subtitle,
-        colorScheme: group.colorScheme,
-      });
-
-      if (expandedGroups.has(group.id)) {
-        (isGroupTitleMatch ? group.courses : matchingCourses).forEach(
-          (course) => {
-            result.push({
-              ...course,
-              isGroupHeader: false,
-              groupId: group.id,
-              colorScheme: group.colorScheme,
-            });
-          }
-        );
-      }
-    });
-    return result;
-  }, [flattenedData, globalFilter, subjectGroups, expandedGroups]);
-
-  const columns = useMemo<ColumnDef<SubjectRow>[]>(
+  const columns = useMemo<ColumnDef<AvailableTableRow>[]>(
     () => [
       {
-        accessorKey: "maHp",
+        id: "group",
+        header: "Học phần",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) {
+            const isExpanded = expandedGroups.has(item.groupName);
+            return (
+              <button
+                onClick={() => toggleGroup(item.groupName)}
+                className="w-full flex items-center justify-between font-bold text-md text-gray-700 p-2 bg-gray-100 hover:bg-gray-200"
+              >
+                <span>
+                  {item.groupName} ({item.count})
+                </span>
+                <ChevronDown
+                  className={`w-5 h-5 text-gray-500 transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`}
+                />
+              </button>
+            );
+          }
+          return <div className="pl-6">{item.hocPhan.tenHp}</div>;
+        },
+      },
+      {
+        accessorKey: "hocPhan.maHp",
         header: "Mã HP",
-        cell: ({ row }) => row.original.maHp,
-        size: 120,
       },
       {
-        accessorKey: "tenHp",
-        header: "Tên học phần",
-        cell: ({ row }) => row.original.tenHp,
-        size: 300,
-      },
-      {
-        accessorKey: "tinChi",
+        accessorKey: "hocPhan.tinChi",
         header: "Tín chỉ",
-        cell: ({ row }) => (
-          <div className="text-center">{row.original.tinChi}</div>
-        ),
-        size: 80,
-      },
-      {
-        accessorKey: "hocPhanTienQuyet",
-        header: "HP Tiên quyết",
-        cell: ({ row }) => (
-          <div className="text-center">
-            {row.original.hocPhanTienQuyet || "Không"}
-          </div>
-        ),
-        size: 120,
       },
       {
         id: "actions",
         header: "Thao tác",
-        cell: ({ row }) => (
-          <div className="text-center">
-            <button
-              onClick={() => onAddToPending(row.original)}
-              className="p-2 text-white bg-emerald-600 hover:bg-emerald-700 rounded-full transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        ),
-        size: 100,
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) return null;
+          return (
+            <div className="text-center">
+              <button
+                onClick={() => onAddToPending(item.hocPhan)}
+                className="px-3 py-1 bg-blue-600 text-white text-xs rounded-md hover:bg-blue-700 transition-colors"
+              >
+                Thêm
+              </button>
+            </div>
+          );
+        },
       },
     ],
-    [onAddToPending]
+    [expandedGroups, onAddToPending, toggleGroup]
   );
 
   const table = useReactTable({
-    data: filteredData,
+    data: displayRows,
     columns,
-    state: { globalFilter, sorting, pagination },
-    onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
-    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    getRowId: (row) => row.maHp,
+    initialState: { pagination: { pageSize: 15 } },
+    getRowId: (row) =>
+      (row as any).isGroupHeader
+        ? (row as GroupHeaderRow).groupName
+        : (row as HocPhanRow).hocPhan.maHp,
   });
 
-  const totalCourses = useMemo(
-    () => subjectGroups.reduce((sum, group) => sum + group.courses.length, 0),
-    [subjectGroups]
-  );
-
   return (
-    <div className="bg-white rounded-lg">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder={`Tìm kiếm trong ${totalCourses} học phần...`}
-            className="border border-gray-300 pl-9 pr-3 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm w-64"
-          />
-        </div>
-      </div>
-      <div className="overflow-x-auto">
-        <table className="w-full">
+    <div>
+      <div className="overflow-x-auto rounded-lg border border-gray-200">
+        <table className="min-w-full bg-white">
           <thead className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
+                    colSpan={header.colSpan}
                     className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    style={{
-                      width:
-                        header.getSize() !== 150 ? header.getSize() : undefined,
-                    }}
                   >
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
-          <tbody>
-            {table.getRowModel().rows.map((row) => {
-              const item = row.original;
-              if (item.isGroupHeader) {
-                const colors = getColorClasses(item.colorScheme || "blue");
-                return (
-                  <tr
-                    key={row.id}
-                    className={`${colors.bg} ${colors.hover} cursor-pointer transition-colors border-l-4 ${colors.border}`}
-                  >
-                    <td
-                      colSpan={columns.length}
-                      className="px-4 py-3 border-b border-gray-200"
-                      onClick={() => toggleGroup(item.groupId)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-3">
-                          <div className="flex items-center justify-center w-6 h-6 rounded">
-                            {expandedGroups.has(item.groupId) ? (
-                              <ChevronDown
-                                className={`w-5 h-5 ${colors.text}`}
-                              />
-                            ) : (
-                              <ChevronRight
-                                className={`w-5 h-5 ${colors.text}`}
-                              />
-                            )}
-                          </div>
-                          <div
-                            className={`p-2 rounded-lg ${colors.badge.replace("text-", "bg-").replace("-800", "-100")}`}
-                          >
-                            <BookOpen className={`w-5 h-5 ${colors.text}`} />
-                          </div>
-                          <div>
-                            <div
-                              className={`font-semibold ${colors.text} text-base`}
-                            >
-                              {item.groupTitle}
-                            </div>
-                            <div
-                              className={`text-sm ${colors.text} opacity-80`}
-                            >
-                              {item.groupSubtitle}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              }
-              return (
-                <tr
-                  key={row.id}
-                  className="hover:bg-gray-50 transition-colors group"
-                >
-                  {row.getVisibleCells().map((cell, index) => (
+          <tbody className="divide-y divide-gray-200">
+            {table.getRowModel().rows.map((row) => (
+              <tr
+                key={row.id}
+                className={`hover:bg-gray-50 ${(row.original as AvailableTableRow).isGroupHeader ? "bg-gray-50" : ""}`}
+              >
+                {row.getVisibleCells().map((cell) => {
+                  const isGroupCell =
+                    cell.column.id === "group" &&
+                    (cell.row.original as AvailableTableRow).isGroupHeader;
+                  return (
                     <td
                       key={cell.id}
-                      className={`px-4 py-2.5 text-sm border-b border-gray-200 ${
-                        index === 0 ? "pl-12" : "text-gray-700"
-                      }`}
+                      colSpan={isGroupCell ? 4 : 1}
+                      className="px-4 py-3 whitespace-nowrap text-sm"
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
                         cell.getContext()
                       )}
                     </td>
-                  ))}
-                </tr>
-              );
-            })}
+                  );
+                })}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
-      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-        <div className="text-sm text-gray-600">
-          Trang {table.getState().pagination.pageIndex + 1} /{" "}
-          {table.getPageCount()}
-        </div>
-        <div className="flex items-center space-x-1">
-          <button
-            onClick={() => table.setPageIndex(0)}
-            disabled={!table.getCanPreviousPage()}
-            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-          >
-            <ChevronsLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-            disabled={!table.getCanNextPage()}
-            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
-          >
-            <ChevronsRight className="w-5 h-5" />
-          </button>
-        </div>
-      </div>
+      {table.getPageCount() > 1 && <PaginationControls table={table} />}
     </div>
   );
 };
@@ -593,7 +344,6 @@ const AvailableSubjectsModal = ({
   currentFilterHocKy,
   onSaveSuccess,
   initialTab,
-  currentHocPhans,
 }: AvailableSubjectsModalProps) => {
   const axiosPrivate = useAxiosPrivate();
 
@@ -631,6 +381,8 @@ const AvailableSubjectsModal = ({
     });
     return Array.from(years.values()).sort((a, b) => a.id - b.id);
   }, [danhSachHocKy, hocKyHienTai]);
+
+  
 
   // Fetching functions
   const fetchChuongTrinhDaoTao = useCallback(async () => {
@@ -759,7 +511,8 @@ const AvailableSubjectsModal = ({
       };
 
       setPendingHocPhans((prev) => [...prev, newItem]);
-
+      setSuccessMessage(`Đã thêm "${hocPhan.tenHp}" vào danh sách chờ.`);
+      setShowSuccessModal(true);
     },
     [
       formHocKy,
@@ -767,16 +520,19 @@ const AvailableSubjectsModal = ({
       danhSachHocKy,
       setPendingHocPhans,
       setErrorMessage,
-      setShowErrorModal
+      setShowErrorModal,
+      setSuccessMessage,
+      setShowSuccessModal,
     ]
   );
 
   const handleRemoveFromPending = useCallback(
     (id: string) => {
       setPendingHocPhans((prev) => prev.filter((item) => item.id !== id));
-
+      setSuccessMessage("Đã xóa học phần khỏi danh sách chờ.");
+      setShowSuccessModal(true);
     },
-    [setPendingHocPhans]
+    [setPendingHocPhans, setSuccessMessage, setShowSuccessModal]
   );
 
   const handleUpdatePending = useCallback(
@@ -854,38 +610,23 @@ const AvailableSubjectsModal = ({
         header: "Mã học phần",
         cell: ({ row }) => (
           <div className="text-center font-medium">
-            {row.original.hocPhan?.maHp}
+            {row.original.hocPhan.maHp}
           </div>
         ),
-        size: 100,
+        size: 120,
       },
       {
         accessorKey: "hocPhan.tenHp",
         header: "Tên học phần",
+        size: 200,
       },
       {
         accessorKey: "hocPhan.tinChi",
         header: "Tín chỉ",
         cell: ({ row }) => (
-          <div className="text-center">{row.original.hocPhan?.tinChi}</div>
+          <div className="text-center">{row.original.hocPhan.tinChi}</div>
         ),
         size: 80,
-      },
-      {
-        accessorKey: "hocPhan.loaiHp",
-        header: "Loại học phần",
-        cell: ({ row }) => (
-          <div className="text-center">{row.original.hocPhan?.loaiHp}</div>
-        ),
-      },
-      {
-        accessorKey: "hocPhan.hocPhanTienQuyet",
-        header: "HP Tiên quyết",
-        cell: ({ row }) => (
-          <div className="text-center">
-            {row.original.hocPhan?.hocPhanTienQuyet || "Không"}
-          </div>
-        ),
       },
       {
         id: "namHoc",
@@ -915,7 +656,7 @@ const AvailableSubjectsModal = ({
             </div>
           );
         },
-        size: 130,
+        size: 120,
       },
       {
         id: "hocKy",
@@ -953,7 +694,7 @@ const AvailableSubjectsModal = ({
             </div>
           );
         },
-        size: 130,
+        size: 100,
       },
       {
         id: "actions",
@@ -987,7 +728,7 @@ const AvailableSubjectsModal = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] h-[95vh] flex flex-col">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[90vw] h-[90vh] flex flex-col">
         {/* Modal Header with Tabs */}
         <div className="flex items-center justify-between border-b border-gray-200">
           <div className="flex space-x-2 px-3 py-2">
@@ -1014,7 +755,7 @@ const AvailableSubjectsModal = ({
         </div>
 
         {/* Modal Content */}
-        <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+        <div className="flex-1 overflow-y-auto p-6">
           {activeTab === "available" ? (
             <>
               {showAddSubjectForm ? (
@@ -1146,11 +887,10 @@ const AvailableSubjectsModal = ({
                   </p>
                 </div>
               ) : (
-                <CollapsibleSubjectsTable
+                <AvailableSubjectsTable
                   hocPhans={availableHocPhans}
                   onAddToPending={handleAddToPending}
                   pendingHocPhans={pendingHocPhans}
-                  currentHocPhans={currentHocPhans}
                 />
               )}
             </>
@@ -1183,8 +923,8 @@ const AvailableSubjectsModal = ({
           )}
         </div>
         {/* Modal Footer */}
-        {activeTab === "add" && pendingHocPhans.length > 0 && (
-          <div className="flex items-center justify-end p-4 border-t border-gray-200 bg-white">
+        {activeTab === "add" && (
+          <div className="flex items-center justify-end p-6 border-t border-gray-200">
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"

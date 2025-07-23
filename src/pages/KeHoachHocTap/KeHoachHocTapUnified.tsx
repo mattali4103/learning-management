@@ -396,7 +396,6 @@ const UnifiedContentDisplay = () => {
     const daiCuongCount = allData.filter(item => item.loaiHp === "Đại cương").length;
     const coSoNganhCount = allData.filter(item => item.loaiHp === "Cơ sở ngành").length;
     const chuyenNganhCount = allData.filter(item => item.loaiHp === "Chuyên ngành").length;
-    console.log("All data", allData);
     // Count unique semesters
     const semesterSet = new Set<string>();
     allData.forEach(item => {

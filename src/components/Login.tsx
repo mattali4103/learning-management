@@ -46,7 +46,7 @@ const Login: React.FC = () => {
     scope: string,
   ) => {
     let url = PROFILE_SERVICE.GET_MY_PROFILE;
-    if (scope === "GIANGVIEN") {
+    if (scope === "GIANGVIEN" || scope === "TRUONGKHOA") {
       url = PROFILE_SERVICE.GET_GIANGVIEN_PROFILE;
     }
     try {
@@ -111,7 +111,7 @@ const Login: React.FC = () => {
         fetchHocKy();
         setMaSo("");
         setPassword("");
-        if (decodedToken.scope === "GIANGVIEN" || decodedToken.scope === "ADMIN") {
+        if (decodedToken.scope === "GIANGVIEN" || decodedToken.scope === "TRUONGKHOA" || decodedToken.scope === "ADMIN") {
           navigate("/giangvien");
         } else {
           navigate("/");

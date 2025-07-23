@@ -67,11 +67,6 @@ export default function MiniGPABarChartCompact({
     { tenHocKy: "HK3", diemTBHocKy: 3.0, diemTBTichLuy: 3.23 },
   ] : chartData.length > 0 ? chartData : [];
 
-  // Debug log
-  console.log('Original Chart Data:', chartData);
-  console.log('Final Chart Data:', finalChartData);
-  console.log('Show Dual Columns:', showDualColumns);
-
   // Calculate trend - fix for dual columns
   const getTrend = () => {
     if (finalChartData.length < 2) return "stable";

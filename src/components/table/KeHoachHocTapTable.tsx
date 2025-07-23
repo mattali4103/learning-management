@@ -42,6 +42,7 @@ interface KeHoachHocTapTableProps {
   showEmptyStateWarningBadge?: boolean;
   // Row click handler
   onRowClick?: (row: any) => void;
+  renderActionCell?: (item: any) => React.ReactNode; // New prop for custom action cell
 }
 
 export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
@@ -111,7 +112,7 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
         }),
     initialState: {
       pagination: {
-        pageSize: enableServerPagination ? pageSize : 7,
+        pageSize: pageSize,
       },
     },
   });

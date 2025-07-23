@@ -124,10 +124,7 @@ const Dashboard = () => {
       try {
         setLoading(true);
         const url = PROFILE_SERVICE.GET_MY_PROFILE.replace(":maSo", auth.user?.maSo || "");
-        console.log("Profile API URL:", url);
         const response = await axiosPrivate.get(url);
-
-        // Check response code
         if (response.status === 200 && response.data?.code === 200) {
           setUserInfo(response.data.data);
         } else {

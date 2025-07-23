@@ -25,6 +25,7 @@ export const USER_SERVICE = {
   LOGOUT: USER_SERIVCE_URL + "/api/auth/logout",
 };
 export const PROFILE_SERVICE = {
+  GET_KHOA_BY_MA_KHOA: PROFILE_SERVICE_URL + "/api/profile/khoa/id/:maKhoa", // Return Object
   GET_SINHVIEN_PREVIEW_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/thongke/:maSo",
   GET_PREVIEW_PROFILE: PROFILE_SERVICE_URL + "/api/profile/lop/preview/:maLop", // Return Object
   UPDATE_SINHVIEN_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/update", // RequestBody: Sinh viên tự cập nhật
@@ -81,7 +82,7 @@ export const KHHT_SERVICE = {
     KHHT_SERVICE_URL + "/api/khht/sinhvien/hocphan/by_loai_hp",
   CTDT_NOT_IN_KHHT:
     KHHT_SERVICE_URL +
-    "/api/khht/sinhvien/hoc_phan_not_in_khht/:id/:khoaHoc/:maNganh",
+    "/api/khht/sinhvien/hoc_phan_not_in_khht/:maSo/:khoaHoc/:maNganh",
   DELETE: KHHT_SERVICE_URL + "/api/khht/delete/:id",
   COUNT_TINCHI_IN_KHHT:
     KHHT_SERVICE_URL +

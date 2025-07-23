@@ -50,7 +50,7 @@ interface CourseGroup {
   totalCredits: number;
   requiredCredits?: number;
   colorScheme: string;
-  groupType?: string; // Added optional groupType for sorting elective groups
+  groupType?: string; 
 }
 
 interface CourseWithGroup extends HocPhan {
@@ -94,7 +94,6 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
     pageSize: 7,
   });
  
-
   // Tạo nhóm học phần từ các khóa học bắt buộc và tự chọn
   const courseGroupsResult = useMemo((): CourseGroupResult => {
     // Define the desired order for required course types

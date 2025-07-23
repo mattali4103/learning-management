@@ -84,8 +84,6 @@ const arrayBufferToBase64 = (buffer: ArrayBuffer): string => {
  */
 export const configureRobotoFont = async (doc: jsPDF): Promise<boolean> => {
   try {
-    console.log('Loading Roboto font from Cloudinary...');
-    
     const fontResponse = await fetch(ROBOTO_FONT_URL);
     
     if (!fontResponse.ok) {

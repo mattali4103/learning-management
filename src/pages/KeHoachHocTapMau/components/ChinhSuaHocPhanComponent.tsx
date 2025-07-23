@@ -129,7 +129,6 @@ const ChinhSuaHocPhanComponent = () => {
         const hocKyResponse = await axiosPrivate.get(
           HOCPHAN_SERVICE.GET_ALL_HOCKY
         );
-        console.log("DEBUG - Raw API response:", hocKyResponse.data);
         const hocKyData: HocKy[] = hocKyResponse.data.data.map((item: any) => ({
           maHocKy: item.maHocKy,
           tenHocKy: item.tenHocKy,
@@ -137,7 +136,6 @@ const ChinhSuaHocPhanComponent = () => {
           ngayKetThuc: item.ngayKetThuc,
           namHoc: item.namHocDTO,
         }));
-        console.log("DEBUG - Processed hocKyData:", hocKyData);
         setAllHocKy(hocKyData);
         try {
           const khhtResponse = await axiosPrivate.get(
