@@ -429,20 +429,28 @@ const CollapsibleSubjectsTable = ({
   );
 
   return (
-    <div className="bg-white rounded-lg">
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <input
-            type="text"
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder={`Tìm kiếm trong ${totalCourses} học phần...`}
-            className="border border-gray-300 pl-9 pr-3 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm w-64"
-          />
+    <div className="overflow-x-auto rounded-lg shadow-xl bg-gray-200">
+      <div className="text-center flex bg-gradient-to-r from-blue-400 to-blue-500 py-3 text-lg text-white relative">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2">
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              placeholder={`Tìm kiếm (${totalCourses} HP)...`}
+              className="pl-8 pr-2 py-1.5 rounded-lg bg-white/90 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 w-48 placeholder-gray-500 text-sm"
+            />
+          </div>
+        </div>
+        <div className="flex-1 flex justify-center items-center">
+          <h3 className="font-bold uppercase tracking-wide">Danh sách học phần</h3>
+          <span className="ml-3 px-2 py-1 bg-white/20 rounded-full text-xs font-medium">
+            {table.getFilteredRowModel().rows.length}/{totalCourses} học phần
+          </span>
         </div>
       </div>
-      <div className="overflow-x-auto">
+      <div className="bg-white">
         <table className="w-full">
           <thead className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
