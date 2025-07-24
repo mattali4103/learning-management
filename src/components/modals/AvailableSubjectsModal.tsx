@@ -220,7 +220,7 @@ const CollapsibleSubjectsTable = ({
 
   const subjectGroups = useMemo((): SubjectGroup[] => {
     const pendingAndCurrentMaHps = new Set([
-      ...pendingHocPhans.map((item) => item.hocPhan.maHp),
+      // ...pendingHocPhans.map((item) => item.hocPhan.maHp),
       ...currentHocPhans.map((item) => item.hocPhan.maHp),
     ]);
 
@@ -259,7 +259,7 @@ const CollapsibleSubjectsTable = ({
         colorScheme,
       };
     });
-  }, [hocPhans, pendingHocPhans, currentHocPhans]);
+  }, [hocPhans, currentHocPhans]);
 
   useEffect(() => {
     if (subjectGroups.length > 0) {
@@ -394,20 +394,36 @@ const CollapsibleSubjectsTable = ({
       {
         id: "actions",
         header: "Thao tác",
-        cell: ({ row }) => (
-          <div className="text-center">
-            <button
-              onClick={() => onAddToPending(row.original)}
-              className="p-2 text-white bg-emerald-600 hover:bg-emerald-700 rounded-full transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        ),
+        cell: ({ row }) => {
+          const isAdded =
+            pendingHocPhans.some(
+              (item) => item.hocPhan.maHp === row.original.maHp
+            ) ||
+            currentHocPhans.some(
+              (item) => item.hocPhan.maHp === row.original.maHp
+            );
+
+          return (
+            <div className="text-center">
+              <button
+                onClick={() => onAddToPending(row.original)}
+                disabled={isAdded}
+                className={`p-2 text-white bg-emerald-600 rounded-full transition-all duration-200 ${
+                  isAdded
+                    ? "opacity-40 cursor-not-allowed"
+                    : "hover:bg-emerald-700 hover:scale-105"
+                }`}
+                title={isAdded ? "Đã thêm học phần này" : "Thêm vào danh sách"}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        },
         size: 100,
       },
     ],
-    [onAddToPending]
+    [pendingHocPhans, currentHocPhans, onAddToPending]
   );
 
   const table = useReactTable({
@@ -759,7 +775,6 @@ const AvailableSubjectsModal = ({
       };
 
       setPendingHocPhans((prev) => [...prev, newItem]);
-
     },
     [
       formHocKy,
@@ -767,14 +782,13 @@ const AvailableSubjectsModal = ({
       danhSachHocKy,
       setPendingHocPhans,
       setErrorMessage,
-      setShowErrorModal
+      setShowErrorModal,
     ]
   );
 
   const handleRemoveFromPending = useCallback(
     (id: string) => {
       setPendingHocPhans((prev) => prev.filter((item) => item.id !== id));
-
     },
     [setPendingHocPhans]
   );
@@ -1070,7 +1084,6 @@ const AvailableSubjectsModal = ({
                             ))}
                           </select>
                         </div>
-
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             Học kỳ

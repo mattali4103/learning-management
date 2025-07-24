@@ -24,11 +24,13 @@ import AccumulatedCreditBarChart from "../../components/chart/AccumulatedCreditB
 import StudentTooltip from "../../components/tooltips/StudentTooltip";
 import { useTablePDFExport } from "../../hooks/useTablePDFExport";
 import ExportModal from "../../components/modals/ExportModal";
+import useAuth from "../../hooks/useAuth";
 
 const ThongTinLopHoc = () => {
   const { maLop } = useParams<{ maLop: string }>();
   const navigate = useNavigate();
   const axiosPrivate = useAxiosPrivate();
+  const { auth } = useAuth();
   const [loading, setLoading] = useState(true);
   const [detailLoading, setDetailLoading] = useState(false);
   const [previewProfiles, setPreviewProfiles] = useState<PreviewProfile[]>([]);
@@ -122,32 +124,55 @@ const ThongTinLopHoc = () => {
   // Fetch preview profiles for all students in the class
   const fetchAllPreviewProfiles = useCallback(async () => {
     if (!maLop) return;
-
+  
+    setLoading(true);
     try {
-      setLoading(true);
-      console.log("Fetching preview profiles for class:", maLop);
-
+      // If user is a GIANGVIEN, check if they are in charge of this class
+      if (auth?.user?.roles === "GIANGVIEN") {
+        const maSoGiangVien = auth.user.maSo;
+        const response = await axiosPrivate.get(
+          PROFILE_SERVICE.GET_DS_LOP_CHUNHIEM.replace(":maSo", maSoGiangVien)
+        );
+  
+        if (response.data.code === 200 && Array.isArray(response.data.data)) {
+          const assignedClasses = response.data.data.map((lop: any) => lop.maLop);
+          if (!assignedClasses.includes(maLop)) {
+            setError("Bạn không có quyền xem thông tin của lớp này.");
+            setPreviewProfiles([]);
+            setLoading(false);
+            return;
+          }
+        } else {
+          // Handle case where fetching assigned classes fails
+          setError("Không thể xác thực quyền truy cập cho lớp này.");
+          setPreviewProfiles([]);
+          setLoading(false);
+          return;
+        }
+      }
+  
+      // Proceed to fetch student profiles for the class
       const response = await axiosPrivate.get(
         PROFILE_SERVICE.GET_PREVIEW_PROFILE.replace(":maLop", maLop)
       );
-
+  
       if (response.data.code === 200 && response.data.data) {
-        // Api trả về mảng PreviewProfile
         const profilesData: PreviewProfile[] = response.data.data;
         setPreviewProfiles(profilesData);
         setError(null);
       } else {
-        console.log("No preview profiles from API");
         setPreviewProfiles([]);
+        // Optionally set a more specific error message if needed
+        setError(response.data.message || "Không tìm thấy thông tin sinh viên cho lớp này.");
       }
     } catch (error) {
-      console.error("Error fetching preview profiles:", error);
+      console.error("Error fetching data:", error);
       setError(error instanceof Error ? error.message : "Lỗi không xác định");
       setPreviewProfiles([]);
     } finally {
       setLoading(false);
     }
-  }, [maLop, axiosPrivate]);
+  }, [maLop, axiosPrivate, auth]);
 
   // Lọc và sắp xếp sinh viên - Bây giờ sử dụng PreviewProfile trực tiếp
   const getFilteredAndSortedStudents = () => {

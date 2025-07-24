@@ -111,23 +111,40 @@ const DanhSachLopHoc = () => {
 
 
 
-  // Fetch danh sách lớp theo khoa
+  // Fetch danh sách lớp theo vai trò
   const fetchDanhSachLop = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axiosPrivate.get(
-        PROFILE_SERVICE.GET_DS_LOP_BY_KHOA.replace(":maKhoa", maKhoa)
-      );
-      setLop(response.data || []);
+      let response;
+      if (auth.user?.roles === "GIANGVIEN") {
+        // Chỉ lấy danh sách lớp chủ nhiệm của giảng viên
+        const maSoGiangVien = auth.user.maSo;
+        response = await axiosPrivate.get(
+          PROFILE_SERVICE.GET_DS_LOP_CHUNHIEM.replace(":maSo", maSoGiangVien)
+        );
+        if (response.data.code === 200 && Array.isArray(response.data.data)) {
+          setLop(response.data.data);
+        } else {
+          setLop([]);
+          setError(response.data.message || "Không tìm thấy lớp chủ nhiệm.");
+        }
+      } else {
+        // Admin hoặc các vai trò khác lấy theo khoa
+        response = await axiosPrivate.get(
+          PROFILE_SERVICE.GET_DS_LOP_BY_KHOA.replace(":maKhoa", maKhoa)
+        );
+        setLop(response.data || []);
+      }
       console.log("Danh sách lớp:", response.data);
       setError(null);
     } catch (error) {
       console.error("Error fetching class list:", error);
       setError(error instanceof Error ? error.message : "Lỗi không xác định");
+      setLop([]);
     } finally {
       setLoading(false);
     }
-  }, [axiosPrivate, maKhoa]);
+  }, [axiosPrivate, maKhoa, auth]);
 
   // Filter danh sách lớp
   const filteredLop = lop.filter(

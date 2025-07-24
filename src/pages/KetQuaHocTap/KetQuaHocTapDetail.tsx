@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useParams } from "react-router-dom";
 import NavigationPanel from "../../components/navigation/NavigationPanel";
 import Loading from "../../components/Loading";
 import KetQuaHocTapTable, {
@@ -11,6 +11,7 @@ import type { HocKy } from "../../types/HocKy";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 
 const KetQuaHocTapDetail = () => {
+  const params = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedNamHoc, setSelectedNamHoc] = useState<string>("Tất cả");
   const [selectedHocKy, setSelectedHocKy] = useState<string>("");
@@ -20,7 +21,8 @@ const KetQuaHocTapDetail = () => {
   const [hocKyFromAPI, setHocKyFromAPI] = useState<HocKy[]>([]);
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
-  const { maSo } = auth.user || {};  // Fetch dữ liệu học kỳ từ API
+  const { maSo: authMaSo } = auth.user || {};
+  const maSo = params.maSo || authMaSo;  // Fetch dữ liệu học kỳ từ API
   const fetchHocKy = useCallback(async (maSo: string) => {
     try {
       setLoading(true);
@@ -275,6 +277,7 @@ const KetQuaHocTapDetail = () => {
         <ContentDisplay
           selectedNamHoc={selectedNamHoc}
           selectedHocKy={selectedHocKy}
+          maSo={maSo}
         />
       )}
     </div>
@@ -284,11 +287,13 @@ const KetQuaHocTapDetail = () => {
 interface ContentDisplayProps {
   selectedNamHoc: string;
   selectedHocKy: string;
+  maSo: string;
 }
 
 const ContentDisplay = ({
   selectedNamHoc,
   selectedHocKy,
+  maSo,
 }: ContentDisplayProps) => {
   const [tableLoading, setTableLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -300,12 +305,9 @@ const ContentDisplay = ({
     pageSize: 10,
     totalElements: 0,
   });
-  const axiosPrivate = useAxiosPrivate();
-  const { auth } = useAuth();
-  const { maSo } = auth.user || {}; // Fetch dữ liệu kết quả học tập từ API với phân trang
+  const axiosPrivate = useAxiosPrivate(); // Fetch dữ liệu kết quả học tập từ API với phân trang
   const fetchKetQuaHocTap = useCallback(
     async (
-      maSo: string,
       hocKyId?: number,
       page: number = 1,
       size: number = 10
@@ -427,7 +429,7 @@ const ContentDisplay = ({
         setTableLoading(false);
       }
     },
-    [axiosPrivate]
+    [axiosPrivate, maSo]
   );
   useEffect(() => {
     if (maSo) {
@@ -436,7 +438,6 @@ const ContentDisplay = ({
       const hocKyId = hocKyIdParam ? parseInt(hocKyIdParam) : undefined;
 
       fetchKetQuaHocTap(
-        maSo,
         hocKyId,
         pagination.currentPage,
         pagination.pageSize

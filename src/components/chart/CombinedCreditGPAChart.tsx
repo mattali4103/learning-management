@@ -63,7 +63,7 @@ const CombinedCreditGPAChart: React.FC<Props> = ({
           <YAxis
             yAxisId="left"
             orientation="left"
-            domain={[0, 10]}
+            domain={[0, 4]}
             tickCount={6}
             label={{ value: "Điểm", angle: -90, position: "insideLeft" }}
           />

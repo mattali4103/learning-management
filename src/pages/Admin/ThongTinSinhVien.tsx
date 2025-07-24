@@ -20,6 +20,8 @@ import {
   AlertTriangle,
   CheckCircle,
   Star,
+  FileText,
+  ClipboardCheck,
 } from "lucide-react";
 import type { HocKy } from "../../hooks/useHocKyData";
 import type { PreviewProfile } from "../../types/PreviewProfile";
@@ -231,10 +233,27 @@ const ThongTinSinhVien = () => {
   // Navigation handlers
   const handleBack = () => {
     if (maLop) {
-      navigate(`/giangvien/lop/${maLop}`);
+      const basePath = window.location.pathname.startsWith("/truongkhoa")
+        ? "/truongkhoa"
+        : "/giangvien";
+      navigate(`${basePath}/lop/${maLop}`);
     } else {
       navigate("/giangvien/lop");
     }
+  };
+
+  const handleViewKHHT = () => {
+    const basePath = window.location.pathname.startsWith("/truongkhoa")
+      ? "/truongkhoa"
+      : "/giangvien";
+    navigate(`${basePath}/lop/${maLop}/student/${maSo}/khht`);
+  };
+
+  const handleViewKQHT = () => {
+    const basePath = window.location.pathname.startsWith("/truongkhoa")
+      ? "/truongkhoa"
+      : "/giangvien";
+    navigate(`${basePath}/lop/${maLop}/student/${maSo}/kqht`);
   };
 
   if (loading) {
@@ -278,6 +297,24 @@ const ThongTinSinhVien = () => {
         icon={GraduationCap}
         iconColor="from-blue-500 to-indigo-600"
         descriptionIcon={User}
+        actions={
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleViewKHHT}
+              className="flex items-center px-3 py-2 bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors text-sm font-medium"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              Kế hoạch học tập
+            </button>
+            <button
+              onClick={handleViewKQHT}
+              className="flex items-center px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors text-sm font-medium"
+            >
+              <ClipboardCheck className="w-4 h-4 mr-2" />
+              Kết quả học tập
+            </button>
+          </div>
+        }
         backButton={
           <button
             onClick={handleBack}

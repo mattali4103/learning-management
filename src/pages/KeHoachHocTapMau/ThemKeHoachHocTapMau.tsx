@@ -78,7 +78,7 @@ const ThemKeHoachHocTapMau = () => {
 
   // States
   const [checkingExistingPlan, setCheckingExistingPlan] = useState(false);
-  
+
   const [danhSachNganh, setDanhSachNganh] = useState<Nganh[]>([]);
   const [selectedNganh, setSelectedNganh] = useState<string>(initialMaNganh);
   const [selectedKhoaHoc, setSelectedKhoaHoc] =

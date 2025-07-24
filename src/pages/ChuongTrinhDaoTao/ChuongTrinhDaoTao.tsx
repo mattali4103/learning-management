@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { BookOpen, Search, Plus } from "lucide-react"; // Import Plus icon
+import { BookOpen, Search, Plus, Pencil, Trash2 } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import type { Nganh } from "../../types/Nganh";
 import type { Khoa } from "../../types/Khoa";
@@ -9,8 +9,18 @@ import Loading from "../../components/Loading";
 import { fetchKhoaData } from "../../api/khoaService";
 import useAuth from "../../hooks/useAuth";
 import { HOCPHAN_SERVICE } from "../../api/apiEndPoints";
-import type { ChuongTrinhDaoTao } from "../../types/ChuongTrinhDaoTao";
+import type { HocPhan } from "../../types/HocPhan";
+import DeleteModal from "../../components/modals/DeleteModal";
 
+interface ChuongTrinhDaoTao {
+  id: number;
+  khoaHoc: string;
+  tongSoTinChi: number;
+  tongSoTinChiTuChon: number;
+  nganh: Nganh;
+  hocPhanList: HocPhan[];
+  hocPhanTuChonList: HocPhan[];
+}
 
 const ChuongTrinhDaoTao = () => {
   const navigate = useNavigate();
@@ -24,10 +34,15 @@ const ChuongTrinhDaoTao = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedMajor, setSelectedMajor] = useState("all");
-
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    maNganh: string;
+    khoaHoc: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const { auth } = useAuth();
   const maKhoa = auth.user?.maKhoa || "";
-  const isTruongKhoa = auth.user?.roles?.includes("TRUONGKHOA"); // Check for role
+  const isTruongKhoa = auth.user?.roles?.includes("TRUONGKHOA");
 
   // Navigate to CTDT detail
   const handleViewDetail = (maNganh: string | number, khoaHoc: string) => {
@@ -39,6 +54,39 @@ const ChuongTrinhDaoTao = () => {
     navigate(`/giangvien/ctdt/them`);
   };
 
+  // Navigate to Edit CTDT page
+  const handleEditCTDT = (maNganh: string | number, khoaHoc: string) => {
+    navigate(`/giangvien/ctdt/edit/${maNganh}/${khoaHoc}`);
+  };
+
+  // Confirm before delete
+  const handleDeleteCTDT = (maNganh: string | number, khoaHoc: string) => {
+    setShowDeleteConfirm(true);
+    setDeleteTarget({ maNganh: maNganh.toString(), khoaHoc });
+  };
+
+  // Thực hiện xoá
+const confirmDeleteCTDT = async () => {
+  if (!deleteTarget) return;
+  try {
+    setDeleting(true);
+    await axiosPrivate.delete(
+      HOCPHAN_SERVICE.CTDT_DELETE,
+      { data: { maNganh: deleteTarget.maNganh, khoaHoc: deleteTarget.khoaHoc } }
+    );
+    await fetchChuongTrinhDaoTao();
+    setShowDeleteConfirm(false);
+    setDeleteTarget(null);
+  } catch (error) {
+    console.error("Error deleting CTDT:", error);
+    setError("Lỗi khi xoá chương trình đào tạo.");
+    setShowDeleteConfirm(false);
+    setDeleteTarget(null);
+  } finally {
+    setDeleting(false);
+  }
+};
+
   //Fetch Ngành trong khoa
   const fetchKhoaDataHandler = useCallback(async () => {
     try {
@@ -47,7 +95,6 @@ const ChuongTrinhDaoTao = () => {
       setKhoa(khoaData);
       setDanhSachNganh(khoaData.dsnganh || []);
     } catch (error) {
-      console.error("Error fetching class list:", error);
       setError(error instanceof Error ? error.message : "Lỗi không xác định");
     } finally {
       setLoading(false);
@@ -75,7 +122,6 @@ const ChuongTrinhDaoTao = () => {
             ? response.data.data
             : [response.data.data];
           dataList.forEach((item: any) => {
-            // Lấy thông tin ngành từ khoa để đảm bảo tên ngành chính xác
             const nganhInfo = khoa.dsnganh[index];
             allChuongTrinh.push({
               id: item.id || 0,
@@ -112,7 +158,6 @@ const ChuongTrinhDaoTao = () => {
 
   // Filter chương trình đào tạo - chỉ hiển thị ngành trong khoa
   const filteredChuongTrinhDaoTao = chuongTrinhDaoTao.filter((ctdt) => {
-    // Kiểm tra ngành có nằm trong danh sách ngành của khoa không
     const isNganhInKhoa = danhSachNganh.some(
       (nganh) => nganh.maNganh.toString() === ctdt.nganh?.maNganh?.toString()
     );
@@ -208,13 +253,22 @@ const ChuongTrinhDaoTao = () => {
               </select>
             </div>
             {isTruongKhoa && (
-              <button
-                onClick={handleAddCTDT}
-                className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                <Plus className="w-5 h-5" />
-                Thêm chương trình đào tạo
-              </button>
+              <div className="flex gap-4">
+                <button
+                  onClick={handleAddCTDT}
+                  className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                  Thêm chương trình đào tạo
+                </button>
+                <button
+                  onClick={() => navigate("/giangvien/ctdt/import")}
+                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <Plus className="w-5 h-5" />
+                  Nhập từ Excel
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -249,8 +303,34 @@ const ChuongTrinhDaoTao = () => {
                     {filteredChuongTrinhDaoTao.map((ctdt, index) => (
                       <div
                         key={`${ctdt.id}-${index}`}
-                        className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow"
+                        className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow relative"
                       >
+                        {/* Nút chỉnh sửa và xoá */}
+                        {isTruongKhoa && (
+                          <div className="absolute top-4 right-4 flex gap-2 z-10">
+                            <button
+                              title="Chỉnh sửa"
+                              onClick={() =>
+                                handleEditCTDT(ctdt.nganh.maNganh, ctdt.khoaHoc)
+                              }
+                              className="p-2 rounded-full hover:bg-blue-100 transition-colors"
+                            >
+                              <Pencil className="w-4 h-4 text-blue-600" />
+                            </button>
+                            <button
+                              title="Xoá"
+                              onClick={() =>
+                                handleDeleteCTDT(
+                                  ctdt.nganh.maNganh,
+                                  ctdt.khoaHoc
+                                )
+                              }
+                              className="p-2 rounded-full hover:bg-red-100 transition-colors"
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </button>
+                          </div>
+                        )}
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex-1">
                             <h3 className="font-semibold text-gray-800 mb-2">
@@ -285,8 +365,10 @@ const ChuongTrinhDaoTao = () => {
                           </div>
                         </div>
                         <div className="mt-4">
-                          <button 
-                            onClick={() => handleViewDetail(ctdt.nganh.maNganh, ctdt.khoaHoc)}
+                          <button
+                            onClick={() =>
+                              handleViewDetail(ctdt.nganh.maNganh, ctdt.khoaHoc)
+                            }
                             className="w-full px-3 py-2 bg-green-50 text-green-700 rounded-lg hover:bg-green-100 transition-colors text-sm font-medium"
                           >
                             Xem chi tiết
@@ -301,6 +383,23 @@ const ChuongTrinhDaoTao = () => {
           </div>
         </div>
       </div>
+
+      {/* Confirm delete dialog */}
+      {showDeleteConfirm && (
+        <DeleteModal
+          isOpen={showDeleteConfirm}
+          onClose={() => {
+            if (!deleting) {
+              setShowDeleteConfirm(false);
+              setDeleteTarget(null);
+            }
+          }}
+          onConfirm={confirmDeleteCTDT}
+          title="Xác nhận xoá"
+          message="Bạn chắc chắn muốn xoá chương trình đào tạo này? Hành động này không thể hoàn tác."
+          isLoading={deleting}
+        />
+      )}
 
       {/* Error Message */}
       {error && (

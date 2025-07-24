@@ -67,13 +67,14 @@ interface CourseWithGroup extends HocPhan {
 
 export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
   name,
-  requiredCourses,
-  electiveGroups,
+  requiredCourses = [],
+  electiveGroups = [],
   activeTab,
   loading = false,
   emptyStateTitle,
   emptyStateDescription,
 }) => {
+
   // Remove duplicate courses by maHp (course code) in requiredCourses
   const uniqueRequiredCourses = useMemo(() => {
     const seen = new Set();
@@ -262,6 +263,7 @@ export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
   }, [uniqueRequiredCourses, electiveGroups, activeTab]);
 
   const courseGroups = courseGroupsResult.groups;
+
 
   // Auto-expand only the first group when courseGroups change
   useEffect(() => {

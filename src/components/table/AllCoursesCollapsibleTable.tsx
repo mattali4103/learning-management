@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -126,13 +126,12 @@ export const AllCoursesCollapsibleTable: React.FC<
         )
         .filter(Boolean)
     );
-
+    console.log("Nhom Hoc Phan Tu Chon:", nhomHocPhanTuChon);
+    console.log("Elective Course Codes:", electiveCourseCodes);
     // Filter required courses based on activeTab and exclude those already in elective groups
     const filteredRequiredCourses = uniqueRequiredCourses.filter(
       (course) => course.maHp && !electiveCourseCodes.has(course.maHp)
     );
-
-
     console.log("Filtered Required Courses:", filteredRequiredCourses);
     // Group required courses by loaiHp (course type)
     const requiredCoursesByType = filteredRequiredCourses.reduce(
@@ -180,6 +179,9 @@ export const AllCoursesCollapsibleTable: React.FC<
           totalCredits,
           colorScheme,
         });
+        console.log(
+          "Required Group Created:", requiredCoursesByType
+        )
       }
     });
 
@@ -200,13 +202,22 @@ export const AllCoursesCollapsibleTable: React.FC<
     // Add elective course groups (keep as groups)
     const electiveGroupsFiltered: CourseGroup[] = [];
     nhomHocPhanTuChon.forEach((group, index) => {
-      const coursesInGroup =
-        activeTab === "tatca"
-          ? group.hocPhanTuChonList || []
-          : (group.hocPhanTuChonList || []).filter(
-              (hp) => hp.loaiHp === activeTab
-            );
-
+      console.log("Processing Elective Group:", group);
+      let coursesInGroup: HocPhan[] = [];
+      if (activeTab === "tatca" || activeTab === "all") {
+        coursesInGroup = group.hocPhanTuChonList || [];
+      } else if (activeTab.startsWith("semester-")) {
+        // Extract hocKyId from tab name
+        const hocKyId = Number(activeTab.replace("semester-", ""));
+        coursesInGroup = (group.hocPhanTuChonList || []).filter(
+          (hp: any) => hp.maHocKy === hocKyId
+        );
+      } else {
+        coursesInGroup = (group.hocPhanTuChonList || []).filter(
+          (hp) => hp.loaiHp === activeTab
+        );
+      }
+      console.log("Courses in Group:", coursesInGroup);
       if (coursesInGroup.length > 0) {
         const totalCredits = coursesInGroup.reduce(
           (sum, course) => sum + (course.tinChi || 0),
@@ -235,6 +246,7 @@ export const AllCoursesCollapsibleTable: React.FC<
         });
       }
     });
+    console.log("Elective Groups Filtered:", electiveGroupsFiltered);
 
     // Sort elective groups by the defined order
     electiveGroupsFiltered.sort((a, b) => {
@@ -284,21 +296,12 @@ export const AllCoursesCollapsibleTable: React.FC<
         combinedGroups.push(group);
       }
     });
+    console.log("Combined Course Groups:", combinedGroups);
 
     return { groups: combinedGroups, uniqueRequiredCourses: [] }; // No longer showing individual required courses
   }, [uniqueRequiredCourses, nhomHocPhanTuChon, activeTab]);
 
   const courseGroups = courseGroupsResult.groups;
-
-  // Auto-expand only the first group when courseGroups change
-  useEffect(() => {
-    if (courseGroups.length > 0) {
-      const firstGroupId = courseGroups[0].id;
-      setExpandedGroups(new Set([firstGroupId]));
-    } else {
-      setExpandedGroups(new Set());
-    }
-  }, [courseGroups]);
 
   // Toggle group expansion
   const toggleGroup = useCallback(
@@ -438,6 +441,21 @@ export const AllCoursesCollapsibleTable: React.FC<
           return item.maHp || "";
         },
         size: 140,
+        enableSorting: true,
+        sortingFn: "alphanumeric",
+      },
+      {
+        id: "tenHp",
+        accessorKey: "tenHp",
+        header: "Tên học phần",
+        cell: ({ row }) => {
+          const item = row.original;
+          if (item.isGroupHeader) {
+            return null;
+          }
+          return item.tenHp || "";
+        },
+        size: 200,
         enableSorting: true,
         sortingFn: "alphanumeric",
       },

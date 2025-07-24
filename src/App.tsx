@@ -24,11 +24,12 @@ import CertificateManagement from "./pages/Profile/CertificateManangement";
 import ProfileLayout from "./pages/Profile/ProfileLayout";
 import PDFExportExample from "./components/PDFExportExample";
 import PDFExportPaginationTest from "./components/PDFExportPaginationTest";
-import ThemKeHoachHocTapMau from "./pages/KeHoachHocTapMau/ThemKeHoachHocTapMau";
-import KeHoachHocTapDetail from "./pages/KeHoachHocTap/KeHoachHocTapDetail";
+import KeHoachHocTapView from "./pages/KeHoachHocTap/KeHoachHocTapView";
 import ThemChuongTrinhDaoTao from "./pages/ChuongTrinhDaoTao/ThemChuongTrinhDaoTao";
 import ChuongTrinhDaoTao from "./pages/ChuongTrinhDaoTao/ChuongTrinhDaoTao";
-
+import ImportChuongTrinhDaoTao from "./pages/ChuongTrinhDaoTao/ImportChuongTrinhDaoTao";
+import ThemKeHoachHocTapMau from "./pages/KeHoachHocTapMau/ThemKeHoachHocTapMau";
+import KeHoachHocTapDetail from "./pages/KeHoachHocTap/KeHoachHocTapDetail";
 const ROLES = {
   SINHVIEN: "SINHVIEN",
   GIANGVIEN: "GIANGVIEN",
@@ -75,7 +76,7 @@ function App() {
         </Route>
         <Route
           element={
-            <RequireAuth allowedRoles={[ROLES.TRUONGKHOA, ROLES.ADMIN]} />
+            <RequireAuth allowedRoles={[ROLES.TRUONGKHOA, ROLES.GIANGVIEN]} />
           }
         >
           {/* Teacher/Admin main routes */}
@@ -87,6 +88,14 @@ function App() {
             <Route index element={<DanhSachLopHoc />} />
             <Route path=":maLop" element={<ThongTinLopHoc />} />
             <Route path=":maLop/student/:maSo" element={<ThongTinSinhVien />} />
+            <Route
+              path=":maLop/student/:maSo/khht"
+              element={<KeHoachHocTapView />}
+            />
+            <Route
+              path=":maLop/student/:maSo/kqht"
+              element={<KetQuaHocTapDetail />}
+            />
           </Route>
 
           {/* Quản Lí Chương Trình Đào Tạo */}
@@ -95,6 +104,7 @@ function App() {
             <Route path="detail/:maNganh/:khoaHoc" element={<CTDTDetail />} />
             <Route path="them" element={<ThemChuongTrinhDaoTao />} />
             <Route path="edit/:maNganh/:khoaHoc" element={<ThemChuongTrinhDaoTao />} />
+            <Route path="import" element={<ImportChuongTrinhDaoTao />} />
           </Route>
 
           {/* Quản lí KHHT Mẫu*/}
@@ -122,6 +132,14 @@ function App() {
             <Route index element={<DanhSachLopHoc />} />
             <Route path=":maLop" element={<ThongTinLopHoc />} />
             <Route path=":maLop/student/:maSo" element={<ThongTinSinhVien />} />
+            <Route
+              path=":maLop/student/:maSo/khht"
+              element={<KeHoachHocTapView />}
+            />
+            <Route
+              path=":maLop/student/:maSo/kqht"
+              element={<KetQuaHocTapDetail />}
+            />
           </Route>
 
           {/* Quản Lí Chương Trình Đào Tạo */}
@@ -130,6 +148,7 @@ function App() {
             <Route path="detail/:maNganh/:khoaHoc" element={<CTDTDetail />} />
             <Route path="them" element={<ThemChuongTrinhDaoTao />} />
             <Route path="edit/:maNganh/:khoaHoc" element={<ThemChuongTrinhDaoTao />} />
+            <Route path="import" element={<ImportChuongTrinhDaoTao />} />
           </Route>
 
           {/* Quản lí KHHT Mẫu*/}
