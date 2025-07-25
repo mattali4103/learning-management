@@ -126,12 +126,28 @@ export const AllCoursesCollapsibleTable: React.FC<
         )
         .filter(Boolean)
     );
+
+    // Create a Set of added course `maHp` for efficient lookup
+    const addedCourseCodes = new Set(allData.map(c => c.maHp));
     console.log("Nhom Hoc Phan Tu Chon:", nhomHocPhanTuChon);
     console.log("Elective Course Codes:", electiveCourseCodes);
     // Filter required courses based on activeTab and exclude those already in elective groups
-    const filteredRequiredCourses = uniqueRequiredCourses.filter(
+    let filteredRequiredCourses = uniqueRequiredCourses.filter(
       (course) => course.maHp && !electiveCourseCodes.has(course.maHp)
     );
+
+    // Apply activeTab filter to required courses
+    if (activeTab !== "tatca" && activeTab !== "all" && !activeTab.startsWith("semester-")) {
+        filteredRequiredCourses = filteredRequiredCourses.filter(course => 
+            course.loaiHp === activeTab
+        );
+    } else if (activeTab.startsWith("semester-")) {
+        const hocKyId = Number(activeTab.replace("semester-", ""));
+        filteredRequiredCourses = filteredRequiredCourses.filter(
+          (hp: any) => hp.maHocKy === hocKyId
+        );
+    }
+
     console.log("Filtered Required Courses:", filteredRequiredCourses);
     // Group required courses by loaiHp (course type)
     const requiredCoursesByType = filteredRequiredCourses.reduce(
@@ -204,16 +220,21 @@ export const AllCoursesCollapsibleTable: React.FC<
     nhomHocPhanTuChon.forEach((group, index) => {
       console.log("Processing Elective Group:", group);
       let coursesInGroup: HocPhan[] = [];
+      const allElectiveCoursesInGroup = group.hocPhanTuChonList || [];
+
+      // Filter to only include courses that have been added (exist in allData)
+      const addedElectiveCourses = allElectiveCoursesInGroup.filter(hp => addedCourseCodes.has(hp.maHp));
+
       if (activeTab === "tatca" || activeTab === "all") {
-        coursesInGroup = group.hocPhanTuChonList || [];
+        coursesInGroup = addedElectiveCourses;
       } else if (activeTab.startsWith("semester-")) {
         // Extract hocKyId from tab name
         const hocKyId = Number(activeTab.replace("semester-", ""));
-        coursesInGroup = (group.hocPhanTuChonList || []).filter(
+        coursesInGroup = addedElectiveCourses.filter(
           (hp: any) => hp.maHocKy === hocKyId
         );
       } else {
-        coursesInGroup = (group.hocPhanTuChonList || []).filter(
+        coursesInGroup = addedElectiveCourses.filter(
           (hp) => hp.loaiHp === activeTab
         );
       }

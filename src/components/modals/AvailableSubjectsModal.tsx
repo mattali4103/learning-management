@@ -746,6 +746,8 @@ const AvailableSubjectsModal = ({
 
   const handleAddToPending = useCallback(
     (hocPhan: HocPhan) => {
+      // Defined credit limit per semester.
+      const CREDIT_LIMIT_PER_SEMESTER = 24;
       let defaultHocKy: HocKy | null = null;
       let defaultNamHoc: number | undefined = undefined;
 
@@ -765,13 +767,30 @@ const AvailableSubjectsModal = ({
         setShowErrorModal(true);
         return;
       }
+      // Calculate current credits for the target semester
+      const creditsInCurrentPlan = currentHocPhans
+        .filter(item => item.hocKy?.maHocKy === defaultHocKy?.maHocKy)
+        .reduce((sum, item) => sum + (item.hocPhan.tinChi || 0), 0);
 
+      const creditsInPending = pendingHocPhans
+        .filter(item => item.hocKy?.maHocKy === defaultHocKy?.maHocKy)
+        .reduce((sum, item) => sum + (item.hocPhan.tinChi || 0), 0);
+
+      const newTotalCredits = creditsInCurrentPlan + creditsInPending + (hocPhan.tinChi || 0);
+
+      if (newTotalCredits > CREDIT_LIMIT_PER_SEMESTER) {
+        setErrorMessage(
+          `Cảnh báo: Thêm học phần này sẽ làm tổng số tín chỉ trong ${defaultHocKy.tenHocKy} là ${newTotalCredits}, vượt quá giới hạn ${CREDIT_LIMIT_PER_SEMESTER} tín chỉ.`
+        );
+        setShowErrorModal(true);
+        // Do not block adding, just warn. The user can decide.
+      }
       const newItem: KeHoachHocTapDetail = {
         id: `pending-${hocPhan.maHp}-${Date.now()}`,
         hocPhan,
         hocKy: defaultHocKy,
         namHoc: defaultNamHoc,
-        hocPhanCaiThien: false,
+        hocPhanCaiThien: hocPhan.loaiHp === "Cải thiện",
       };
 
       setPendingHocPhans((prev) => [...prev, newItem]);
@@ -783,6 +802,8 @@ const AvailableSubjectsModal = ({
       setPendingHocPhans,
       setErrorMessage,
       setShowErrorModal,
+      currentHocPhans,
+      pendingHocPhans,
     ]
   );
 
@@ -867,7 +888,7 @@ const AvailableSubjectsModal = ({
         accessorKey: "hocPhan.maHp",
         header: "Mã học phần",
         cell: ({ row }) => (
-          <div className="text-center font-medium">
+          <div className="text-base font-medium">
             {row.original.hocPhan?.maHp}
           </div>
         ),
@@ -881,7 +902,7 @@ const AvailableSubjectsModal = ({
         accessorKey: "hocPhan.tinChi",
         header: "Tín chỉ",
         cell: ({ row }) => (
-          <div className="text-center">{row.original.hocPhan?.tinChi}</div>
+          <div className="text-base">{row.original.hocPhan?.tinChi}</div>
         ),
         size: 80,
       },
@@ -889,14 +910,14 @@ const AvailableSubjectsModal = ({
         accessorKey: "hocPhan.loaiHp",
         header: "Loại học phần",
         cell: ({ row }) => (
-          <div className="text-center">{row.original.hocPhan?.loaiHp}</div>
+          <div className="text-base">{row.original.hocPhan?.loaiHp}</div>
         ),
       },
       {
         accessorKey: "hocPhan.hocPhanTienQuyet",
         header: "HP Tiên quyết",
         cell: ({ row }) => (
-          <div className="text-center">
+          <div className="text-base">
             {row.original.hocPhan?.hocPhanTienQuyet || "Không"}
           </div>
         ),
@@ -907,7 +928,7 @@ const AvailableSubjectsModal = ({
         cell: ({ row }) => {
           const detail = row.original;
           return (
-            <div className="text-center">
+            <div className="text-base">
               <select
                 value={detail.namHoc || ""}
                 onChange={(e) => {
@@ -941,7 +962,7 @@ const AvailableSubjectsModal = ({
           );
 
           return (
-            <div className="text-center">
+            <div className="text-base">
               <select
                 value={detail.hocKy?.maHocKy || ""}
                 onChange={(e) => {
@@ -996,6 +1017,47 @@ const AvailableSubjectsModal = ({
       danhSachHocKy,
     ]
   );
+
+  const creditWarnings = useMemo(() => {
+    const CREDIT_LIMIT_PER_SEMESTER = 24;
+    const semesterCredits = new Map<number, { total: number; limitExceeded: boolean; tenHocKy: string }>();
+
+    // Group pending courses by semester
+    const pendingBySemester = pendingHocPhans.reduce((acc, item) => {
+        if (item.hocKy) {
+            if (!acc[item.hocKy.maHocKy]) {
+                acc[item.hocKy.maHocKy] = [];
+            }
+            acc[item.hocKy.maHocKy].push(item);
+        }
+        return acc;
+    }, {} as Record<number, KeHoachHocTapDetail[]>);
+
+    // Calculate totals for each semester with pending courses
+    for (const maHocKyStr in pendingBySemester) {
+        const maHocKy = Number(maHocKyStr);
+        const pendingItems = pendingBySemester[maHocKy];
+        const tenHocKy = pendingItems[0].hocKy?.tenHocKy || `Học kỳ ${maHocKy}`;
+
+        const creditsInCurrentPlan = currentHocPhans
+            .filter(item => item.hocKy?.maHocKy === maHocKy)
+            .reduce((sum, item) => sum + (item.hocPhan.tinChi || 0), 0);
+
+        const creditsInPending = pendingItems
+            .reduce((sum, item) => sum + (item.hocPhan.tinChi || 0), 0);
+        
+        const total = creditsInCurrentPlan + creditsInPending;
+
+        semesterCredits.set(maHocKy, {
+            total,
+            limitExceeded: total > CREDIT_LIMIT_PER_SEMESTER,
+            tenHocKy
+        });
+    }
+
+    return Array.from(semesterCredits.values()).filter(s => s.limitExceeded);
+
+}, [pendingHocPhans, currentHocPhans]);
 
   if (!isOpen) return null;
 
@@ -1160,15 +1222,27 @@ const AvailableSubjectsModal = ({
                 </div>
               ) : (
                 <CollapsibleSubjectsTable
-                  hocPhans={availableHocPhans}
-                  onAddToPending={handleAddToPending}
-                  pendingHocPhans={pendingHocPhans}
-                  currentHocPhans={currentHocPhans}
-                />
+                hocPhans={availableHocPhans}
+                onAddToPending={handleAddToPending}
+                pendingHocPhans={pendingHocPhans}
+                currentHocPhans={currentHocPhans}
+              />
               )}
             </>
           ) : (
             <>
+              {creditWarnings.length > 0 && (
+                <div className="mb-4 p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700 rounded-r-lg">
+                  <p className="font-bold">Cảnh báo giới hạn tín chỉ</p>
+                  <ul className="list-disc list-inside mt-1 text-sm">
+                    {creditWarnings.map(warning => (
+                      <li key={warning.tenHocKy}>
+                        Tổng số tín chỉ cho {warning.tenHocKy} là <strong>{warning.total}</strong>, vượt quá giới hạn 24 tín chỉ.
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
               {pendingHocPhans.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-gray-500">
                   <div className="text-center">

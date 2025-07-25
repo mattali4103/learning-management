@@ -3,7 +3,6 @@ import { useEffect, useState, useMemo } from "react";
 import useAuth from "../hooks/useAuth";
 import useAxiosPrivate from "../hooks/useAxiosPrivate";
 import {
-  KHHT_SERVICE,
   PROFILE_SERVICE,
   KQHT_SERVICE,
 } from "../api/apiEndPoints";
@@ -88,9 +87,7 @@ const Dashboard = () => {
       try {
         console.log("maso:", auth.user?.maSo);
         // Đảm bảo không có dấu / dư thừa
-        const url = KHHT_SERVICE.COUNT_TINCHI_IN_KHHT
-          .replace(":khoaHoc", auth.user?.khoaHoc || "_")
-          .replace(":maNganh", auth.user?.maNganh || "_")
+        const url = KQHT_SERVICE.GET_COUNT_TIN_CHI
           .replace(":maSo", auth.user?.maSo || "");
         
         console.log("API URL:", url);
@@ -105,7 +102,7 @@ const Dashboard = () => {
         );
 
         // Check response code
-        if (response.status === 200 && response.data?.code === 200) {
+        if (response.data?.code === 200) {
           setThongKeTinChi(response.data.data);
         } else {
           console.warn(
@@ -197,7 +194,6 @@ const Dashboard = () => {
     fetchDiemTrungBinh();
   }, [axiosPrivate, auth.user?.maSo, auth.user?.khoaHoc, auth.user?.maNganh]); // Tính toán thống kê từ dữ liệu thực
 
-  // ...existing code...
   // Tính toán thống kê từ dữ liệu thực
   const statistics = useMemo(() => {
     const { tongSoTinChi, soTinChiTichLuy, soTinChiCaiThien } = thongKeTinChi;
@@ -230,6 +226,8 @@ const Dashboard = () => {
   useEffect(() => {
     const totalCredits = typeof statistics.soTinChiTichLuy === 'number' ? statistics.soTinChiTichLuy : 0;
     const totalSemesters = Array.isArray(tinChiTichLuy) ? tinChiTichLuy.length : 0;
+
+    console.log("Total Credits:", totalCredits, "Total Semesters:", totalSemesters);
     let status = "Chưa có dữ liệu";
     let color = "text-gray-600";
     let bg = "bg-gray-50";

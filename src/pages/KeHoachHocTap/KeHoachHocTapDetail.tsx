@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
   BarChart,
@@ -31,8 +31,8 @@ import DeleteModal from "../../components/modals/DeleteModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import { AllCoursesCollapsibleTable } from "../../components/table/AllCoursesCollapsibleTable";
-import AvailableSubjectsModal from "../../components/modals/AvailableSubjectsModal";
 import type { HocPhan } from "../../types/HocPhan";
+import ThemKHHTModal from "../../components/modals/ThemKHHTModal";
 
 interface CreditStatData {
   tenHocKy: string;
@@ -54,6 +54,8 @@ export interface KeHoachHocTapDetail {
 const KeHoachHocTapDetail = () => {
   const { auth } = useAuth();
   const params = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { maSo: authMaSo, khoaHoc, maNganh } = auth.user || {};
   const maSo = params.maSo || authMaSo;
   const axiosPrivate = useAxiosPrivate();
@@ -129,13 +131,23 @@ const KeHoachHocTapDetail = () => {
     const storedHocKy = localStorage.getItem("hocKyHienTai");
     return storedHocKy ? JSON.parse(storedHocKy) : null;
   }, []);
+
+  const minHocKyInKHHT = useMemo(() => {
+    if (allData.length === 0) return null;
+    return Math.min(...allData.map(item => item.maHocKy));
+  }, [allData]);
+  
   // Available academic years for navigation
   const availableNamHoc = useMemo(() => {
     const years = new Map<number, { id: number; tenNh: string }>();
     danhSachHocKy.forEach((hk) => {
       if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        // Chỉ lấy năm học có học kỳ <= hocKyHienTai?.maHocKy
-        if (hocKyHienTai && hk.maHocKy <= hocKyHienTai.maHocKy) {
+        // Chỉ lấy năm học có học kỳ <= hocKyHienTai?.maHocKy và >= minHocKyInKHHT
+        if (
+          hocKyHienTai &&
+          hk.maHocKy <= hocKyHienTai.maHocKy &&
+          (!minHocKyInKHHT || hk.maHocKy >= minHocKyInKHHT)
+        ) {
           years.set(hk.namHoc.id, {
             id: hk.namHoc.id,
             tenNh: `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`,
@@ -144,7 +156,7 @@ const KeHoachHocTapDetail = () => {
       }
     });
     return Array.from(years.values()).sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, hocKyHienTai]);
+  }, [danhSachHocKy, hocKyHienTai, minHocKyInKHHT]);
 
   // Available semesters for selected academic year
   const availableHocKy = useMemo(() => {
@@ -153,7 +165,8 @@ const KeHoachHocTapDetail = () => {
       .filter(
         (item) =>
           item.namHoc?.id === selectedTabNamHoc &&
-          (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy)
+          (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy) &&
+          (!minHocKyInKHHT || item.maHocKy >= minHocKyInKHHT)
       )
       .map((item) => ({
         id: item.maHocKy,
@@ -161,12 +174,13 @@ const KeHoachHocTapDetail = () => {
         namHoc: item.namHoc,
       }))
       .sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai]);
+  }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai, minHocKyInKHHT]);
 
   // Credit statistics for chart
   const creditStatistics = useMemo(() => {
-    console.log("selectedHocPhans:", selectedHocPhans);
     const statsMap = new Map<string, CreditStatData>();
+    
+    // First, populate with semesters that have courses from allData
     selectedHocPhans.forEach((item) => {
       if (item.maHocKy) {
         const key = `${item.maHocKy}`;
@@ -188,8 +202,14 @@ const KeHoachHocTapDetail = () => {
         statsMap.set(key, existing);
       }
     });
+
+    // Then, add all other relevant semesters
     danhSachHocKy.forEach((hk) => {
-      if (hocKyHienTai && hk.maHocKy <= hocKyHienTai.maHocKy) {
+      if (
+        hocKyHienTai &&
+        hk.maHocKy <= hocKyHienTai.maHocKy &&
+        (!minHocKyInKHHT || hk.maHocKy >= minHocKyInKHHT)
+      ) {
         const key = `${hk.maHocKy}`;
         if (!statsMap.has(key)) {
           statsMap.set(key, {
@@ -204,13 +224,14 @@ const KeHoachHocTapDetail = () => {
         }
       }
     });
+
     return Array.from(statsMap.values()).sort((a, b) => {
       if (a.namHocId !== b.namHocId) {
         return a.namHocId - b.namHocId;
       }
       return a.hocKyId - b.hocKyId;
     });
-  }, [selectedHocPhans, danhSachHocKy, hocKyHienTai]);
+  }, [selectedHocPhans, danhSachHocKy, hocKyHienTai, minHocKyInKHHT]);
 
   const handleChartBarClick = (data: any) => {
     if (data && data.activePayload && data.activePayload[0]) {
@@ -286,6 +307,8 @@ const KeHoachHocTapDetail = () => {
         setErrorMessage("Không thể xóa học phần. Vui lòng thử lại.");
         setShowErrorModal(true);
       } finally {
+        //Re-Fetch all data to ensure UI is updated
+        fetchAllData();
         setIsDeleting(false);
       }
     },
@@ -415,6 +438,40 @@ const KeHoachHocTapDetail = () => {
     fetchAllData,
     fetchNhomHocPhanTuChon,
   ]);
+
+  // Read filters from URL on initial load
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const namHocId = searchParams.get("namHocId");
+    const hocKyId = searchParams.get("hocKyId");
+
+    if (namHocId) {
+      const namHocIdNum = parseInt(namHocId, 10);
+      setSelectedTabNamHoc(namHocIdNum);
+      setSelectedFilterNamHoc(namHocIdNum);
+      if (hocKyId) {
+        const hocKyIdNum = parseInt(hocKyId, 10);
+        setActiveTab(`semester-${hocKyIdNum}`);
+        setSelectedHocKyChart(hocKyIdNum);
+        setSelectedFilterHocKy(hocKyIdNum);
+      } else {
+        setActiveTab("all");
+      }
+    }
+  }, [location.search]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const searchParams = new URLSearchParams();
+    if (selectedTabNamHoc) {
+      searchParams.set("namHocId", selectedTabNamHoc.toString());
+    }
+    if (activeTab.startsWith("semester-")) {
+      const hocKyId = activeTab.replace("semester-", "");
+      searchParams.set("hocKyId", hocKyId);
+    }
+    navigate({ search: searchParams.toString() }, { replace: true });
+  }, [selectedTabNamHoc, activeTab, navigate]);
 
   if (loading) {
     return (
@@ -724,6 +781,7 @@ const KeHoachHocTapDetail = () => {
           )}
         </div>
       </div>
+           {/* Fixed Floating Button for Pending Subjects */}
       {pendingHocPhans.length > 0 && (
         <div
           className="fixed right-6 bottom-1.5 transform -translate-y-1/2 z-40"
@@ -753,34 +811,9 @@ const KeHoachHocTapDetail = () => {
         </div>
       )}
 
-      {/* Fixed Floating Button for Pending Subjects */}
-      {pendingHocPhans.length > 0 && (
-        <div className="fixed right-6 bottom-1.5 transform -translate-y-1/2 z-40" id="floating-button">
-          <button
-            onClick={() => {
-              setInitialModalTab("add");
-              setShowAvailableSubjectsModal(true);
-            }}
-            className={`relative flex items-center px-4 py-3 rounded-2xl font-semibold text-sm transition-all duration-300 shadow-2xl hover:shadow-3xl transform hover:scale-105 ${
-              pendingHocPhans.length > 0
-                ? "bg-gradient-to-r from-orange-500 to-red-500 text-white hover:from-orange-600 hover:to-red-600 animate-pulse"
-                : "bg-gradient-to-r from-blue-500 to-purple-500 text-white hover:from-blue-600 hover:to-purple-600"
-            }`}
-            title={`${pendingHocPhans.length > 0 ? "Có" : "Chưa có"} học phần chuẩn bị thêm`}
-          >
-            <div className="flex flex-col items-center">
-              <BookOpen className="w-6 h-6 mb-1" />
-            </div>
-            {pendingHocPhans.length > 0 && (
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-600 text-white text-xs rounded-full flex items-center justify-center font-bold animate-bounce border-2 border-white shadow-lg">
-                {pendingHocPhans.length}
-              </div>
-            )}
-          </button>
-        </div>
-      )}
+ 
       {showAvailableSubjectsModal && (
-        <AvailableSubjectsModal
+        <ThemKHHTModal
           isOpen={showAvailableSubjectsModal}
           currentHocPhans={selectedHocPhans.map((item) => {
             return {

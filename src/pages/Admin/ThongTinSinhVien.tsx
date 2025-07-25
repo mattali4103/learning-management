@@ -67,9 +67,12 @@ const ThongTinSinhVien = () => {
     if (typeof userInfo?.soTinChiTichLuy === "number") {
       totalCredits = userInfo.soTinChiTichLuy;
     }
+
     if (Array.isArray(tinChiTichLuy)) {
       totalSemesters = tinChiTichLuy.length;
     }
+    console.log("Total Credits:", totalCredits);
+    console.log("Total Semesters:", totalSemesters);
     let status = "Chưa có dữ liệu";
     let color = "text-gray-600";
     let bg = "bg-gray-50";

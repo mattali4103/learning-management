@@ -101,6 +101,7 @@ export const KHHT_SERVICE = {
 };
 
 export const KQHT_SERVICE = {
+  GET_COUNT_TIN_CHI: KQHT_SERVICE_URL + "/api/kqht/get-count-tin-chi/:maSo", // Thống kê tổng số tín chỉ
   GET_THONGKE_TINCHI: KQHT_SERVICE_URL + "/api/kqht/thong-ke/:maSo", //Thong Ke tin chi tihc luy qua tung hoc ky
   GET_HOCKY: KQHT_SERVICE_URL + "/api/kqht/hoc-ky/:maSo",
   GET_KETQUA: KQHT_SERVICE_URL + "/api/kqht/detail/page", // phân trang: ?maSo=xxx&page=0&size=20

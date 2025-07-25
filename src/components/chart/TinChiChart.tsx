@@ -37,7 +37,7 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
             </h3>
           </div>
           <button
-            onClick={() => navigate("/khht/detail")}
+            onClick={() => navigate("/khht/chitiet")}
             className="flex items-center px-3 py-2 text-sm bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors duration-200"
           >
             <ExternalLink className="w-4 h-4 mr-1" />
@@ -91,12 +91,12 @@ const TinChiChart = ({ data }: TinChiChartProps) => {
     );
   }
   const handleChartClick = () => {
-    navigate("/khht/detail");
+    navigate("/khht/chitiet");
   };
 
   const handleDataPointClick = (data: any) => {
     if (!data?.activePayload?.[0]) {
-      navigate("/khht/detail");
+      navigate("/khht/chitiet ");
       return;
     }
 
