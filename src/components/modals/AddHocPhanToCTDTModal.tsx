@@ -778,7 +778,7 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[95vw] h-[95vh] flex flex-col">
         <div className="flex items-center justify-between border-b border-gray-200">
           <div className="flex space-x-2 px-3 py-2">

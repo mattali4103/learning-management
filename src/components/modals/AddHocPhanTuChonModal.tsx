@@ -3,13 +3,12 @@ import {
   X,
   BookOpen,
   Trash2,
-  ChevronLeft,
-  ChevronRight,
   Search,
   Plus,
   PackagePlus,
   BookCopy,
   ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import {
   useReactTable,
@@ -18,9 +17,7 @@ import {
   getFilteredRowModel,
   flexRender,
   type ColumnDef,
-  type Table,
 } from "@tanstack/react-table";
-
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { HOCPHAN_SERVICE } from "../../api/apiEndPoints";
 import ErrorMessageModal from "./ErrorMessageModal";
@@ -28,23 +25,7 @@ import SuccessMessageModal from "./SuccessMessageModal";
 import type { HocPhan } from "../../types/HocPhan";
 import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 
-interface SubjectGroup {
-  id: string;
-  title: string;
-  subtitle: string;
-  courses: HocPhan[];
-  totalCredits: number;
-  colorScheme: string;
-}
-
-interface SubjectRow extends HocPhan {
-  isGroupHeader: boolean;
-  groupId: string;
-  groupTitle?: string;
-  groupSubtitle?: string;
-  colorScheme?: string;
-}
-
+// --- MÀU GROUP ---
 const getColorClasses = (colorScheme: string) => {
   const schemes = {
     blue: {
@@ -79,6 +60,22 @@ const getColorClasses = (colorScheme: string) => {
   return schemes[colorScheme as keyof typeof schemes] || schemes.blue;
 };
 
+interface SubjectGroup {
+  id: string;
+  title: string;
+  subtitle: string;
+  courses: HocPhan[];
+  totalCredits: number;
+  colorScheme: string;
+}
+interface SubjectRow extends HocPhan {
+  isGroupHeader: boolean;
+  groupId: string;
+  groupTitle?: string;
+  groupSubtitle?: string;
+  colorScheme?: string;
+}
+
 interface AddHocPhanTuChonModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -86,72 +83,148 @@ interface AddHocPhanTuChonModalProps {
   existingNhomHocPhan: HocPhanTuChon[];
   selectedKhoaHoc: string;
   selectedNganh: string;
+  selectedCTDTId: number;
 }
 
-const PaginationControls = <TData,>({ table }: { table: Table<TData> }) => (
-  <div className="flex items-center justify-end gap-2 mt-4">
-    <button
-      className="border rounded p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-      onClick={() => table.previousPage()}
-      disabled={!table.getCanPreviousPage()}
-    >
-      <ChevronLeft className="w-5 h-5" />
-    </button>
-    <span className="flex items-center gap-1 text-sm">
-      <div>Trang</div>
-      <strong>
-        {table.getState().pagination.pageIndex + 1} / {table.getPageCount()}
-      </strong>
-    </span>
-    <button
-      className="border rounded p-1 disabled:opacity-50 disabled:cursor-not-allowed"
-      onClick={() => table.nextPage()}
-      disabled={!table.getCanNextPage()}
-    >
-      <ChevronRight className="w-5 h-5" />
-    </button>
-  </div>
-);
+// ---- FORM NHÓM VÀ TÍN CHỈ TRÊN CÙNG HÀNG ----
+const NhomForm = ({
+  selectedNhomId,
+  existingNhomHocPhan,
+  tenNhom,
+  soTinChiYeuCau,
+  onChangeNhomId,
+  onChangeTenNhom,
+  onChangeTinChiYeuCau,
+}: {
+  selectedNhomId: number | "new";
+  existingNhomHocPhan: HocPhanTuChon[];
+  tenNhom: string;
+  soTinChiYeuCau: number;
+  onChangeNhomId: (value: number | "new") => void;
+  onChangeTenNhom: (value: string) => void;
+  onChangeTinChiYeuCau: (value: number) => void;
+}) => {
+  // Lấy nhóm đã có (nếu đang sửa)
+  const currentNhom =
+    selectedNhomId !== "new"
+      ? existingNhomHocPhan.find((n) => n.id === selectedNhomId)
+      : null;
 
-const CollapsibleAvailableSubjectsTable = ({
+  return (
+    <div className="flex flex-col gap-3 mb-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700">
+          Chọn nhóm
+        </label>
+        <select
+          value={selectedNhomId}
+          onChange={(e) =>
+            onChangeNhomId(
+              e.target.value === "new" ? "new" : Number(e.target.value)
+            )
+          }
+          className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border"
+        >
+          <option value="new">Tạo mới</option>
+          {existingNhomHocPhan.map((nhom) => (
+            <option key={nhom.id} value={nhom.id}>
+              {nhom.tenNhom}
+            </option>
+          ))}
+        </select>
+      </div>
+      {/* Nếu tạo mới thì nhập tên, nhập tín chỉ. Nếu sửa thì chỉ hiển thị */}
+      {selectedNhomId === "new" ? (
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Tên nhóm mới
+            </label>
+             
+            <input
+              type="text"
+              value={tenNhom}
+              onChange={(e) => onChangeTenNhom(e.target.value)}
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border"
+              placeholder="VD: Tự chọn chuyên ngành"
+            />
+          </div>
+          <div className="w-48">
+            <label className="block text-sm font-medium text-gray-700">
+              Số tín chỉ yêu cầu
+            </label>
+            <input
+              type="number"
+              value={soTinChiYeuCau}
+              onChange={(e) =>
+                onChangeTinChiYeuCau(parseInt(e.target.value, 10) || 0)
+              }
+              className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border"
+              placeholder="VD: 3"
+              min={0}
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="flex gap-2">
+          <div className="flex-1">
+            <label className="block text-sm font-medium text-gray-700">
+              Tên nhóm
+            </label>
+            <input
+              disabled
+              value={currentNhom?.tenNhom || ""}
+              className="mt-1 block w-full border-gray-200 bg-gray-100 rounded-md shadow-sm p-2"
+            />
+          </div>
+          <div className="w-48">
+            <label className="block text-sm font-medium text-gray-700">
+              Số tín chỉ yêu cầu
+            </label>
+            <input
+              disabled
+              value={currentNhom?.tinChiYeuCau || 0}
+              className="mt-1 block w-full border-gray-200 bg-gray-100 rounded-md shadow-sm p-2"
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ---- BẢNG CHỌN HỌC PHẦN (7 dòng, nút +, + mờ khi đã chọn) ----
+const CollapsibleSelectableSubjectsTable = ({
   hocPhans,
   selectedHocPhans,
-  onToggleSelect,
+  onAdd,
 }: {
   hocPhans: HocPhan[];
   selectedHocPhans: HocPhan[];
-  onToggleSelect: (hocPhan: HocPhan) => void;
+  onAdd: (hocPhan: HocPhan) => void;
 }) => {
-  const [globalFilter, setGlobalFilter] = useState("");
+  const [globalFilter, setGlobalFilter] = useState<string>("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
-  const [pagination, setPagination] = useState({
-    pageIndex: 0,
-    pageSize: 7,
-  });
+  const [pagination, setPagination] = useState({ pageIndex: 0, pageSize: 7 });
 
+  // Group
   const subjectGroups = useMemo((): SubjectGroup[] => {
     const groupedByLoaiHp = hocPhans.reduce(
       (acc, course) => {
         const type = course.loaiHp || "Khác";
-        if (!acc[type]) {
-          acc[type] = [];
-        }
+        if (!acc[type]) acc[type] = [];
         acc[type].push(course);
         return acc;
       },
       {} as Record<string, HocPhan[]>
     );
-
     return Object.entries(groupedByLoaiHp).map(([loaiHp, courses]) => {
-      const totalCredits = courses.reduce(
-        (sum, course) => sum + (course.tinChi || 0),
-        0
-      );
+      const totalCredits = courses.reduce((sum, c) => sum + (c.tinChi || 0), 0);
       let colorScheme = "blue";
       if (loaiHp.includes("Đại cương")) colorScheme = "purple";
       else if (loaiHp.includes("Cơ sở ngành")) colorScheme = "blue";
       else if (loaiHp.includes("Chuyên ngành")) colorScheme = "orange";
-
+      else if (loaiHp.includes("Tự chọn")) colorScheme = "green";
       return {
         id: `group-${loaiHp.replace(/\s+/g, "-")}`,
         title: `Học phần ${loaiHp}`,
@@ -162,13 +235,11 @@ const CollapsibleAvailableSubjectsTable = ({
       };
     });
   }, [hocPhans]);
-
   useEffect(() => {
     if (subjectGroups.length > 0) {
       setExpandedGroups(new Set(subjectGroups.map((g) => g.id)));
     }
   }, [subjectGroups]);
-
   const toggleGroup = useCallback((groupId: string) => {
     setExpandedGroups((prev) => {
       const newSet = new Set(prev);
@@ -177,7 +248,7 @@ const CollapsibleAvailableSubjectsTable = ({
       return newSet;
     });
   }, []);
-
+  // Flatten
   const flattenedData = useMemo((): SubjectRow[] => {
     const result: SubjectRow[] = [];
     subjectGroups.forEach((group) => {
@@ -193,7 +264,6 @@ const CollapsibleAvailableSubjectsTable = ({
         groupSubtitle: group.subtitle,
         colorScheme: group.colorScheme,
       });
-
       if (expandedGroups.has(group.id)) {
         group.courses.forEach((course) => {
           result.push({
@@ -208,84 +278,71 @@ const CollapsibleAvailableSubjectsTable = ({
     return result;
   }, [subjectGroups, expandedGroups]);
 
+  // Filter
   const filteredData = useMemo(() => {
     if (!globalFilter) return flattenedData;
     const filterValue = globalFilter.toLowerCase();
-
+    const filteredGroups = subjectGroups.filter(
+      (group) =>
+        group.title.toLowerCase().includes(filterValue) ||
+        group.courses.some(
+          (c) =>
+            c.tenHp.toLowerCase().includes(filterValue) ||
+            c.maHp.toLowerCase().includes(filterValue)
+        )
+    );
     const result: SubjectRow[] = [];
-    subjectGroups.forEach((group) => {
+    filteredGroups.forEach((group) => {
       const matchingCourses = group.courses.filter(
         (c) =>
           c.tenHp.toLowerCase().includes(filterValue) ||
           c.maHp.toLowerCase().includes(filterValue)
       );
-
-      if (
-        group.title.toLowerCase().includes(filterValue) ||
-        matchingCourses.length > 0
-      ) {
-        result.push({
-          maHp: `group-header-${group.id}`,
-          tenHp: group.title,
-          tinChi: 0,
-          loaiHp: "group",
-          hocPhanTienQuyet: "",
-          isGroupHeader: true,
-          groupId: group.id,
-          groupTitle: group.title,
-          groupSubtitle: group.subtitle,
-          colorScheme: group.colorScheme,
-        });
-
-        if (expandedGroups.has(group.id)) {
-          const coursesToShow = group.title.toLowerCase().includes(filterValue)
-            ? group.courses
-            : matchingCourses;
-          coursesToShow.forEach((course) => {
+      const isGroupTitleMatch = group.title.toLowerCase().includes(filterValue);
+      result.push({
+        maHp: `group-header-${group.id}`,
+        tenHp: group.title,
+        tinChi: 0,
+        loaiHp: "group",
+        hocPhanTienQuyet: "",
+        isGroupHeader: true,
+        groupId: group.id,
+        groupTitle: group.title,
+        groupSubtitle: group.subtitle,
+        colorScheme: group.colorScheme,
+      });
+      if (expandedGroups.has(group.id)) {
+        (isGroupTitleMatch ? group.courses : matchingCourses).forEach(
+          (course) => {
             result.push({
               ...course,
               isGroupHeader: false,
               groupId: group.id,
               colorScheme: group.colorScheme,
             });
-          });
-        }
+          }
+        );
       }
     });
     return result;
   }, [flattenedData, globalFilter, subjectGroups, expandedGroups]);
 
+  // Columns: Mã | Tên | Tín chỉ | Tiên quyết | Thao tác (+)
   const columns = useMemo<ColumnDef<SubjectRow>[]>(
     () => [
-      {
-        id: "select",
-        header: "",
-        cell: ({ row }) =>
-          !row.original.isGroupHeader && (
-            <input
-              type="checkbox"
-              className="w-4 h-4"
-              checked={selectedHocPhans.some(
-                (hp) => hp.maHp === row.original.maHp
-              )}
-              onChange={() => onToggleSelect(row.original)}
-            />
-          ),
-        size: 40,
-      },
       {
         accessorKey: "maHp",
         header: "Mã HP",
         cell: ({ row }) =>
           row.original.isGroupHeader ? null : row.original.maHp,
-        size: 100,
+        size: 80,
       },
       {
         accessorKey: "tenHp",
         header: "Tên học phần",
         cell: ({ row }) =>
           row.original.isGroupHeader ? null : row.original.tenHp,
-        size: 250,
+        size: 200,
       },
       {
         accessorKey: "tinChi",
@@ -294,10 +351,54 @@ const CollapsibleAvailableSubjectsTable = ({
           row.original.isGroupHeader ? null : (
             <div className="text-center">{row.original.tinChi}</div>
           ),
-        size: 80,
+        size: 60,
+      },
+      {
+        accessorKey: "hocPhanTienQuyet",
+        header: "Tiên quyết",
+        cell: ({ row }) =>
+          row.original.isGroupHeader ? null : (
+            <div className="text-center">
+              {row.original.hocPhanTienQuyet || "Không"}
+            </div>
+          ),
+        size: 120,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) =>
+          !row.original.isGroupHeader && (
+            <button
+              onClick={() => onAdd(row.original)}
+              disabled={selectedHocPhans.some(
+                (hp) => hp.maHp === row.original.maHp
+              )}
+              className={`ml-auto p-2 rounded-full transition-all duration-200 ${
+                selectedHocPhans.some((hp) => hp.maHp === row.original.maHp)
+                  ? "bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed"
+                  : "bg-emerald-600 text-white hover:bg-emerald-700 hover:scale-110"
+              }`}
+              title={
+                selectedHocPhans.some((hp) => hp.maHp === row.original.maHp)
+                  ? "Đã thêm"
+                  : "Thêm học phần"
+              }
+              style={{
+                pointerEvents: selectedHocPhans.some(
+                  (hp) => hp.maHp === row.original.maHp
+                )
+                  ? "none"
+                  : undefined,
+              }}
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          ),
+        size: 60,
       },
     ],
-    [selectedHocPhans, onToggleSelect]
+    [selectedHocPhans, onAdd]
   );
 
   const table = useReactTable({
@@ -313,41 +414,47 @@ const CollapsibleAvailableSubjectsTable = ({
   });
 
   return (
-    <div className="flex-1 flex flex-col">
-      <h3 className="text-lg font-semibold mb-2 flex items-center">
-        <BookOpen className="mr-2" /> Danh sách học phần
-      </h3>
-      <div className="relative mb-2">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-        <input
-          type="text"
-          value={globalFilter}
-          onChange={(e) => setGlobalFilter(e.target.value)}
-          placeholder="Tìm kiếm học phần..."
-          className="border border-gray-300 pl-9 pr-3 py-1.5 rounded-lg w-full"
-        />
+    <div className="bg-white rounded-lg border border-gray-200 h-full flex flex-col">
+      <div className="flex items-center justify-between p-3 border-b">
+        <span className="font-semibold text-base flex items-center gap-2">
+          <BookOpen /> Chọn học phần
+        </span>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            value={globalFilter ?? ""}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            placeholder="Tìm kiếm học phần..."
+            className="border border-gray-300 pl-9 pr-3 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm w-56"
+          />
+        </div>
       </div>
-      <div className="overflow-auto border rounded-lg flex-1">
-        <table className="min-w-full bg-white">
-          <thead className="bg-gray-50 sticky top-0">
+      <div className="overflow-x-auto flex-1">
+        <table className="w-full">
+          <thead className="bg-gray-50">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
-                    style={{ width: header.getSize() }}
+                    className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    style={{
+                      width: header.getSize(),
+                    }}
                   >
-                    {flexRender(
-                      header.column.columnDef.header,
-                      header.getContext()
-                    )}
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </th>
                 ))}
               </tr>
             ))}
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody>
             {table.getRowModel().rows.map((row) => {
               const item = row.original;
               if (item.isGroupHeader) {
@@ -355,54 +462,37 @@ const CollapsibleAvailableSubjectsTable = ({
                 return (
                   <tr
                     key={row.id}
-                    className={`${colors.bg} ${colors.hover} cursor-pointer transition-colors border-l-4 ${colors.border}`}
-                    onClick={() => toggleGroup(item.groupId)}
+                    className={`${colors.bg} border-l-4 ${colors.border} cursor-pointer`}
                   >
-                    <td colSpan={columns.length} className="px-3 py-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <div
-                            className={`p-1.5 rounded-lg ${colors.badge
-                              .replace("text-", "bg-")
-                              .replace("-800", "-100")}`}
-                          >
-                            <BookOpen className={`w-4 h-4 ${colors.text}`} />
-                          </div>
-                          <div className="flex items-baseline space-x-2">
-                            <span
-                              className={`font-semibold ${colors.text} text-sm`}
-                            >
-                              {item.groupTitle}
-                            </span>
-                            <span
-                              className={`text-xs ${colors.text} opacity-80`}
-                            >
-                              ({item.groupSubtitle})
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-center w-6 h-6 rounded">
-                          {expandedGroups.has(item.groupId) ? (
-                            <ChevronDown className={`w-5 h-5 ${colors.text}`} />
-                          ) : (
-                            <ChevronRight
-                              className={`w-5 h-5 ${colors.text}`}
-                            />
-                          )}
-                        </div>
+                    <td
+                      colSpan={columns.length}
+                      className={`px-4 py-2 border-b ${colors.text}`}
+                      onClick={() => toggleGroup(item.groupId)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {expandedGroups.has(item.groupId) ? (
+                          <ChevronDown className="w-4 h-4" />
+                        ) : (
+                          <ChevronRight className="w-4 h-4" />
+                        )}
+                        <span className="font-semibold">{item.groupTitle}</span>
+                        <span className={`text-xs ml-2 ${colors.text}`}>
+                          {item.groupSubtitle}
+                        </span>
                       </div>
                     </td>
                   </tr>
                 );
               }
               return (
-                <tr key={row.id} className="hover:bg-gray-50">
-                  {row.getVisibleCells().map((cell, index) => (
+                <tr
+                  key={row.id}
+                  className="hover:bg-gray-50 group transition-colors"
+                >
+                  {row.getVisibleCells().map((cell, idx) => (
                     <td
                       key={cell.id}
-                      className={`px-4 py-1.5 whitespace-nowrap text-sm ${
-                        index === 1 ? "pl-12" : ""
-                      }`}
+                      className={`px-3 py-2 text-sm border-b ${idx === 1 ? "pl-8" : "text-gray-700"}`}
                     >
                       {flexRender(
                         cell.column.columnDef.cell,
@@ -416,11 +506,148 @@ const CollapsibleAvailableSubjectsTable = ({
           </tbody>
         </table>
       </div>
-      {table.getPageCount() > 1 && <PaginationControls table={table} />}
+      {/* Pagination controls - cập nhật theo style tham khảo */}
+      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+        <div className="text-sm text-gray-600">
+          Trang {table.getState().pagination.pageIndex + 1} /{" "}
+          {table.getPageCount()}
+        </div>
+        <div className="flex items-center space-x-1">
+          <button
+            onClick={() => table.setPageIndex(0)}
+            disabled={!table.getCanPreviousPage()}
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+            title="Trang đầu"
+          >
+            <span style={{ fontWeight: "bold" }}>&laquo;</span>
+          </button>
+          <button
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+            title="Trang trước"
+          >
+            <span>&lsaquo;</span>
+          </button>
+          <button
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+            title="Trang sau"
+          >
+            <span>&rsaquo;</span>
+          </button>
+          <button
+            onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+            disabled={!table.getCanNextPage()}
+            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50"
+            title="Trang cuối"
+          >
+            <span style={{ fontWeight: "bold" }}>&raquo;</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
 
+// --- BẢNG ĐÃ CHỌN (bổ sung Tiên quyết) ---
+const SelectedSubjectsTable = ({
+  data,
+  onRemove,
+}: {
+  data: HocPhan[];
+  onRemove: (hocPhan: HocPhan) => void;
+}) => {
+  const columns = useMemo<ColumnDef<HocPhan>[]>(
+    () => [
+      { accessorKey: "maHp", header: "Mã HP", size: 80 },
+      { accessorKey: "tenHp", header: "Tên học phần", size: 180 },
+      { accessorKey: "tinChi", header: "Tín chỉ", size: 60 },
+      {
+        accessorKey: "hocPhanTienQuyet",
+        header: "Tiên quyết",
+        cell: ({ row }) => row.original.hocPhanTienQuyet || "Không",
+        size: 120,
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <button
+            onClick={() => onRemove(row.original)}
+            className="p-1 text-red-500 hover:text-red-700"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        ),
+        size: 50,
+      },
+    ],
+    [onRemove]
+  );
+  const table = useReactTable({
+    data,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+  });
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 h-full flex flex-col">
+      <div className="p-3 border-b font-semibold flex items-center gap-2">
+        <BookCopy /> Đã chọn ({data.length})
+      </div>
+      <div className="overflow-auto flex-1">
+        <table className="w-full">
+          <thead className="bg-gray-50 sticky top-0">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-3 py-2 text-xs font-medium text-gray-500 uppercase"
+                    style={{ width: header.getSize() }}
+                  >
+                    {flexRender(
+                      header.column.columnDef.header,
+                      header.getContext()
+                    )}
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.length > 0 ? (
+              table.getRowModel().rows.map((row) => (
+                <tr key={row.id} className="hover:bg-gray-50">
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-3 py-2 text-sm border-b">
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan={columns.length}
+                  className="text-center py-8 text-gray-500"
+                >
+                  Chưa chọn học phần nào.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+// --- MODAL MAIN ---
 const AddHocPhanTuChonModal = ({
   isOpen,
   onClose,
@@ -428,6 +655,7 @@ const AddHocPhanTuChonModal = ({
   existingNhomHocPhan,
   selectedKhoaHoc,
   selectedNganh,
+  selectedCTDTId,
 }: AddHocPhanTuChonModalProps) => {
   const axiosPrivate = useAxiosPrivate();
   const [selectedNhomId, setSelectedNhomId] = useState<number | "new">("new");
@@ -441,7 +669,6 @@ const AddHocPhanTuChonModal = ({
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [step, setStep] = useState(1);
 
   const fetchAvailableHocPhans = useCallback(async () => {
     setLoading(true);
@@ -453,13 +680,11 @@ const AddHocPhanTuChonModal = ({
         setAvailableHocPhans([]);
       }
     } catch (error) {
-      console.error("Error fetching available hoc phans:", error);
       setAvailableHocPhans([]);
     } finally {
       setLoading(false);
     }
   }, [axiosPrivate]);
-
   useEffect(() => {
     if (isOpen) {
       fetchAvailableHocPhans();
@@ -467,17 +692,14 @@ const AddHocPhanTuChonModal = ({
       setTenNhom("");
       setSoTinChiYeuCau(0);
       setSelectedHocPhans([]);
-      setStep(1);
     }
   }, [isOpen, fetchAvailableHocPhans]);
-
   useEffect(() => {
     if (selectedNhomId === "new") {
       setTenNhom("");
       setSoTinChiYeuCau(0);
       setSelectedHocPhans([]);
     } else {
-      console.log("Selected Nhom ID:", selectedNhomId);
       const selectedGroup = existingNhomHocPhan.find(
         (nhom) => nhom.id === selectedNhomId
       );
@@ -497,29 +719,57 @@ const AddHocPhanTuChonModal = ({
       setShowErrorModal(true);
       return;
     }
-
     setIsSaving(true);
     const isEditing = selectedNhomId !== "new";
-    const payload = {
-      id: isEditing ? selectedNhomId : undefined,
-      tenNhom,
-      tinChiYeuCau: soTinChiYeuCau,
-      khoaHoc: selectedKhoaHoc,
-      maNganh: selectedNganh,
-      hocPhanList: selectedHocPhans.map((hp) => ({ maHp: hp.maHp })),
+    let payload;
+    if (isEditing) {
+      const existingGroup = existingNhomHocPhan.find(
+        (nhom) => nhom.id === selectedNhomId
+      );
+      if (!existingGroup) {
+        setErrorMessage("Nhóm học phần không tồn tại.");
+        setShowErrorModal(true);
+        setIsSaving(false);
+        return;
+      }
+      payload = {
+        id: existingGroup.id,
+        tenNhom,
+        tinChiYeuCau: soTinChiYeuCau,
+        khoaHoc: selectedKhoaHoc,
+        maNganh: selectedNganh,
+        hocPhanTuChonList: [
+          ...selectedHocPhans.filter(
+            (hp) =>
+              !existingGroup.hocPhanTuChonList.some(
+                (exHp) => exHp.maHp === hp.maHp
+              )
+          ),
+        ],
+      };
+    }
+    // Nếu là nhóm mới, tạo payload mới
+    payload = {
+      id: selectedCTDTId,
+      nhomHocPhanTuChon: [
+        {
+          tenNhom,
+          tinChiYeuCau: soTinChiYeuCau,
+          hocPhanTuChonList: selectedHocPhans.map((hp) => ({
+            maHp: hp.maHp,
+            tenHp: hp.tenHp,
+            tinChi: hp.tinChi,
+            loaiHp: hp.loaiHp,
+            hocPhanTienQuyet: hp.hocPhanTienQuyet || "",
+          })),
+        },
+      ],
     };
-
+    console.log("Saving hoc phan tu chon:", payload);
     try {
       const response = isEditing
-        ? await axiosPrivate.put(
-            HOCPHAN_SERVICE.CTDT_UPDATE, // Replace with your update endpoint
-            payload
-          )
-        : await axiosPrivate.post(
-            HOCPHAN_SERVICE.CTDT_CREATE, // Replace with your create endpoint
-            payload
-          );
-
+        ? await axiosPrivate.put(HOCPHAN_SERVICE.TU_CHON_UPDATE, payload)
+        : await axiosPrivate.post(HOCPHAN_SERVICE.TU_CHON_ADD, payload);
       if (response.data.code === 200) {
         setSuccessMessage(
           `Đã ${
@@ -531,10 +781,9 @@ const AddHocPhanTuChonModal = ({
           onClose();
           onSaveSuccess();
         }, 1500);
-      } else {
-        throw new Error(response.data.message || "Lỗi không xác định");
       }
     } catch (error) {
+      console.error("Error saving hoc phan tu chon:", error);
       setErrorMessage("Có lỗi xảy ra khi lưu. Vui lòng thử lại.");
       setShowErrorModal(true);
     } finally {
@@ -550,187 +799,19 @@ const AddHocPhanTuChonModal = ({
     );
   };
 
-  const selectedColumns = useMemo<ColumnDef<HocPhan>[]>(
-    () => [
-      { accessorKey: "maHp", header: "Mã HP", size: 100 },
-      { accessorKey: "tenHp", header: "Tên học phần", size: 250 },
-      { accessorKey: "tinChi", header: "Tín chỉ", size: 80 },
-      {
-        id: "actions",
-        header: "Xóa",
-        cell: ({ row }) => (
-          <button
-            onClick={() => toggleSelectHocPhan(row.original)}
-            className="p-1 text-red-500 hover:text-red-700"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        ),
-        size: 60,
-      },
-    ],
-    []
-  );
-
-  const selectedTable = useReactTable({
-    data: selectedHocPhans,
-    columns: selectedColumns,
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-  });
-
   if (!isOpen) return null;
 
-  const renderStepContent = () => {
-    switch (step) {
-      case 1:
-        return (
-          <div className="flex flex-col gap-4">
-            <div>
-              <label
-                htmlFor="nhom-select"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Chọn nhóm học phần
-              </label>
-              <select
-                id="nhom-select"
-                value={selectedNhomId}
-                onChange={(e) =>
-                  setSelectedNhomId(
-                    e.target.value === "new" ? "new" : Number(e.target.value)
-                  )
-                }
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border"
-              >
-                <option value="new">Tạo mới</option>
-                {existingNhomHocPhan.map((nhom) => (
-                  <option key={nhom.id} value={nhom.id}>
-                    {nhom.tenNhom}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {selectedNhomId === "new" && (
-              <div>
-                <label
-                  htmlFor="tenNhom"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Tên nhóm mới
-                </label>
-                <input
-                  type="text"
-                  id="tenNhom"
-                  value={tenNhom}
-                  onChange={(e) => setTenNhom(e.target.value)}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border"
-                  placeholder="VD: Tự chọn chuyên ngành"
-                />
-              </div>
-            )}
-            <div>
-              <label
-                htmlFor="soTinChiYeuCau"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Số tín chỉ yêu cầu
-              </label>
-              <input
-                type="number"
-                id="soTinChiYeuCau"
-                value={soTinChiYeuCau}
-                onChange={(e) =>
-                  setSoTinChiYeuCau(parseInt(e.target.value, 10) || 0)
-                }
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm p-2 border"
-                placeholder="VD: 3"
-              />
-            </div>
-          </div>
-        );
-      case 2:
-        return (
-          <CollapsibleAvailableSubjectsTable
-            hocPhans={availableHocPhans}
-            selectedHocPhans={selectedHocPhans}
-            onToggleSelect={toggleSelectHocPhan}
-          />
-        );
-      case 3:
-        return (
-          <div className="flex flex-col h-full">
-            <h3 className="text-lg font-semibold mb-2 flex items-center">
-              <BookCopy className="mr-2" /> Học phần đã chọn (
-              {selectedHocPhans.length})
-            </h3>
-            <div className="overflow-auto border rounded-lg flex-1">
-              <table className="min-w-full bg-white">
-                <thead className="bg-gray-50 sticky top-0">
-                  {selectedTable.getHeaderGroups().map((headerGroup) => (
-                    <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => (
-                        <th
-                          key={header.id}
-                          className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
-                          style={{ width: header.getSize() }}
-                        >
-                          {flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                        </th>
-                      ))}
-                    </tr>
-                  ))}
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {selectedTable.getRowModel().rows.length > 0 ? (
-                    selectedTable.getRowModel().rows.map((row) => (
-                      <tr key={row.id} className="hover:bg-gray-50">
-                        {row.getVisibleCells().map((cell) => (
-                          <td
-                            key={cell.id}
-                            className="px-4 py-2 whitespace-nowrap text-sm"
-                          >
-                            {flexRender(
-                              cell.column.columnDef.cell,
-                              cell.getContext()
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan={selectedColumns.length}
-                        className="text-center py-8 text-gray-500"
-                      >
-                        Chưa chọn học ph��n nào.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm bg-black/20">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm ">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[1300px] h-[92vh] flex flex-col">
+        <div className="flex items-center justify-between p-2 border-b">
           <h2 className="text-xl font-bold flex items-center">
             <PackagePlus className="mr-2" />
             {selectedNhomId === "new"
               ? "Thêm Nhóm Học Phần Tự Chọn"
               : "Chỉnh Sửa Nhóm Học Phần Tự Chọn"}
           </h2>
+
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full"
@@ -738,54 +819,69 @@ const AddHocPhanTuChonModal = ({
             <X className="w-5 h-5" />
           </button>
         </div>
-
-        <div className="p-4 flex-1 overflow-y-auto bg-gray-50">
-          {renderStepContent()}
+        <div className="flex-1 flex flex-row gap-6 p-2 overflow-auto bg-gray-50">
+          {/* LEFT */}
+          <div className="flex-1 flex flex-col max-w-[60%] min-w-[420px]">
+            <NhomForm
+              selectedNhomId={selectedNhomId}
+              existingNhomHocPhan={existingNhomHocPhan}
+              tenNhom={tenNhom}
+              soTinChiYeuCau={soTinChiYeuCau}
+              onChangeNhomId={setSelectedNhomId}
+              onChangeTenNhom={setTenNhom}
+              onChangeTinChiYeuCau={setSoTinChiYeuCau}
+            />
+            <p className="text-[12px]">Để tạo nhóm chuyên ngành, cần đặt tên theo quy tắc: [Tên nhóm] - [Mã nhóm] ví dụ: [Nhóm Chuyên Ngành] - [CN1]</p>
+            <div className="flex-1 min-h-[390px]">
+              {loading ? (
+                <div className="flex items-center justify-center py-10 text-gray-500">
+                  <div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                    Đang tải danh sách học phần...
+                  </div>
+                </div>
+              ) : (
+                <CollapsibleSelectableSubjectsTable
+                  hocPhans={availableHocPhans}
+                  selectedHocPhans={selectedHocPhans}
+                  onAdd={toggleSelectHocPhan}
+                />
+              )}
+            </div>
+          </div>
+          {/* RIGHT */}
+          <div className="flex-1 flex flex-col min-w-[340px] max-w-[40%]">
+            <SelectedSubjectsTable
+              data={selectedHocPhans}
+              onRemove={toggleSelectHocPhan}
+            />
+          </div>
         </div>
-
-        <div className="flex items-center justify-between p-4 border-t">
-          <div>
-            {step > 1 && (
-              <button
-                onClick={() => setStep(step - 1)}
-                className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
-              >
-                Quay lại
-              </button>
-            )}
-          </div>
-          <div className="flex items-center">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
-            >
-              Hủy
-            </button>
-            {step < 3 ? (
-              <button
-                onClick={() => setStep(step + 1)}
-                disabled={
-                  (step === 1 && (!tenNhom || soTinChiYeuCau <= 0))
-                }
-                className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-              >
-                Tiếp theo
-              </button>
+        {/* FOOTER */}
+        <div className="flex items-center justify-end gap-2 p-2 border-t bg-white">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+          >
+            Hủy
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={
+              isSaving ||
+              !tenNhom ||
+              soTinChiYeuCau <= 0 ||
+              selectedHocPhans.length === 0
+            }
+            className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
+          >
+            {isSaving ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
             ) : (
-              <button
-                onClick={handleSave}
-                disabled={isSaving}
-                className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center"
-              >
-                {isSaving ? (
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                ) : (
-                  <Plus className="w-4 h-4 inline-block mr-1" />
-                )}
-                {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
-              </button>
+              <Plus className="w-4 h-4 inline-block mr-1" />
             )}
-          </div>
+            {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
+          </button>
         </div>
       </div>
       <ErrorMessageModal

@@ -52,6 +52,8 @@ export const PROFILE_SERVICE = {
 };
 
 export const HOCPHAN_SERVICE = {
+  TU_CHON_UPDATE: HOCPHAN_SERVICE_URL + "/api/ctdt/update_hoc_phan_tu_chon", // RequestBody
+  TU_CHON_ADD: HOCPHAN_SERVICE_URL + "/api/ctdt/add_hoc_phan_tu_chon", // RequestBody
   HOCPHAN_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/list", // No Parameters, return list
   CTDT_DELETE_HOC_PHAN_IN_CTDT: HOCPHAN_SERVICE_URL + "/api/ctdt/delete/hocphan", // RequestBody
   CTDT_DELETE_HOC_PHAN_TU_CHON_IN_CTDT: HOCPHAN_SERVICE_URL + "/api/ctdt/delete/hoc_phan_tu_chon", // RequestBody

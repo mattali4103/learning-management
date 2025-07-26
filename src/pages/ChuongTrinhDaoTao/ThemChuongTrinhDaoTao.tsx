@@ -540,7 +540,7 @@ const ThemChuongTrinhDaoTao = () => {
       />
 
       {/* Thống kê tín chỉ */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6">
         <div className="bg-white rounded-2xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center">
             <BarChart3 className="w-5 h-5 mr-2 text-blue-600" />
@@ -569,31 +569,6 @@ const ThemChuongTrinhDaoTao = () => {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
-        </div>
-        <div className="bg-white rounded-2xl shadow-lg p-6 flex flex-col justify-center">
-          <div className="text-center">
-            <p className="text-sm text-gray-600">Tổng số tín chỉ</p>
-            <p className="text-4xl font-bold text-gray-800 my-2">
-              {totalCredits}
-            </p>
-            <div className="flex justify-center space-x-4 mt-2">
-              <div>
-                <p className="text-xs text-gray-500">Bắt buộc</p>
-                <p className="font-semibold text-blue-600">
-                  {creditStatistics
-                    .filter((c) => c.name !== "Tự chọn")
-                    .reduce((s, c) => s + c.soTinChi, 0)}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-500">Tự chọn</p>
-                <p className="font-semibold text-orange-600">
-                  {creditStatistics.find((c) => c.name === "Tự chọn")
-                    ?.soTinChi || 0}
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -653,6 +628,7 @@ const ThemChuongTrinhDaoTao = () => {
       )}
       {showAddNhomTuChonModal && (
         <AddHocPhanTuChonModal
+          selectedCTDTId={chuongTrinhDaoTao.id ?? 0}
           isOpen={showAddNhomTuChonModal}
           onClose={() => setShowAddNhomTuChonModal(false)}
           onSaveSuccess={handleSaveNhomSuccess}

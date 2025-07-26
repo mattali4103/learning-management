@@ -19,6 +19,7 @@ interface XepLoaiSinhVien {
 
 interface XepLoaiSinhVienPieChartProps {
   students: PreviewProfile[];
+  onClassificationClick?: (classification: string) => void;
 }
 
 // Define specific colors for each classification
@@ -32,7 +33,10 @@ const CLASSIFICATION_COLORS: { [key: string]: string } = {
   "Chưa xác định": "#9CA3AF", // Gray - Undetermined
 };
 
-export default function XepLoaiSinhVienPieChart({ students }: XepLoaiSinhVienPieChartProps) {
+export default function XepLoaiSinhVienPieChart({
+  students,
+  onClassificationClick,
+}: XepLoaiSinhVienPieChartProps) {
   // Process students data into chart format
   const data: XepLoaiSinhVien[] = useMemo(() => {
     if (!students.length) return [];
@@ -118,7 +122,12 @@ export default function XepLoaiSinhVienPieChart({ students }: XepLoaiSinhVienPie
             outerRadius={120}
             startAngle={90}
             endAngle={-270}
-            label={({ xepLoai, soLuong, percent }) => 
+            onClick={(payload) => {
+              if (onClassificationClick && payload) {
+                onClassificationClick(payload.xepLoai);
+              }
+            }}
+            label={({ xepLoai, soLuong, percent }) =>
               `${xepLoai}: ${soLuong} (${(percent * 100).toFixed(1)}%)`
             }
           >
@@ -126,6 +135,7 @@ export default function XepLoaiSinhVienPieChart({ students }: XepLoaiSinhVienPie
               <Cell
                 key={`cell-${entry.xepLoai}`}
                 fill={CLASSIFICATION_COLORS[entry.xepLoai] || "#9CA3AF"}
+                style={{ cursor: onClassificationClick ? "pointer" : "default" }}
               />
             ))}
           </Pie>

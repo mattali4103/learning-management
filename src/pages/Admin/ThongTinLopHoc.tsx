@@ -46,6 +46,9 @@ const ThongTinLopHoc = () => {
     "all"
   );
   const [filterClassification, setFilterClassification] = useState("all");
+  const [filterCreditRange, setFilterCreditRange] = useState<string | null>(
+    null
+  );
   const [filterCanhBao, setFilterCanhBao] = useState<
     "all" | "warning" | "normal"
   >("all");
@@ -213,6 +216,23 @@ const ThongTinLopHoc = () => {
         filterClassification === "all" ||
         student.xepLoaiHocLuc === filterClassification;
 
+      const matchesCreditRange = () => {
+        if (!filterCreditRange) return true;
+
+        const credits = student.soTinChiTichLuy || 0;
+        const rangeParts = filterCreditRange.replace(" tín chỉ", "").split("-");
+
+        if (rangeParts.length === 2) {
+          const min = parseInt(rangeParts[0], 10);
+          const max = parseInt(rangeParts[1], 10);
+          return credits >= min && credits <= max;
+        } else if (filterCreditRange.startsWith(">")) {
+          const min = parseInt(filterCreditRange.replace(">", "").replace(" tín chỉ", ""), 10);
+          return credits > min;
+        }
+        return true;
+      };
+
       const matchesCanhBao =
         filterCanhBao === "all" ||
         (filterCanhBao === "warning" &&
@@ -228,6 +248,7 @@ const ThongTinLopHoc = () => {
         matchesSearch &&
         matchesGender &&
         matchesClassification &&
+        matchesCreditRange() &&
         matchesCanhBao
       );
     });
@@ -284,6 +305,7 @@ const ThongTinLopHoc = () => {
     searchTerm,
     filterGender,
     filterClassification,
+    filterCreditRange,
     filterCanhBao,
     sortBy,
     sortOrder,
@@ -319,6 +341,18 @@ const ThongTinLopHoc = () => {
     return classifications.filter(
       (classification) => classification && classification.trim() !== ""
     );
+  };
+
+  const handleClassificationClick = (classification: string) => {
+    setActiveTab("students");
+    setFilterClassification(classification);
+    setFilterCreditRange(null); // Reset other filter
+  };
+
+  const handleCreditRangeClick = (range: string) => {
+    setActiveTab("students");
+    setFilterCreditRange(range);
+    setFilterClassification("all"); // Reset other filter
   };
 
   // Quay lại danh sách lớp
@@ -518,11 +552,13 @@ const ThongTinLopHoc = () => {
             <div className="h-80">
               <StudentClassificationPieChart
                 students={getProcessedStudentsForCharts()}
+                onClassificationClick={handleClassificationClick}
               />
             </div>
             <div className="h-80">
               <AccumulatedCreditBarChart
                 students={getProcessedStudentsForCharts()}
+                onRangeClick={handleCreditRangeClick}
               />
             </div>
           </div>
@@ -541,6 +577,18 @@ const ThongTinLopHoc = () => {
                   {getFilteredAndSortedStudents().length} /{" "}
                   {previewProfiles?.length || 0} sinh viên
                 </p>
+                {filterClassification !== "all" && (
+                  <p className="text-sm text-blue-600 mt-1">
+                    Đang lọc theo xếp loại:{" "}
+                    <span className="font-semibold">{filterClassification}</span>
+                  </p>
+                )}
+                {filterCreditRange && (
+                  <p className="text-sm text-blue-600 mt-1">
+                    Đang lọc theo tín chỉ:{" "}
+                    <span className="font-semibold">{filterCreditRange}</span>
+                  </p>
+                )}
               </div>
               <div className="flex items-center space-x-3">
                 {/* View Mode Toggle */}
@@ -579,6 +627,19 @@ const ThongTinLopHoc = () => {
                     className={`w-4 h-4 transition-transform ${showFilters ? "rotate-180" : ""}`}
                   />
                 </button>
+
+                {/* Clear active chart filters */}
+                {(filterClassification !== "all" || filterCreditRange) && (
+                  <button
+                    onClick={() => {
+                      setFilterClassification("all");
+                      setFilterCreditRange(null);
+                    }}
+                    className="flex items-center space-x-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                  >
+                    <span>Xoá bộ lọc biểu đồ</span>
+                  </button>
+                )}
               </div>
             </div>
 

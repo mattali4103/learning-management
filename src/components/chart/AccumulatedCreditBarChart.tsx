@@ -20,9 +20,13 @@ interface CreditData {
 
 interface AccumulatedCreditBarChartProps {
   students: PreviewProfile[];
+  onRangeClick?: (range: string) => void;
 }
 
-export default function AccumulatedCreditBarChart({ students }: AccumulatedCreditBarChartProps) {
+export default function AccumulatedCreditBarChart({
+  students,
+  onRangeClick,
+}: AccumulatedCreditBarChartProps) {
   // Process students data into chart format
   const data: CreditData[] = useMemo(() => {
     if (!students.length) return [];
@@ -122,11 +126,17 @@ export default function AccumulatedCreditBarChart({ students }: AccumulatedCredi
             label={{ value: 'Số sinh viên', angle: -90, position: 'insideLeft' }}
           />
           <Tooltip content={<CustomBarTooltip />} />
-          <Bar 
-            dataKey="value" 
+          <Bar
+            dataKey="value"
             fill="#3b82f6"
             radius={[4, 4, 0, 0]}
             name="Số sinh viên"
+            onClick={(payload) => {
+              if (onRangeClick && payload) {
+                onRangeClick(payload.range);
+              }
+            }}
+            style={{ cursor: onRangeClick ? "pointer" : "default" }}
           />
         </BarChart>
       </ResponsiveContainer>
