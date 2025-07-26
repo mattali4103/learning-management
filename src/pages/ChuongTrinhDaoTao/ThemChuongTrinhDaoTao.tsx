@@ -25,7 +25,6 @@ import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
 import AddHocPhanToCTDTModal from "../../components/modals/AddHocPhanToCTDTModal"; // Placeholder
 import Loading from "../../components/Loading";
-import { CollapsibleCourseTable } from "../../components/table/CollapsibleCourseTable";
 
 // Hooks
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
@@ -39,6 +38,7 @@ import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 
 // API endpoints
 import { HOCPHAN_SERVICE, PROFILE_SERVICE } from "../../api/apiEndPoints";
+import { ChuongTrinhDaoTaoTable } from "../../components/table/CollapsibleCourseTable";
 
 // Main data structure
 interface ChuongTrinhDaoTao {
@@ -198,18 +198,17 @@ const ThemChuongTrinhDaoTao = () => {
       );
       if (response.data.code === 200) {
         if (response.data.data === null) {
-          // Không có dữ liệu CTĐT
-          return false;
+          setSuccessMessage(
+            "Có vẻ bạn vừa tạo CTDT ngành học hoặc khoá học mới, tiến hành tạo mới."
+          )
+          return false; // Không có dữ liệu CTĐT
         }
         setChuongTrinhDaoTao(response.data.data);
         return true;
       }
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Không thể tải khóa học. Vui lòng thử lại."
-      );
+      console.error("Error fetching CTDT:", error);
+      setErrorMessage("Không thể tải khóa học. Vui lòng thử lại.");
       setShowErrorModal(true);
       return false;
     } finally {
@@ -459,9 +458,11 @@ const ThemChuongTrinhDaoTao = () => {
                     );
                   } else {
                     await handleAddCTDT();
-                    navigate(
-                      `/giangvien/ctdt/edit/${selectedNganh}/${selectedKhoaHoc}`
-                    );
+                    setTimeout(() => {
+                      navigate(
+                        `/giangvien/ctdt/edit/${selectedNganh}/${selectedKhoaHoc}`
+                      );
+                    }, 3000);
                   }
                   setLoading(false);
                 } else {
@@ -591,7 +592,7 @@ const ThemChuongTrinhDaoTao = () => {
               Thêm học phần / Nhóm tự chọn
             </button>
           </div>
-          <CollapsibleCourseTable
+          <ChuongTrinhDaoTaoTable
             activeTab="tatca"
             name="Chương trình đào tạo"
             requiredCourses={chuongTrinhDaoTao.hocPhanList ?? []}

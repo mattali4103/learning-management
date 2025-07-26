@@ -112,10 +112,12 @@ const ImportChuongTrinhDaoTao = () => {
         setShowSuccessModal(true);
         setSelectedNganh("");
         setKhoaHoc("");
-        setSelectedFile(null);
+        // Không reset selectedFile ở đây, chỉ reset khi người dùng chọn file mới hoặc khi modal đóng
         setTimeout(() => navigate("/giangvien/ctdt"), 2000);
       } else {
-        setErrorMessage(response.data.message || "Có lỗi xảy ra khi nhập file.");
+        setErrorMessage(
+          response.data.message || "Có lỗi xảy ra khi nhập file."
+        );
         setShowErrorModal(true);
       }
     } catch (error) {
@@ -150,7 +152,6 @@ const ImportChuongTrinhDaoTao = () => {
 
       <div className="max-w-2xl mx-auto bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-10 border border-gray-100 relative">
         <div className="space-y-8">
-
           {/* Select Ngành */}
           <div className="relative group">
             <label
@@ -191,7 +192,6 @@ const ImportChuongTrinhDaoTao = () => {
               Khóa học <span className="text-red-500">*</span>
             </label>
           </div>
-
           {/* Upload Excel */}
           <div
             onDragEnter={handleDrag}
@@ -203,7 +203,6 @@ const ImportChuongTrinhDaoTao = () => {
                 ? "border-indigo-500 bg-indigo-50"
                 : "border-dashed border-gray-200 bg-white"
             } rounded-2xl p-6 flex flex-col items-center justify-center relative cursor-pointer shadow-md group`}
-            onClick={() => fileInputRef.current?.click()}
           >
             <input
               ref={fileInputRef}
@@ -216,14 +215,20 @@ const ImportChuongTrinhDaoTao = () => {
             />
             <UploadCloud
               className={`mx-auto mb-2 h-14 w-14 ${
-                dragActive ? "text-indigo-500 animate-bounce" : "text-gray-400 group-hover:text-indigo-500"
+                dragActive
+                  ? "text-indigo-500 animate-bounce"
+                  : "text-gray-400 group-hover:text-indigo-500"
               } transition`}
               strokeWidth={2}
             />
             <div className="text-center">
-              <span className="font-medium text-indigo-700">Kéo & thả file Excel vào đây</span>
+              <span className="font-medium text-indigo-700">
+                Kéo & thả file Excel vào đây
+              </span>
               <span className="mx-1 text-gray-400">hoặc</span>
-              <span className="underline text-indigo-600 cursor-pointer">Chọn file</span>
+              <span className="underline text-indigo-600 cursor-pointer">
+                Chọn file
+              </span>
             </div>
             <p className="text-xs text-gray-500 mt-1">
               Chỉ chấp nhận file .xlsx hoặc .xls, dung lượng tối đa 10MB
@@ -235,7 +240,6 @@ const ImportChuongTrinhDaoTao = () => {
               </p>
             )}
           </div>
-
           {/* Upload Button */}
           <div className="flex justify-end mt-8">
             <button
@@ -259,7 +263,6 @@ const ImportChuongTrinhDaoTao = () => {
         isOpen={showErrorModal}
         onClose={() => setShowErrorModal(false)}
         message={errorMessage}
-       
       />
       <SuccessMessageModal
         isOpen={showSuccessModal}

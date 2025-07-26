@@ -25,7 +25,7 @@ import { EmptyTableState } from "./EmptyTableState";
 import { KeHoachHocTapExportButton } from "../PDFExportButton";
 import type { HocPhan } from "../../types/HocPhan";
 import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
-interface CollapsibleCourseTableProps {
+interface ChuongTrinhDaoTaoTableProps {
   name: string;
   requiredCourses: HocPhan[];
   electiveGroups: HocPhanTuChon[];
@@ -65,7 +65,7 @@ interface CourseWithGroup extends HocPhan {
   type?: 'direct-required' | 'elective';
 }
 
-export const CollapsibleCourseTable: React.FC<CollapsibleCourseTableProps> = ({
+export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
   name,
   requiredCourses = [],
   electiveGroups = [],

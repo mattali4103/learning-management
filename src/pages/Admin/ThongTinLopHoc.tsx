@@ -58,7 +58,7 @@ const ThongTinLopHoc = () => {
 
   // Tab state
   const [activeTab, setActiveTab] = useState<"students" | "statistics">(
-    "students"
+    "statistics"
   );
 
   // Export modal states
@@ -124,7 +124,7 @@ const ThongTinLopHoc = () => {
   // Fetch preview profiles for all students in the class
   const fetchAllPreviewProfiles = useCallback(async () => {
     if (!maLop) return;
-  
+
     setLoading(true);
     try {
       // If user is a GIANGVIEN, check if they are in charge of this class
@@ -133,9 +133,11 @@ const ThongTinLopHoc = () => {
         const response = await axiosPrivate.get(
           PROFILE_SERVICE.GET_DS_LOP_CHUNHIEM.replace(":maSo", maSoGiangVien)
         );
-  
+
         if (response.data.code === 200 && Array.isArray(response.data.data)) {
-          const assignedClasses = response.data.data.map((lop: any) => lop.maLop);
+          const assignedClasses = response.data.data.map(
+            (lop: any) => lop.maLop
+          );
           if (!assignedClasses.includes(maLop)) {
             setError("Bạn không có quyền xem thông tin của lớp này.");
             setPreviewProfiles([]);
@@ -150,12 +152,12 @@ const ThongTinLopHoc = () => {
           return;
         }
       }
-  
+
       // Proceed to fetch student profiles for the class
       const response = await axiosPrivate.get(
         PROFILE_SERVICE.GET_PREVIEW_PROFILE.replace(":maLop", maLop)
       );
-  
+
       if (response.data.code === 200 && response.data.data) {
         const profilesData: PreviewProfile[] = response.data.data;
         setPreviewProfiles(profilesData);
@@ -163,7 +165,10 @@ const ThongTinLopHoc = () => {
       } else {
         setPreviewProfiles([]);
         // Optionally set a more specific error message if needed
-        setError(response.data.message || "Không tìm thấy thông tin sinh viên cho lớp này.");
+        setError(
+          response.data.message ||
+            "Không tìm thấy thông tin sinh viên cho lớp này."
+        );
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -477,6 +482,17 @@ const ThongTinLopHoc = () => {
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
           <div className="flex border-b border-gray-200">
             <button
+              onClick={() => setActiveTab("statistics")}
+              className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium transition-colors ${
+                activeTab === "statistics"
+                  ? "border-b-2 border-blue-500 text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>Thống kê & Biểu đồ</span>
+            </button>
+            <button
               onClick={() => setActiveTab("students")}
               className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium transition-colors ${
                 activeTab === "students"
@@ -490,17 +506,6 @@ const ThongTinLopHoc = () => {
                 {previewProfiles?.length || 0}
               </span>
             </button>
-            <button
-              onClick={() => setActiveTab("statistics")}
-              className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium transition-colors ${
-                activeTab === "statistics"
-                  ? "border-b-2 border-blue-500 text-blue-600 bg-blue-50"
-                  : "text-gray-600 hover:text-gray-800 hover:bg-gray-50"
-              }`}
-            >
-              <BarChart3 className="w-4 h-4" />
-              <span>Thống kê & Biểu đồ</span>
-            </button>
           </div>
         </div>
       )}
@@ -509,18 +514,18 @@ const ThongTinLopHoc = () => {
       {previewProfiles &&
         previewProfiles.length > 0 &&
         activeTab === "statistics" && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-96">
-              <div className="h-80">
-                <StudentClassificationPieChart
-                  students={getProcessedStudentsForCharts()}
-                />
-              </div>
-              <div className="h-80">
-                <AccumulatedCreditBarChart
-                  students={getProcessedStudentsForCharts()}
-                />
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-h-96">
+            <div className="h-80">
+              <StudentClassificationPieChart
+                students={getProcessedStudentsForCharts()}
+              />
             </div>
+            <div className="h-80">
+              <AccumulatedCreditBarChart
+                students={getProcessedStudentsForCharts()}
+              />
+            </div>
+          </div>
         )}
 
       {/* Students List */}

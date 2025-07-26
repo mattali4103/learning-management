@@ -36,8 +36,7 @@ const ChuongTrinhDaoTao = () => {
   const [selectedMajor, setSelectedMajor] = useState("all");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{
-    maNganh: string;
-    khoaHoc: string;
+    id: number;
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const { auth } = useAuth();
@@ -60,9 +59,9 @@ const ChuongTrinhDaoTao = () => {
   };
 
   // Confirm before delete
-  const handleDeleteCTDT = (maNganh: string | number, khoaHoc: string) => {
+  const handleDeleteCTDT = (id: number) => {
     setShowDeleteConfirm(true);
-    setDeleteTarget({ maNganh: maNganh.toString(), khoaHoc });
+    setDeleteTarget({ id });
   };
 
   // Thực hiện xoá
@@ -71,8 +70,7 @@ const confirmDeleteCTDT = async () => {
   try {
     setDeleting(true);
     await axiosPrivate.delete(
-      HOCPHAN_SERVICE.CTDT_DELETE,
-      { data: { maNganh: deleteTarget.maNganh, khoaHoc: deleteTarget.khoaHoc } }
+      HOCPHAN_SERVICE.CTDT_DELETE.replace(":id", deleteTarget.id.toString())
     );
     await fetchChuongTrinhDaoTao();
     setShowDeleteConfirm(false);
@@ -321,8 +319,7 @@ const confirmDeleteCTDT = async () => {
                               title="Xoá"
                               onClick={() =>
                                 handleDeleteCTDT(
-                                  ctdt.nganh.maNganh,
-                                  ctdt.khoaHoc
+                                  ctdt.id
                                 )
                               }
                               className="p-2 rounded-full hover:bg-red-100 transition-colors"

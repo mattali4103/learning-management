@@ -7,8 +7,8 @@ import type { Nganh } from "../../types/Nganh";
 import Loading from "../../components/Loading";
 import PageHeader from "../../components/PageHeader";
 import StatisticsCard from "../../components/StatisticsCard";
-import { CollapsibleCourseTable } from "../../components/table/CollapsibleCourseTable";
 import { HOCPHAN_SERVICE } from "../../api/apiEndPoints";
+import { ChuongTrinhDaoTaoTable } from "../../components/table/CollapsibleCourseTable";
 
 interface HocPhanTuChon{
     id: number;
@@ -250,7 +250,7 @@ const CTDTDetail = () => {
         </div>
         {/* Content */}
         <div className="p-6">
-          <CollapsibleCourseTable
+          <ChuongTrinhDaoTaoTable
             name={activeTab === "tatca" 
               ? "Chi tiết chương trình đào tạo" 
               : `Chi tiết chương trình đào tạo - ${activeTab}`
