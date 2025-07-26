@@ -52,15 +52,18 @@ export const PROFILE_SERVICE = {
 };
 
 export const HOCPHAN_SERVICE = {
-
-  CTDT_DELETE: HOCPHAN_SERVICE_URL + "/api/ctdt/delete/:id", // PathVariable
+  HOCPHAN_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/list", // No Parameters, return list
+  CTDT_DELETE_HOC_PHAN_IN_CTDT: HOCPHAN_SERVICE_URL + "/api/ctdt/delete/hocphan", // RequestBody
+  CTDT_DELETE_HOC_PHAN_TU_CHON_IN_CTDT: HOCPHAN_SERVICE_URL + "/api/ctdt/delete/hoc_phan_tu_chon", // RequestBody
+  CTDT_DELETE_HOC_PHAN_IN_HP_TU_CHON: HOCPHAN_SERVICE_URL + "/api/ctdt/delete/hoc_phan_in_hptc", // RequestBody
+  CTDT_DELETE: HOCPHAN_SERVICE_URL + "/api/ctdt/delete/:id", // PathVariable xoá toàn bộ
   CTDT_UPLOAD_EXCEL: HOCPHAN_SERVICE_URL + "/api/ctdt/create/upload", // RequestBody
   CTDT_CREATE: HOCPHAN_SERVICE_URL + "/api/ctdt/create", // RequestBody
   CTDT_UPDATE: HOCPHAN_SERVICE_URL + "/api/ctdt/update", // RequestBody
   BY_LOAI_HP: HOCPHAN_SERVICE_URL + "/api/hocphan/by_loai_hp", // requestBody
   CTDT_BY_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/get_by_ma_nganh/:maNganh", //PathVariable, hocphanlist = null
   GET_ALL_HOCKY: HOCPHAN_SERVICE_URL + "/api/hocky/list",
-  CTDT_NGANH: HOCPHAN_SERVICE_URL + "/api/ctdt/get/:maNganh/:khoaHoc",
+  CTDT_NGANH_KHOAHOC: HOCPHAN_SERVICE_URL + "/api/ctdt/get/:maNganh/:khoaHoc",
   CTDT_HOC_PHAN_TU_CHON_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/list",
   CTDT_BY_LOAI_HP: HOCPHAN_SERVICE_URL + "/api/ctdt/hocphan/by_loai_hp", // RequestBody 
   HOCPHAN_TUCHON_BY_LOAI_HP: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/by_loai_hp", // RequestBody
@@ -77,7 +80,7 @@ export const KHHT_SERVICE = {
   KHHT_MAU_CREATES: KHHT_SERVICE_URL + "/api/khht/mau/creates", // tạo mẫu kế hoạch học tập - posts
   KHHT_MAU_BY_NGANH: KHHT_SERVICE_URL + "/api/khht/mau/group_by_khoa_hoc", // lấy khht mẫu group by khoa dựa theo mã ngành params
   KHHT_MAU_BY_KHOAHOC_MA_NGANH: KHHT_SERVICE_URL + "/api/khht/mau/by_ma_nganh", // lấy mẫu kế hoạch học tập theo mã ngành params
-  GET_HOCPHAN_BY_GOIY: KHHT_SERVICE_URL + "/api/khht/sinhvien/goi_y", // lấy danh sách học phần gợi ý - posts
+  GET_HOCPHAN_BY_GOIY: KHHT_SERVICE_URL + "/api/khht/recommend", // lấy danh sách học phần gợi ý - posts
   GET_HOCKY_MAU: KHHT_SERVICE_URL + "/api/khht/mau/hocky", // lấy mẫu học kỳ - params
   GET_HOCKY: KHHT_SERVICE_URL + "/api/khht/hocky/sinhvien/:maSo",
   GET_MAHP_IN_KHHT:

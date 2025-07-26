@@ -8,7 +8,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
-import { CollapsibleCourseTable } from "../../components/table/CollapsibleCourseTable";
+
 
 import PageHeader from "../../components/PageHeader";
 import StatisticsCard from "../../components/StatisticsCard";
@@ -25,6 +25,7 @@ import DeleteModal from "../../components/modals/DeleteModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
 import type { Khoa } from "../../types/Khoa";
 import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
+import { HocPhanTable } from "../../components/table/HocPhanTable";
 
 interface KeHoachHocTapDetail {
   id: string;
@@ -500,7 +501,7 @@ const KeHoachHocTapMauDetail = () => {
                 {/* Required Courses Section */}
                 {filteredCoursesByType.length > 0 && (
                   <div className="overflow-hidden mb-8">
-                    <CollapsibleCourseTable
+                    <HocPhanTable
                       name={
                         activeDetailTab === "tatca"
                           ? "Kế hoạch học tập"

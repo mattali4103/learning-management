@@ -60,10 +60,6 @@ interface SubjectGroup {
   courses: HocPhan[];
   colorScheme: string;
 }
-
-
-
-
 // --- Reusable Pagination Component ---
 const PaginationControls = <TData,>({ table }: { table: Table<TData> }) => (
   <div className="flex items-center justify-end gap-2 mt-4">
@@ -601,7 +597,6 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
   
   const [allHocPhans, setAllHocPhans] = useState<HocPhan[]>([]);
   const [loadingAvailableSubjects, setLoadingAvailableSubjects] = useState(false);
-  const [availableHocPhans, setAvailableHocPhans] = useState<HocPhan[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
@@ -648,7 +643,6 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
     } else {
       setActiveTab("available");
       setAllHocPhans([]);
-      setAvailableHocPhans([]);
       setErrorMessage("");
       setShowErrorModal(false);
       setSuccessMessage("");
@@ -671,22 +665,12 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
       };
       setPendingHocPhans((prev) => [...prev, newItem]);
     },
-    [setPendingHocPhans, setErrorMessage, setShowErrorModal]
+    [setPendingHocPhans]
   );
 
   const handleRemoveFromPending = useCallback(
     (maHp: string) => {
       setPendingHocPhans((prev) => prev.filter((item) => item.maHp !== maHp));
-    },
-    [setPendingHocPhans]
-  );
-  const handleUpdatePending = useCallback(
-    (maHp: string, updates: Partial<HocPhan>) => {
-      setPendingHocPhans((prev) =>
-        prev.map((item) =>
-          item.maHp === maHp ? { ...item, ...updates } : item
-        )
-      );
     },
     [setPendingHocPhans]
   );
@@ -789,7 +773,7 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
         size: 80,
       },
     ],
-    [handleUpdatePending, handleRemoveFromPending]
+    [handleRemoveFromPending]
   );
   if (!isOpen) return null;
 
@@ -808,7 +792,15 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
               className={tabButtonClass("add")}
               onClick={() => setActiveTab("add")}
             >
-              Học phần chuẩn bị thêm ({pendingHocPhans.length})
+              Chờ xác nhận
+              {pendingHocPhans.length > 0 && (
+                <span className="relative inline-flex ml-2">
+                  <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-400 opacity-75"></span>
+                  <span className="relative inline-flex items-center justify-center rounded-full h-4 w-4 bg-red-500 text-white text-[10px] font-bold">
+                    {pendingHocPhans.length}
+                  </span>
+                </span>
+              )}
             </button>
           </div>
           <button

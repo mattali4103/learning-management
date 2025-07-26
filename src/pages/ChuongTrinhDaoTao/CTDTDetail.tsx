@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { BookOpen, ArrowLeft, Users, GraduationCap } from "lucide-react";
+import { BookOpen, ArrowLeft, Users, GraduationCap, Edit, Trash2 } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import type { HocPhan } from "../../types/HocPhan";
 import type { Nganh } from "../../types/Nganh";
@@ -8,7 +8,10 @@ import Loading from "../../components/Loading";
 import PageHeader from "../../components/PageHeader";
 import StatisticsCard from "../../components/StatisticsCard";
 import { HOCPHAN_SERVICE } from "../../api/apiEndPoints";
-import { ChuongTrinhDaoTaoTable } from "../../components/table/CollapsibleCourseTable";
+import { HocPhanTable } from "../../components/table/HocPhanTable";
+import DeleteModal from "../../components/modals/DeleteModal";
+import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
+import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 
 interface HocPhanTuChon{
     id: number;
@@ -38,6 +41,12 @@ const CTDTDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("tatca");
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showErrorModal, setShowErrorModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   // Function to copy course code to clipboard
   const copyToClipboard = (text: string) => {
@@ -58,7 +67,7 @@ const CTDTDetail = () => {
     try {
       setLoading(true);
       const response = await axiosPrivate.get(
-        HOCPHAN_SERVICE.CTDT_NGANH.replace(":maNganh", maNganh).replace(":khoaHoc", khoaHoc)
+        HOCPHAN_SERVICE.CTDT_NGANH_KHOAHOC.replace(":maNganh", maNganh).replace(":khoaHoc", khoaHoc)
       );
       
       if (response.data && response.data.data) {
@@ -84,6 +93,31 @@ const CTDTDetail = () => {
   useEffect(() => {
     fetchCTDTDetail();
   }, [fetchCTDTDetail]);
+
+  const handleEdit = () => {
+    if (maNganh && khoaHoc) {
+      navigate(`/giangvien/ctdt/edit/${maNganh}/${khoaHoc}`);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!chuongTrinhDaoTao) return;
+    setIsDeleting(true);
+    try {
+      await axiosPrivate.delete(HOCPHAN_SERVICE.CTDT_DELETE.replace(":id", chuongTrinhDaoTao.id.toString()));
+      setSuccessMessage("Xóa chương trình đào tạo thành công!");
+      setShowSuccessModal(true);
+      setTimeout(() => {
+        setIsDeleteModalOpen(false);
+        navigate("/giangvien/ctdt");
+      }, 1500);
+    } catch (error) {
+      setErrorMessage("Không thể xóa chương trình đào tạo. Vui lòng thử lại.");
+      setShowErrorModal(true);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Get filtered data based on course type
   const allCourses = useMemo(() => chuongTrinhDaoTao?.hocPhanList || [], [chuongTrinhDaoTao?.hocPhanList]);
@@ -156,6 +190,24 @@ const CTDTDetail = () => {
             <ArrowLeft className="w-4 h-4 mr-2" />
             Quay lại
           </button>
+        }
+        actions={
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={handleEdit}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              Chỉnh sửa
+            </button>
+            <button
+              onClick={() => setIsDeleteModalOpen(true)}
+              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Xóa
+            </button>
+          </div>
         }
       />
 
@@ -250,7 +302,7 @@ const CTDTDetail = () => {
         </div>
         {/* Content */}
         <div className="p-6">
-          <ChuongTrinhDaoTaoTable
+          <HocPhanTable
             name={activeTab === "tatca" 
               ? "Chi tiết chương trình đào tạo" 
               : `Chi tiết chương trình đào tạo - ${activeTab}`
@@ -269,6 +321,24 @@ const CTDTDetail = () => {
           />
         </div>
       </div>
+      <DeleteModal
+        isOpen={isDeleteModalOpen}
+        onConfirm={handleDelete}
+        onClose={() => setIsDeleteModalOpen(false)}
+        title="Xác nhận xóa"
+        message="Bạn có chắc chắn muốn xóa toàn bộ chương trình đào tạo này không? Hành động này không thể hoàn tác."
+        isLoading={isDeleting}
+      />
+      <SuccessMessageModal
+        isOpen={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        message={successMessage}
+      />
+      <ErrorMessageModal
+        isOpen={showErrorModal}
+        onClose={() => setShowErrorModal(false)}
+        message={errorMessage}
+      />
     </div>
   );
 };

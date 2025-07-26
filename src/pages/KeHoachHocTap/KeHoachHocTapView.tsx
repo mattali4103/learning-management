@@ -28,7 +28,7 @@ import {
   HOCPHAN_SERVICE,
   PROFILE_SERVICE,
 } from "../../api/apiEndPoints";
-import { CollapsibleCourseTable } from "../../components/table/CollapsibleCourseTable";
+import { HocPhanTable } from "../../components/table/HocPhanTable";
 import type { PreviewProfile } from "../../types/PreviewProfile";
 
 interface CreditStatData {
@@ -513,7 +513,7 @@ const KeHoachHocTapView = () => {
               </h4>
 
               {allData.length > 0 ? (
-                <CollapsibleCourseTable
+                <HocPhanTable
                   name="Tất cả học phần"
                   requiredCourses={allData.map((item) => ({
                     maHp: item.maHp,
@@ -546,7 +546,7 @@ const KeHoachHocTapView = () => {
               </h4>
 
               {selectedSemesterData.length > 0 ? (
-                <CollapsibleCourseTable
+                <HocPhanTable
                   name={`Học phần trong học kỳ`}
                   requiredCourses={selectedSemesterData.map((item) => ({
                     maHp: item.maHp,

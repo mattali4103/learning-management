@@ -23,7 +23,8 @@ import PageHeader from "../../components/PageHeader";
 import DeleteModal from "../../components/modals/DeleteModal";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
-import AddHocPhanToCTDTModal from "../../components/modals/AddHocPhanToCTDTModal"; // Placeholder
+import AddHocPhanToCTDTModal from "../../components/modals/AddHocPhanToCTDTModal";
+import AddHocPhanTuChonModal from "../../components/modals/AddHocPhanTuChonModal";
 import Loading from "../../components/Loading";
 
 // Hooks
@@ -38,7 +39,7 @@ import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 
 // API endpoints
 import { HOCPHAN_SERVICE, PROFILE_SERVICE } from "../../api/apiEndPoints";
-import { ChuongTrinhDaoTaoTable } from "../../components/table/CollapsibleCourseTable";
+import { HocPhanTable } from "../../components/table/HocPhanTable";
 
 // Main data structure
 interface ChuongTrinhDaoTao {
@@ -102,14 +103,11 @@ const ThemChuongTrinhDaoTao = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<{
-    type: "hocphan" | "nhom";
-    id: any;
-  } | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(isEditMode);
+  const [showAddNhomTuChonModal, setShowAddNhomTuChonModal] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
-
   const maKhoa = auth.user?.maKhoa || "";
 
   // Memoized statistics
@@ -185,13 +183,12 @@ const ThemChuongTrinhDaoTao = () => {
   }, [axiosPrivate, selectedNganh]);
 
   // Fetch dữ liệu CTĐT để edit
-  // ==> CHỈNH SỬA: TRẢ VỀ true/false để biết có tồn tại hay không
   const fetchChuongTrinhDaoTaoForEdit = useCallback(async () => {
     if (!selectedNganh || !selectedKhoaHoc) return false;
     setLoading(true);
     try {
       const response = await axiosPrivate.get(
-        HOCPHAN_SERVICE.CTDT_NGANH.replace(":maNganh", selectedNganh).replace(
+        HOCPHAN_SERVICE.CTDT_NGANH_KHOAHOC.replace(":maNganh", selectedNganh).replace(
           ":khoaHoc",
           selectedKhoaHoc
         )
@@ -200,9 +197,10 @@ const ThemChuongTrinhDaoTao = () => {
         if (response.data.data === null) {
           setSuccessMessage(
             "Có vẻ bạn vừa tạo CTDT ngành học hoặc khoá học mới, tiến hành tạo mới."
-          )
+          );
           return false; // Không có dữ liệu CTĐT
         }
+        console.log("CTDT data:", response.data.data);
         setChuongTrinhDaoTao(response.data.data);
         return true;
       }
@@ -294,26 +292,49 @@ const ThemChuongTrinhDaoTao = () => {
     });
   };
 
+  const handleSaveNhomSuccess = () => {
+    fetchChuongTrinhDaoTaoForEdit();
+  };
+
+  const handleOpenDeleteModal = useCallback((maHp: string | null) => {
+    setItemToDelete(maHp);
+    setIsDeleteModalOpen(true);
+  }, []);
+
   // Xóa học phần/nhóm
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!itemToDelete) return;
-    if (itemToDelete.type === "hocphan") {
-      setChuongTrinhDaoTao((prev) => ({
-        ...prev,
-        hocPhanList: prev.hocPhanList.filter(
-          (hp) => hp.maHp !== itemToDelete.id
-        ),
-      }));
-    } else if (itemToDelete.type === "nhom") {
-      setChuongTrinhDaoTao((prev) => ({
-        ...prev,
-        nhomHocPhanTuChon: prev.nhomHocPhanTuChon.filter(
-          (nhom) => nhom.id !== itemToDelete.id
-        ),
-      }));
+    //fetch API để xóa học phần
+    setIsDeleting(true);
+    const data = {
+      id: chuongTrinhDaoTao.id,
+      hocPhanList: [
+        {
+          maHp: itemToDelete,
+        },
+      ],
+    };
+    console.log("Deleting hoc phan:", data);
+    try {
+      await axiosPrivate.delete(HOCPHAN_SERVICE.CTDT_DELETE_HOC_PHAN_IN_CTDT, {
+        data: data,
+      });
+    } catch (error) {
+      console.error("Error deleting hoc phan:", error);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Không thể xóa học phần. Vui lòng thử lại."
+      );
+      setShowErrorModal(true);
+      setIsDeleting(false);
+      return;
     }
-    setSuccessMessage("Xóa thành công!");
-    setShowSuccessModal(true);
+    // Cập nhật lại danh sách học phần
+    setChuongTrinhDaoTao((prev) => ({
+      ...prev,
+      hocPhanList: prev.hocPhanList.filter((hp) => hp.maHp !== itemToDelete),
+    }));
     setIsDeleteModalOpen(false);
     setItemToDelete(null);
     setIsDeleting(false);
@@ -584,15 +605,24 @@ const ThemChuongTrinhDaoTao = () => {
             <h4 className="text-lg font-semibold text-gray-800">
               Danh sách học phần
             </h4>
-            <button
-              onClick={() => setShowAddHocPhanModal(true)}
-              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Thêm học phần / Nhóm tự chọn
-            </button>
+            <div className="flex space-x-2">
+              <button
+                onClick={() => setShowAddHocPhanModal(true)}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm học phần
+              </button>
+              <button
+                onClick={() => setShowAddNhomTuChonModal(true)}
+                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Thêm nhóm tự chọn
+              </button>
+            </div>
           </div>
-          <ChuongTrinhDaoTaoTable
+          <HocPhanTable
             activeTab="tatca"
             name="Chương trình đào tạo"
             requiredCourses={chuongTrinhDaoTao.hocPhanList ?? []}
@@ -600,6 +630,8 @@ const ThemChuongTrinhDaoTao = () => {
             loading={loading}
             emptyStateTitle="Chưa có học phần nào"
             emptyStateDescription="Nhấn nút 'Thêm học phần' để bắt đầu xây dựng chương trình."
+            showDeleteButton={true}
+            onDelete={handleOpenDeleteModal}
           />
         </div>
       </div>
@@ -617,6 +649,16 @@ const ThemChuongTrinhDaoTao = () => {
           isOpen={showAddHocPhanModal}
           onClose={() => setShowAddHocPhanModal(false)}
           onSave={handleAddHocPhanSuccess}
+        />
+      )}
+      {showAddNhomTuChonModal && (
+        <AddHocPhanTuChonModal
+          isOpen={showAddNhomTuChonModal}
+          onClose={() => setShowAddNhomTuChonModal(false)}
+          onSaveSuccess={handleSaveNhomSuccess}
+          existingNhomHocPhan={chuongTrinhDaoTao.nhomHocPhanTuChon}
+          selectedKhoaHoc={selectedKhoaHoc}
+          selectedNganh={selectedNganh}
         />
       )}
       <DeleteModal

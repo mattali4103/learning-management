@@ -19,13 +19,14 @@ import {
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
+  Trash2,
 } from "lucide-react";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
 import { KeHoachHocTapExportButton } from "../PDFExportButton";
 import type { HocPhan } from "../../types/HocPhan";
 import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
-interface ChuongTrinhDaoTaoTableProps {
+interface HocPhanTableProps {
   name: string;
   requiredCourses: HocPhan[];
   electiveGroups: HocPhanTuChon[];
@@ -34,6 +35,8 @@ interface ChuongTrinhDaoTaoTableProps {
   emptyStateTitle?: string;
   emptyStateDescription?: string;
   onCopyToClipboard?: (text: string) => void;
+  showDeleteButton?: boolean;
+  onDelete?: (maHp: string) => void;
 }
 
 interface CourseGroupResult {
@@ -43,6 +46,7 @@ interface CourseGroupResult {
 
 interface CourseGroup {
   id: string;
+  originalId?: any;
   type: 'required' | 'elective';
   title: string;
   subtitle: string;
@@ -55,6 +59,7 @@ interface CourseGroup {
 
 interface CourseWithGroup extends HocPhan {
   groupId: string;
+  groupOriginalId?: any;
   groupType: 'required' | 'elective';
   isGroupHeader?: boolean;
   groupTitle?: string;
@@ -65,7 +70,7 @@ interface CourseWithGroup extends HocPhan {
   type?: 'direct-required' | 'elective';
 }
 
-export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
+export const HocPhanTable: React.FC<HocPhanTableProps> = ({
   name,
   requiredCourses = [],
   electiveGroups = [],
@@ -73,6 +78,8 @@ export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
   loading = false,
   emptyStateTitle,
   emptyStateDescription,
+  showDeleteButton = false,
+  onDelete,
 }) => {
 
   // Remove duplicate courses by maHp (course code) in requiredCourses
@@ -109,7 +116,7 @@ export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
 
     // Define the desired order for elective group types by matching course types inside them
     const electiveOrder = [
-      "Đại cương",
+      "Đại c��ơng",
       "Cơ sở ngành",
       "Chuyên ngành",
     ];
@@ -202,6 +209,7 @@ export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
 
         electiveGroupsFiltered.push({
           id: `elective-${group.id}-${index}`,
+          originalId: group.id,
           type: 'elective',
           title: `Nhóm tự chọn: ${group.tenNhom}`,
           subtitle: `${coursesInGroup.length} học phần • Yêu cầu: ${group.tinChiYeuCau} tín chỉ`,
@@ -304,6 +312,7 @@ export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
         loaiHp: group.type,
         hocPhanTienQuyet: '',
         groupId: group.id,
+        groupOriginalId: group.originalId,
         groupType: group.type,
         isGroupHeader: true,
         groupTitle: group.title,
@@ -319,6 +328,7 @@ export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
           result.push({
             ...course,
             groupId: group.id,
+            groupOriginalId: group.originalId,
             groupType: group.type,
             isGroupHeader: false,
             colorScheme: group.colorScheme
@@ -362,7 +372,8 @@ export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
 
   // Columns definition
   const columns = useMemo<ColumnDef<CourseWithGroup>[]>(
-    () => [
+    () => {
+      const baseColumns: ColumnDef<CourseWithGroup>[] = [
       {
         id: "stt",
         header: "STT",
@@ -494,8 +505,43 @@ export const ChuongTrinhDaoTaoTable: React.FC<ChuongTrinhDaoTaoTableProps> = ({
         enableSorting: true,
         sortingFn: "alphanumeric",
       },
-    ],
-    []
+    ];
+    if (showDeleteButton) {
+        baseColumns.push({
+          id: "actions",
+          header: "",
+          size: 80,
+          cell: ({ row }) => {
+            const item = row.original;
+            const handleDeleteClick = (e: React.MouseEvent) => {
+              e.stopPropagation(); // Ngăn không cho event click lan tới row
+              if (onDelete) {
+                  onDelete(item.maHp || item.groupOriginalId );
+              }
+            };
+
+            // Chỉ hiển thị nút xóa cho học phần hoặc nhóm tự chọn
+            const canDelete = !item.isGroupHeader || (item.isGroupHeader && item.groupType === 'elective');
+
+            if (!canDelete) return null;
+
+            return (
+              <div className="text-center">
+                <button
+                  onClick={handleDeleteClick}
+                  className="p-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-full transition-colors duration-200 group"
+                  title="Xóa"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          },
+        });
+      }
+      return baseColumns;
+    },
+    [showDeleteButton, onDelete]
   );
 
   // Create table instance - use standard setup but handle pagination display manually

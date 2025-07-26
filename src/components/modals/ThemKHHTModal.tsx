@@ -61,14 +61,6 @@ interface KHHTCreatePayload {
   maHocKy: number;
   maHocPhan: string;
 }
-interface HocPhanCaiThien {
-  id: number;
-  maHp: string;
-  tenHp: string;
-  diemChu: string;
-  diemSo?: number;
-  soTinChi: number;
-}
 // --- Reusable Pagination Component ---
 const PaginationControls = <TData,>({ table }: { table: Table<TData> }) => (
   <div className="flex items-center justify-end gap-2 mt-4">
@@ -719,7 +711,7 @@ const ThemKHHTModal = ({
     setLoadingAvailableSubjects(true);
     try {
       const response = await axiosPrivate.get(
-        HOCPHAN_SERVICE.CTDT_NGANH.replace(":khoaHoc", selectedKhoaHoc).replace(
+        HOCPHAN_SERVICE.CTDT_NGANH_KHOAHOC.replace(":khoaHoc", selectedKhoaHoc).replace(
           ":maNganh",
           selectedNganh
         )
