@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import CreatableSelect from "react-select/creatable";
 import {
   BookOpen,
   ArrowLeft,
   Plus,
   BarChart3,
-  ClipboardCheck,
 } from "lucide-react";
 import {
   BarChart,
@@ -106,6 +106,7 @@ const ThemChuongTrinhDaoTao = () => {
   const [itemToDelete, setItemToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [loading, setLoading] = useState(isEditMode);
+  const [isCreatingNganh, setIsCreatingNganh] = useState(false);
   const [showAddNhomTuChonModal, setShowAddNhomTuChonModal] = useState(false);
   const tableRef = useRef<HTMLDivElement>(null);
   const maKhoa = auth.user?.maKhoa || "";
@@ -116,7 +117,6 @@ const ThemChuongTrinhDaoTao = () => {
       "Đại cương": 0,
       "Cơ sở ngành": 0,
       "Chuyên ngành": 0,
-      "Tự chọn": 0,
     };
     (chuongTrinhDaoTao.hocPhanList ?? []).forEach((hp) => {
       if (hp.loaiHp in stats) {
@@ -131,20 +131,7 @@ const ThemChuongTrinhDaoTao = () => {
         soTinChi: stats["Chuyên ngành"],
         color: "#10b981",
       },
-      { name: "Tự chọn", soTinChi: stats["Tự chọn"], color: "#f97316" },
     ];
-  }, [chuongTrinhDaoTao]);
-
-  const totalCredits = useMemo(() => {
-    const required = (chuongTrinhDaoTao.hocPhanList ?? []).reduce(
-      (sum, hp) => sum + hp.tinChi,
-      0
-    );
-    const elective = (chuongTrinhDaoTao.nhomHocPhanTuChon ?? []).reduce(
-      (sum, nhom) => sum + nhom.tinChiYeuCau,
-      0
-    );
-    return required + elective;
   }, [chuongTrinhDaoTao]);
 
   // Fetch ngành, khóa học
@@ -218,25 +205,6 @@ const ThemChuongTrinhDaoTao = () => {
   // Navigation
   const handleBack = () => navigate("/giangvien/ctdt");
 
-  // Lưu CTĐT
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      // TODO: API Save
-      setSuccessMessage("Lưu chương trình đào tạo thành công!");
-      setShowSuccessModal(true);
-      setTimeout(() => navigate("/giangvien/chuongtrinhdaotao"), 1500);
-    } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Không thể tải khóa học. Vui lòng thử lại."
-      );
-      setShowErrorModal(true);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAddCTDT = async (): Promise<void> => {
     try {
@@ -340,6 +308,38 @@ const ThemChuongTrinhDaoTao = () => {
     setIsDeleting(false);
   };
 
+  const handleCreateNganh = async (inputValue: string) => {
+    setIsCreatingNganh(true);
+    try {
+      const response = await axiosPrivate.post(PROFILE_SERVICE.NGANH_CREATE, {
+        tenNganh: inputValue,
+        maKhoa: maKhoa,
+      });
+      if (response.data.code === 200 && response.data.data) {
+        const newNganh = response.data.data as Nganh;
+        // Thêm ngành mới vào danh sách và tự động chọn nó
+        setDanhSachNganh((prev) => [...prev, newNganh]);
+        setSelectedNganh(newNganh.maNganh.toString());
+        setSuccessMessage(`Tạo ngành "${newNganh.tenNganh}" thành công!`);
+        setShowSuccessModal(true);
+      } else {
+        setErrorMessage(
+          response.data.message || "Không thể tạo ngành mới. Vui lòng thử lại."
+        );
+        setShowErrorModal(true);
+      }
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Đã xảy ra lỗi khi tạo ngành mới."
+      );
+      setShowErrorModal(true);
+    } finally {
+      setIsCreatingNganh(false);
+    }
+  };
+
   // Effects
   useEffect(() => {
     fetchDanhSachNganh();
@@ -371,6 +371,10 @@ const ThemChuongTrinhDaoTao = () => {
 
   // Section: Chọn ngành + khóa học
   if ((!isEditMode && !isAddMode) || !selectedNganh || !selectedKhoaHoc) {
+    const nganhOptions = danhSachNganh.map((nganh) => ({
+      value: nganh.maNganh.toString(),
+      label: nganh.tenNganh,
+    }));
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
         <PageHeader
@@ -391,20 +395,27 @@ const ThemChuongTrinhDaoTao = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Chọn ngành
+                Chọn hoặc tạo ngành mới
               </label>
-              <select
-                value={selectedNganh}
-                onChange={(e) => setSelectedNganh(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-              >
-                <option value="">Chọn ngành</option>
-                {danhSachNganh.map((nganh) => (
-                  <option key={nganh.maNganh} value={nganh.maNganh}>
-                    {nganh.tenNganh}
-                  </option>
-                ))}
-              </select>
+              <CreatableSelect
+                isClearable
+                isDisabled={isCreatingNganh}
+                isLoading={isCreatingNganh}
+                onChange={(newValue) =>
+                  setSelectedNganh(newValue ? newValue.value : "")
+                }
+                onCreateOption={handleCreateNganh}
+                options={nganhOptions}
+                value={
+                  nganhOptions.find(
+                    (option) => option.value === selectedNganh
+                  ) || null
+                }
+                placeholder="Chọn ngành hoặc nhập để tạo mới..."
+                formatCreateLabel={(inputValue) => `Tạo ngành mới: "${inputValue}"`}
+                className="react-select-container"
+                classNamePrefix="react-select"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -421,7 +432,7 @@ const ThemChuongTrinhDaoTao = () => {
                     }
                     onChange={(e) => {
                       if (e.target.value === "__other__") {
-                        setSelectedKhoaHoc(""); // Xoá giá trị cũ để nhập mới
+                        setSelectedKhoaHoc(""); // Xoá gi���� trị cũ để nhập mới
                       } else {
                         setSelectedKhoaHoc(e.target.value);
                       }
@@ -525,16 +536,6 @@ const ThemChuongTrinhDaoTao = () => {
             className="p-2 hover:bg-gray-100 rounded-lg"
           >
             <ArrowLeft className="w-5 h-5" />
-          </button>
-        }
-        actions={
-          <button
-            onClick={handleSave}
-            disabled={loading}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center"
-          >
-            <ClipboardCheck className="w-4 h-4 mr-2" />
-            {loading ? "Đang lưu..." : "Lưu chương trình"}
           </button>
         }
       />

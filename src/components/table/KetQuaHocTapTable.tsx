@@ -18,14 +18,13 @@ import {
 import React, { useMemo, useState, useEffect } from "react";
 import { SortableHeader } from "./SortableHeader";
 import type { HocKy } from "../../types/HocKy";
-import type { NamHoc } from "../../types/NamHoc";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
 import { KetQuaHocTapExportButton } from "../PDFExportButton";
 
 // define columns for the KetQuaHocTapTable
 export interface KetQuaHocTapTableType {
-  id: number;
+  id: number | string;
   maHp: string;
   tenHp: string;
   dieuKien: boolean;
@@ -33,8 +32,7 @@ export interface KetQuaHocTapTableType {
   soTinChi: number;
   diemChu: string;
   diemSo: number;
-  hocKy: HocKy;
-  namHoc: NamHoc;
+  hocKy: HocKy | null;
 }
 
 const columns: ColumnDef<KetQuaHocTapTableType>[] = [

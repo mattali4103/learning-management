@@ -79,7 +79,7 @@ const ThemHocPhanComponent = () => {
       try {
         setIsLoading(true);
         const [hocPhanResponse, hocKyResponse] = await Promise.all([
-          axiosPrivate.get(HOCPHAN_SERVICE.CTDT_NGANH.replace(":khoaHoc", khoaHoc!).replace(":maNganh", maNganh!)),
+          axiosPrivate.get(HOCPHAN_SERVICE.CTDT_BY_NGANH.replace(":khoaHoc", khoaHoc!).replace(":maNganh", maNganh!)),
           axiosPrivate.get(HOCPHAN_SERVICE.GET_ALL_HOCKY),
         ]);
         const hocKyList = hocKyResponse.data.data || [];

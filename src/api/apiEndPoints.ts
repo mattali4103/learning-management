@@ -1,4 +1,4 @@
-const BASE_URL = "http://localhost"; // Base URL for the API
+
 // const BASE_URL = "http://172.30.121.32"; // Base URL for the API
 // const KONG_URL = "http://172.30.121.19"
 // export const USER_SERIVCE_URL = "http://localhost:8088";
@@ -6,14 +6,21 @@ const BASE_URL = "http://localhost"; // Base URL for the API
 // export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
 // export const PROFILE_SERVICE_URL = "http://localhost:8083";
 // export const KQHT_SERVICE_URL = "http://localhost:8089";
-
 // export const USER_SERIVCE_URL = "http://172.30.121.19" + ":8088";
+// FOR KONG
+// const KONG_URL = "http://localhost:8000"
+// export const USER_SERIVCE_URL = KONG_URL + "/user-service";
+// export const KHHT_SERVICE_URL = KONG_URL + "/khht-service";
+// export const HOCPHAN_SERVICE_URL = KONG_URL + "/course-service";
+// export const PROFILE_SERVICE_URL = KONG_URL + "/profile-service";
+// export const KQHT_SERVICE_URL = KONG_URL + "/kqht-service";
 
+//
+const BASE_URL = "http://localhost"; // Base URL for the API
 export const USER_SERIVCE_URL = BASE_URL + ":8088";
-
 export const KHHT_SERVICE_URL = BASE_URL + ":8087";
 export const HOCPHAN_SERVICE_URL = BASE_URL + ":8086";
-export const PROFILE_SERVICE_URL = BASE_URL + ":8083";
+export const PROFILE_SERVICE_URL = BASE_URL + ":8085";
 export const KQHT_SERVICE_URL = BASE_URL + ":8089";
 export const USER_SERVICE = {
   LOGIN: USER_SERIVCE_URL + "/api/auth/login",
@@ -25,6 +32,7 @@ export const USER_SERVICE = {
   LOGOUT: USER_SERIVCE_URL + "/api/auth/logout",
 };
 export const PROFILE_SERVICE = {
+    NGANH_CREATE: PROFILE_SERVICE_URL + "/api/profile/nganh/create", // RequestBody
   GET_DS_LOP_CHUNHIEM: PROFILE_SERVICE_URL + "/api/profile/lop/get_by_chu_nhiem/:maSo", // Return List không có cấu trúc API
   GET_KHOA_BY_MA_KHOA: PROFILE_SERVICE_URL + "/api/profile/khoa/id/:maKhoa", // Return Object
   GET_SINHVIEN_PREVIEW_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/thongke/:maSo",
@@ -35,7 +43,7 @@ export const PROFILE_SERVICE = {
   GET_KHOA: PROFILE_SERVICE_URL + "/api/profile/khoa/id/:maKhoa", // Return Object
   GET_GIANGVIEN_PROFILE:
     PROFILE_SERVICE_URL + "/api/profile/giangvien/me/:maSo",
-  GET_SINHVIEN_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/:maSo",
+  GET_SINHVIEN_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/id/:maSo",
   GET_MY_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/me/:maSo",
   GET_ADMIN_PROFILE: PROFILE_SERVICE_URL + "/api/profile/admin/me/:maSo",
   UPDATE_PROFILE: PROFILE_SERVICE_URL + "/api/profile/update",
@@ -52,6 +60,7 @@ export const PROFILE_SERVICE = {
 };
 
 export const HOCPHAN_SERVICE = {
+
   TU_CHON_UPDATE: HOCPHAN_SERVICE_URL + "/api/ctdt/update_hoc_phan_tu_chon", // RequestBody
   TU_CHON_ADD: HOCPHAN_SERVICE_URL + "/api/ctdt/add_hoc_phan_tu_chon", // RequestBody
   HOCPHAN_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/list", // No Parameters, return list
@@ -111,6 +120,7 @@ export const KQHT_SERVICE = {
   GET_HOCKY: KQHT_SERVICE_URL + "/api/kqht/hoc-ky/:maSo",
   GET_KETQUA: KQHT_SERVICE_URL + "/api/kqht/detail/page", // phân trang: ?maSo=xxx&page=0&size=20
   GET_KETQUA_BY_HOCKY: KQHT_SERVICE_URL + "/api/kqht/detail", // theo học kỳ: ?maSo=xxx&maHocKy=yyy
+  GET_KETQUA_ALL : KQHT_SERVICE_URL + "/api/kqht/detail/all", // lấy tất cả kết quả học tập của sinh viên không phân trang
   GET_DIEM_TRUNG_BINH_BY_HOCKY:
     KQHT_SERVICE_URL + "/api/kqht/diem/trung_binh_hoc_ky/list",
   GET_HOC_PHAN_CAI_THIEN:

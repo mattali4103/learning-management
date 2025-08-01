@@ -40,7 +40,6 @@ const CTDTDetail = () => {
   const [chuongTrinhDaoTao, setChuongTrinhDaoTao] = useState<ChuongTrinhDaoTaoDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState("tatca");
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -111,50 +110,20 @@ const CTDTDetail = () => {
         setIsDeleteModalOpen(false);
         navigate("/giangvien/ctdt");
       }, 1500);
-    } catch (error) {
+    } catch (err) {
       setErrorMessage("Không thể xóa chương trình đào tạo. Vui lòng thử lại.");
       setShowErrorModal(true);
+      console.error("Error deleting CTDT:", err);
     } finally {
       setIsDeleting(false);
     }
   };
 
-  // Get filtered data based on course type
+  // Get all courses
   const allCourses = useMemo(() => chuongTrinhDaoTao?.hocPhanList || [], [chuongTrinhDaoTao?.hocPhanList]);
   
-  const filteredCoursesByType = useMemo(() => {
-    if (activeTab === "tatca") {
-      return allCourses;
-    }
-    return allCourses.filter(hp => hp.loaiHp === activeTab);
-  }, [allCourses, activeTab]);
-
-  // Calculate statistics by course type
-  const courseTypeStatistics = useMemo(() => {
-    const totalCourses = allCourses.length;
-    const daiCuongCourses = allCourses.filter(hp => hp.loaiHp === "Đại cương").length;
-    const coSoNganhCourses = allCourses.filter(hp => hp.loaiHp === "Cơ sở ngành").length;
-    const chuyenNganhCourses = allCourses.filter(hp => hp.loaiHp === "Chuyên ngành").length;
-    
-    return {
-      totalCourses,
-      daiCuongCourses,
-      coSoNganhCourses,
-      chuyenNganhCourses,
-    };
-  }, [allCourses]);
-
-  // Get elective course groups for the current active tab
-  const filteredElectiveGroups = useMemo(() => {
-    const allGroups = chuongTrinhDaoTao?.nhomHocPhanTuChon || [];
-    if (activeTab === "tatca") {
-      return allGroups;
-    }
-    // Filter groups that have courses of the selected type
-    return allGroups.filter(nhom => 
-      nhom.hocPhanTuChonList?.some(hp => hp.loaiHp === activeTab)
-    );
-  }, [chuongTrinhDaoTao?.nhomHocPhanTuChon, activeTab]);
+  // Get all elective course groups
+  const allElectiveGroups = useMemo(() => chuongTrinhDaoTao?.nhomHocPhanTuChon || [], [chuongTrinhDaoTao?.nhomHocPhanTuChon]);
 
 
   if (loading) {
@@ -248,75 +217,17 @@ const CTDTDetail = () => {
         />
       </div>
 
-      {/* Tab Navigation & Content */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden"> 
-        <div className="flex border-b border-gray-200">
-          <button
-            onClick={() => setActiveTab("tatca")}
-            className={`flex-1 px-6 py-4 text-center transition-colors ${
-              activeTab === "tatca"
-                ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            <span className="font-medium">
-              Tất cả ({courseTypeStatistics.totalCourses})
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("Đại cương")}
-            className={`flex-1 px-6 py-4 text-center transition-colors ${
-              activeTab === "Đại cương"
-                ? "bg-green-50 text-green-700 border-b-2 border-green-500"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            <span className="font-medium">
-              Đại Cương ({courseTypeStatistics.daiCuongCourses})
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("Cơ sở ngành")}
-            className={`flex-1 px-6 py-4 text-center transition-colors ${
-              activeTab === "Cơ sở ngành"
-                ? "bg-purple-50 text-purple-700 border-b-2 border-purple-500"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            <span className="font-medium">
-              Cơ Sở Ngành ({courseTypeStatistics.coSoNganhCourses})
-            </span>
-          </button>
-          <button
-            onClick={() => setActiveTab("Chuyên ngành")}
-            className={`flex-1 px-6 py-4 text-center transition-colors ${
-              activeTab === "Chuyên ngành"
-                ? "bg-orange-50 text-orange-700 border-b-2 border-orange-500"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            <span className="font-medium">
-              Chuyên Ngành ({courseTypeStatistics.chuyenNganhCourses})
-            </span>
-          </button>
-        </div>
-        {/* Content */}
+      {/* Content */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         <div className="p-6">
           <HocPhanTable
-            name={activeTab === "tatca" 
-              ? "Chi tiết chương trình đào tạo" 
-              : `Chi tiết chương trình đào tạo - ${activeTab}`
-            }
-            requiredCourses={filteredCoursesByType}
-            electiveGroups={filteredElectiveGroups}
-            activeTab={activeTab}
+            name="Chi tiết chương trình đào tạo"
+            requiredCourses={allCourses}
+            electiveGroups={allElectiveGroups}
+            activeTab="tatca"
             loading={loading}
-            emptyStateTitle={activeTab === "tatca" ? "Chưa có học phần nào" : `Chưa có học phần ${activeTab}`}
-            emptyStateDescription={
-              activeTab === "tatca" 
-                ? "Hiện tại chưa có học phần nào trong chương trình đào tạo" 
-                : `Hiện tại chưa có học phần ${activeTab} nào`
-            }
+            emptyStateTitle="Chưa có học phần nào"
+            emptyStateDescription="Hiện tại chưa có học phần nào trong chương trình đào tạo"
             onCopyToClipboard={copyToClipboard}
           />
         </div>

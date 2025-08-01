@@ -11,7 +11,6 @@ import { KetQuaHocTapLayout } from "./pages/KetQuaHocTap/KetQuaHocTapLayout";
 import KeHoachHocTap, {
   KeHoachHocTapPage,
 } from "./pages/KeHoachHocTap/KeHoachHocTap";
-import NhapKeHoachHocTap from "./pages/KeHoachHocTap/NhapKeHoachHocTap";
 import KeHoachHocTapUnified from "./pages/KeHoachHocTap/KeHoachHocTapUnified";
 import CTDTDetail from "./pages/ChuongTrinhDaoTao/CTDTDetail";
 import DanhSachLopHoc from "./pages/Admin/DanhSachLopHoc";
@@ -63,7 +62,6 @@ function App() {
             <Route index element={<KeHoachHocTapPage />} />
             <Route path="chung" element={<KeHoachHocTapPage />} />
             <Route path="detail" element={<KeHoachHocTapUnified />} />
-            <Route path="add" element={<NhapKeHoachHocTap />} />
             <Route path="chitiet" element={<KeHoachHocTapDetail />} />
           </Route>
 

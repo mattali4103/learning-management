@@ -6,6 +6,7 @@ export interface SinhVienProfile {
   maLop: string;
   khoaHoc: string;
   tenNganh: string;
+  maNganh?: string;
   soDienThoai?: string;
   email?: string;
   diaChi?: string;

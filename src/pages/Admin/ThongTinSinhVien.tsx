@@ -3,8 +3,6 @@ import { useParams, useNavigate } from "react-router-dom";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { PROFILE_SERVICE, KQHT_SERVICE } from "../../api/apiEndPoints";
 import Loading from "../../components/Loading";
-import TinChiChart from "../../components/chart/TinChiChart";
-import GPAChart from "../../components/chart/GPAChart";
 import CombinedCreditGPAChart from "../../components/chart/CombinedCreditGPAChart";
 import CreditProgressCard from "../../components/progress/CreditProgressCard";
 import PageHeader from "../../components/PageHeader";
@@ -88,7 +86,7 @@ const ThongTinSinhVien = () => {
         color = "text-green-600";
         bg = "bg-green-50";
       } else {
-        status = "Kịp tiến độ";
+        status = "Đúng tiến độ";
         color = "text-blue-600";
         bg = "bg-blue-50";
       }
@@ -336,7 +334,11 @@ const ThongTinSinhVien = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-          <div className="lg:col-span-1 justify-center items-center content-center">
+          <div
+            className={`lg:col-span-1 content-center rounded-2xl p-6 transition-colors duration-300 ${
+              userInfo?.canhBaoHocVu?.lyDo ? "bg-red-50" : progressState.bg
+            }`}
+          >
             <CreditProgressCard
               currentCredits={userInfo?.soTinChiTichLuy ?? 0}
               totalCredits={156}
@@ -347,9 +349,9 @@ const ThongTinSinhVien = () => {
               );
               const IconComponent = classificationStyle.icon;
               return (
-                <div className="mt-6">
+                <div className="mt-6 space-y-2">
                   <div
-                    className={`p-4 ${classificationStyle.bgColor} rounded-lg border ${classificationStyle.borderColor} shadow-sm`}
+                    className={`p-4 bg-white/60 rounded-lg border ${classificationStyle.borderColor} shadow-sm`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
@@ -370,7 +372,7 @@ const ThongTinSinhVien = () => {
 
                   {/* Academic Warning - Compact Version */}
                   {userInfo?.canhBaoHocVu?.lyDo && (
-                    <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <div className="p-3 bg-white/60 border border-red-200 rounded-lg">
                       <div className="flex items-start">
                         <AlertTriangle className="w-4 h-4 text-red-500 mr-2 flex-shrink-0" />
                         <div>
@@ -419,7 +421,7 @@ const ThongTinSinhVien = () => {
           </div>
         </div>
         {/* Additional Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-6 border-t border-gray-200">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-6 border-t border-gray-200">
           {/* Tiến độ học tập */}
           <div
             className={`text-center p-4 rounded-lg hover:bg-opacity-80 transition-colors ${progressState.bg}`}
@@ -437,13 +439,7 @@ const ThongTinSinhVien = () => {
             </p>
             <p className="text-sm text-gray-600">Học kỳ đã hoàn thành</p>
           </div>
-          <div className="text-center p-4 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors ">
-            <GraduationCap className="w-8 h-8 text-indigo-600 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-indigo-600">
-              {(((userInfo?.soTinChiTichLuy ?? 0) / 156) * 100).toFixed(1)}%
-            </p>
-            <p className="text-sm text-gray-600">Tiến độ tổng thể</p>
-          </div>
+
         </div>
       </div>
 
@@ -505,40 +501,6 @@ const ThongTinSinhVien = () => {
 
         {/* Charts Section - Right Side */}
         <div className="xl:col-span-2 space-y-6">
-          {/* Tin Chi Line Chart */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
-            <TinChiChart
-              data={
-                tinChiTichLuy && tinChiTichLuy.length > 0
-                  ? tinChiTichLuy.map((item, index) => {
-                      const hocKyId = item.hocKy?.maHocKy || null;
-                      const namHocId = item.hocKy?.namHoc?.id || null;
-
-                      return {
-                        name: `Học kỳ ${index + 1}`,
-                        tinChiTichLuy: item.soTinChiTichLuy || 0,
-                        tinChiRot: item.soTinChiRot || 0,
-                        tinChiCaiThien: 0,
-                        hocKyId,
-                        namHocId,
-                      };
-                    })
-                  : []
-              }
-            />
-          </div>
-
-          {/* GPA Line Chart */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-200">
-            <GPAChart
-              data={diemTrungBinhHocKy.map((item, index) => ({
-                name: `Học kỳ ${index + 1}`,
-                diem: item.diemTrungBinhTichLuy,
-                hocKyId: item.hocKy?.maHocKy || null,
-                namHocId: item.hocKy?.namHoc?.id || null,
-              }))}
-            />
-          </div>
         </div>
       </div>
       {/* Quick Actions Footer */}

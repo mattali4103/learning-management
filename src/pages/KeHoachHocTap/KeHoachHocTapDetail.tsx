@@ -473,6 +473,27 @@ const KeHoachHocTapDetail = () => {
     navigate({ search: searchParams.toString() }, { replace: true });
   }, [selectedTabNamHoc, activeTab, navigate]);
 
+  // Set initial view to current semester if no study plan exists
+  useEffect(() => {
+    if (
+      !loading &&
+      allData.length === 0 &&
+      hocKyHienTai &&
+      danhSachHocKy.length > 0
+    ) {
+      const currentSemester = danhSachHocKy.find(
+        (hk) => hk.maHocKy === hocKyHienTai.maHocKy
+      );
+      if (currentSemester && currentSemester.namHoc) {
+        setSelectedTabNamHoc(currentSemester.namHoc.id);
+        setActiveTab(`semester-${currentSemester.maHocKy}`);
+        setSelectedHocKyChart(currentSemester.maHocKy);
+        setSelectedFilterNamHoc(currentSemester.namHoc.id);
+        setSelectedFilterHocKy(currentSemester.maHocKy);
+      }
+    }
+  }, [loading, allData, hocKyHienTai, danhSachHocKy]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
@@ -676,6 +697,7 @@ const KeHoachHocTapDetail = () => {
               </div>
               {selectedHocPhans.length > 0 ? (
                 <AllCoursesCollapsibleTable
+                  key={activeTab}
                   activeTab={activeTab}
                   name={
                     activeTab === "all"
@@ -734,6 +756,7 @@ const KeHoachHocTapDetail = () => {
               </div>
               {selectedSemesterData.length > 0 ? (
                 <AllCoursesCollapsibleTable
+                  key={activeTab}
                   activeTab={activeTab}
                   name="Học phần theo học kỳ"
                   allData={selectedSemesterData.map((item, idx) => ({

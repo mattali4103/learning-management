@@ -23,8 +23,3 @@ Bố Quy Tắc Tuỳ Chỉnh cho Ứng Dụng React TypeScript
 ## Hạn chế thay đổi tên biến
 - Không thay đổi tên biến đã được định nghĩa trong mã nguồn.
 - Sử dụng tên biến rõ ràng và có ý nghĩa để dễ dàng bảo trì và đọc hiểu mã.
-
-## Cách sử dụng tệp hướng dẫn
-- Tạo tệp `.github/copilot-instructions.md` tại thư mục gốc của workspace.
-- Mô tả các quy tắc bằng ngôn ngữ tự nhiên và định dạng Markdown.
-- Đảm bảo rằng các quy tắc này được tự động bao gồm trong mỗi yêu cầu chat.

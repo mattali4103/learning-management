@@ -68,6 +68,7 @@ interface CourseWithGroup extends HocPhan {
   groupRequiredCredits?: number;
   colorScheme?: string;
   type?: 'direct-required' | 'elective';
+  isVisible?: boolean;
 }
 
 export const HocPhanTable: React.FC<HocPhanTableProps> = ({
@@ -302,6 +303,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
   // Create flattened data structure - group headers with their courses directly below
   const flattenedData = useMemo((): CourseWithGroup[] => {
     const result: CourseWithGroup[] = [];
+    
     // Add each group header followed immediately by its courses
     courseGroups.forEach(group => {
       // Add group header
@@ -322,50 +324,89 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
         colorScheme: group.colorScheme
       } as CourseWithGroup);
       
-      // Add courses immediately after the header if group is expanded
-      if (expandedGroups.has(group.id)) {
-        group.courses.forEach(course => {
-          result.push({
-            ...course,
-            groupId: group.id,
-            groupOriginalId: group.originalId,
-            groupType: group.type,
-            isGroupHeader: false,
-            colorScheme: group.colorScheme
-          } as CourseWithGroup);
-        });
-      }
+      // Always add courses to the flattened data for search purposes
+      group.courses.forEach(course => {
+        result.push({
+          ...course,
+          groupId: group.id,
+          groupOriginalId: group.originalId,
+          groupType: group.type,
+          isGroupHeader: false,
+          colorScheme: group.colorScheme
+        } as CourseWithGroup);
+      });
     });
     
     return result;
-  }, [courseGroups, expandedGroups]);
+  }, [courseGroups]);
 
   // Filter data based on global filter (apply to both headers and courses)
+  // Auto-expand groups that contain matching courses when searching
   const filteredData = useMemo(() => {
-    let filtered = flattenedData;
     if (globalFilter) {
-      filtered = flattenedData.filter((item) => {
+      const matchingGroupIds = new Set<string>();
+      const matchingCourses = new Set<string>();
+      
+      // First pass: find all groups and courses that should be shown
+      courseGroups.forEach(group => {
+        // Check if group header matches
+        const groupHeaderMatches = (
+          group.title?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+          group.subtitle?.toLowerCase().includes(globalFilter.toLowerCase())
+        );
+        
+        // Check courses in this group
+        const matchingCoursesInGroup = group.courses.filter(course => (
+          course.maHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+          course.tenHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+          course.loaiHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
+          course.hocPhanTienQuyet?.toLowerCase().includes(globalFilter.toLowerCase())
+        ));
+        
+        if (groupHeaderMatches || matchingCoursesInGroup.length > 0) {
+          matchingGroupIds.add(group.id);
+          // Add matching courses to the set
+          matchingCoursesInGroup.forEach(course => {
+            matchingCourses.add(course.maHp || '');
+          });
+          // If group header matches, include all courses in that group
+          if (groupHeaderMatches) {
+            group.courses.forEach(course => {
+              matchingCourses.add(course.maHp || '');
+            });
+          }
+        }
+      });
+      
+      // Auto-expand groups that have matches
+      if (matchingGroupIds.size > 0) {
+        setExpandedGroups(prev => new Set([...prev, ...matchingGroupIds]));
+      }
+      
+      // Filter the flattened data to only show matching groups and courses
+      return flattenedData.filter((item) => {
         if (item.isGroupHeader) {
-          // For group headers, search in group title and subtitle
-          return (
-            item.groupTitle?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            item.groupSubtitle?.toLowerCase().includes(globalFilter.toLowerCase())
-          );
+          // Show group header if it has matches
+          return matchingGroupIds.has(item.groupId);
         } else {
-          // For courses, search in course properties
-          return (
-            item.maHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            item.tenHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            item.loaiHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-            item.hocPhanTienQuyet?.toLowerCase().includes(globalFilter.toLowerCase())
-          );
+          // Show course if its group has matches and either:
+          // 1. The course itself matches the search criteria, or
+          // 2. The group header matches (showing all courses in matching group)
+          return matchingGroupIds.has(item.groupId) && matchingCourses.has(item.maHp || '');
+        }
+      });
+    } else {
+      // When not searching, respect the expansion state
+      return flattenedData.filter((item) => {
+        if (item.isGroupHeader) {
+          return true; // Always show group headers
+        } else {
+          // Show courses only if their group is expanded
+          return expandedGroups.has(item.groupId);
         }
       });
     }
-    return filtered;
-  }, [flattenedData, globalFilter]);
-
-  // Use filteredData directly for display with pagination
+  }, [flattenedData, globalFilter, courseGroups, expandedGroups]);  // Use filteredData directly for display with pagination
   const displayData = useMemo((): CourseWithGroup[] => {
     return filteredData;
   }, [filteredData]);

@@ -258,13 +258,13 @@ export default function KetQuaHocTap() {
           subtitleIcon={TrendingUp}
         />
         <StatisticsCard
-          title="Tín chỉ cần cải thiện"
+          title="Có thể cải thiện"
           value={statistics.tinChiCanCaiThien}
           icon={Target}
           gradient="bg-gradient-to-br from-purple-500 to-indigo-600"
           textColor="text-purple-100"
           iconColor="text-purple-200"
-          subtitle="Cần cải thiện"
+          subtitle="Số tín chỉ có thể cải thiện"
           subtitleIcon={BarChart3}
         />
         <StatisticsCard
@@ -274,7 +274,7 @@ export default function KetQuaHocTap() {
           gradient="bg-gradient-to-br from-red-500 to-pink-600"
           textColor="text-red-100"
           iconColor="text-red-200"
-          subtitle="Cần bổ sung"
+          subtitle="Số tín chỉ chưa đạt"
           subtitleIcon={Award}
         />
       </div>

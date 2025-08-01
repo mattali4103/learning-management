@@ -98,7 +98,7 @@ const PendingSubjectsTable = ({ data, columns }: PendingSubjectsTableProps) => {
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 5 } },
+    initialState: { pagination: { pageSize: 7 } },
   });
 
   return (
@@ -395,28 +395,65 @@ const CollapsibleSubjectsTable = ({
         id: "actions",
         header: "Thao tác",
         cell: ({ row }) => {
-          const isAdded =
+          if (row.original.isGroupHeader) return null;
+
+          const hocPhan = row.original;
+          const isAlreadyAdded =
             pendingHocPhans.some(
-              (item) => item.hocPhan.maHp === row.original.maHp
+              (item) => item.hocPhan.maHp === hocPhan.maHp
             ) ||
             currentHocPhans.some(
-              (item) => item.hocPhan.maHp === row.original.maHp
+              (item) => item.hocPhan.maHp === hocPhan.maHp
             );
 
+          // --- Logic kiểm tra học phần tiên quyết ---
+          const checkPrerequisites = (
+            hp: HocPhan,
+            currentPlan: KeHoachHocTapDetail[]
+          ): { areMet: boolean; missing: string[] } => {
+            if (!hp.hocPhanTienQuyet) {
+              return { areMet: true, missing: [] };
+            }
+            
+            const currentPlanIds = new Set(currentPlan.map(item => item.hocPhan.maHp));
+            const prerequisites = hp.hocPhanTienQuyet.split(',').map(s => s.trim()).filter(Boolean);
+
+            if (prerequisites.length === 0) {
+              return { areMet: true, missing: [] };
+            }
+
+            const missing = prerequisites.filter(p => !currentPlanIds.has(p));
+            return {
+              areMet: missing.length === 0,
+              missing,
+            };
+          };
+
+          const prerequisiteCheck = checkPrerequisites(hocPhan, currentHocPhans);
+          const isDisabled = isAlreadyAdded || !prerequisiteCheck.areMet;
+
+          let tooltipMessage = "Thêm vào danh sách";
+          if (isAlreadyAdded) {
+            tooltipMessage = "Học phần đã có trong kế hoạch";
+          } else if (!prerequisiteCheck.areMet) {
+            tooltipMessage = `Yêu cầu tiên quyết: ${prerequisiteCheck.missing.join(", ")}`;
+          }
+
           return (
-            <div className="text-center">
+            <div className="text-center relative group flex justify-center">
               <button
-                onClick={() => onAddToPending(row.original)}
-                disabled={isAdded}
-                className={`p-2 text-white bg-emerald-600 rounded-full transition-all duration-200 ${
-                  isAdded
-                    ? "opacity-40 cursor-not-allowed"
-                    : "hover:bg-emerald-700 hover:scale-105"
-                }`}
-                title={isAdded ? "Đã thêm học phần này" : "Thêm vào danh sách"}
+                onClick={() => onAddToPending(hocPhan)}
+                disabled={isDisabled}
+                className="p-2 text-white bg-emerald-600 rounded-full transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:bg-emerald-700 hover:scale-105"
               >
                 <Plus className="w-4 h-4" />
               </button>
+              {isDisabled && (
+                <div className="absolute bottom-full mb-2 w-max max-w-xs px-3 py-1.5 text-sm font-medium text-white bg-gray-800 rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-10">
+                  {tooltipMessage}
+                  <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-x-4 border-x-transparent border-t-4 border-t-gray-800"></div>
+                </div>
+              )}
             </div>
           );
         },
@@ -654,7 +691,7 @@ const AvailableSubjectsModal = ({
     setLoadingAvailableSubjects(true);
     try {
       const response = await axiosPrivate.get(
-        HOCPHAN_SERVICE.CTDT_NGANH.replace(":khoaHoc", selectedKhoaHoc).replace(
+        HOCPHAN_SERVICE.CTDT_NGANH_KHOAHOC.replace(":khoaHoc", selectedKhoaHoc).replace(
           ":maNganh",
           selectedNganh
         )

@@ -9,7 +9,6 @@ import {
   Tooltip,
   Legend,
   CartesianGrid,
-  LabelList,
 } from "recharts";
 
 interface HocKy {
@@ -100,7 +99,6 @@ const CombinedCreditGPAChart: React.FC<Props> = ({
             maxBarSize={30}
           >
             {/* <LabelList dataKey="soTinChiRot" position="top" /> */}
-            <LabelList dataKey="soTinChiTichLuy" position="top" />
           </Bar>
           {/* Line for điểm trung bình tích lũy (cumulative GPA) */}
           <Line

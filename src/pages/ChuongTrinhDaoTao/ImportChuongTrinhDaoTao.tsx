@@ -96,7 +96,7 @@ const ImportChuongTrinhDaoTao = () => {
     formData.append("maNganh", selectedNganh);
     formData.append("khoaHoc", khoaHoc);
     formData.append("file", selectedFile);
-
+    console.log("formData:", formData);
     try {
       const response = await axiosPrivate.post(
         HOCPHAN_SERVICE.CTDT_UPLOAD_EXCEL,
@@ -121,6 +121,7 @@ const ImportChuongTrinhDaoTao = () => {
         setShowErrorModal(true);
       }
     } catch (error) {
+      console.log("Upload error:", error);
       setErrorMessage(
         error instanceof Error
           ? error.message

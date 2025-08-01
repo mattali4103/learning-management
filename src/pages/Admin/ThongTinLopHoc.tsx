@@ -32,7 +32,6 @@ const ThongTinLopHoc = () => {
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
   const [loading, setLoading] = useState(true);
-  const [detailLoading, setDetailLoading] = useState(false);
   const [previewProfiles, setPreviewProfiles] = useState<PreviewProfile[]>([]);
 
   const [error, setError] = useState<string | null>(null);
@@ -734,14 +733,7 @@ const ThongTinLopHoc = () => {
             )}
           </div>
 
-          {detailLoading ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <span className="mt-3 text-gray-600">
-                Đang tải thông tin sinh viên...
-              </span>
-            </div>
-          ) : previewProfiles?.length > 0 ? (
+          {previewProfiles?.length > 0 ? (
             <>
               {/* Student Display */}
               <div className="p-4 flex-1 overflow-y-auto">
@@ -840,7 +832,7 @@ const ThongTinLopHoc = () => {
                   /* List View - Using TanStack Table */
                   <StudentTable
                     data={getFilteredAndSortedStudents()}
-                    loading={detailLoading}
+                    loading={false}
                     onViewProfile={handleViewStudentProfile}
                   />
                 )}

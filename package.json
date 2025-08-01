@@ -16,6 +16,7 @@
     "@tanstack/react-table": "^8.21.3",
     "@toolpad/core": "^0.15.0",
     "@types/react-circular-progressbar": "^1.0.2",
+    "@types/react-select": "^5.0.0",
     "axios": "^1.9.0",
     "framer-motion": "^12.16.0",
     "jspdf": "^3.0.1",
@@ -26,6 +27,7 @@
     "react-circular-progressbar": "^2.2.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",
+    "react-select": "^5.10.2",
     "recharts": "^2.15.4",
     "tailwindcss": "^4.1.6"
   },
@@ -34,6 +36,7 @@
     "@types/node": "^24.0.3",
     "@types/react": "^19.1.2",
     "@types/react-dom": "^19.1.2",
+    "@types/xlsx": "^0.0.35",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
     "@vitejs/plugin-react": "^4.4.1",
@@ -45,6 +48,7 @@
     "globals": "^16.0.0",
     "typescript": "~5.8.3",
     "typescript-eslint": "^8.30.1",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "xlsx": "^0.18.5"
   }
 }

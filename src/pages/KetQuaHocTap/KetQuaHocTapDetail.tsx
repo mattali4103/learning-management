@@ -2,13 +2,15 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useParams } from "react-router-dom";
 import NavigationPanel from "../../components/navigation/NavigationPanel";
 import Loading from "../../components/Loading";
-import KetQuaHocTapTable, {
+import { GroupedKetQuaHocTapTable } from "../../components/table/GroupedKetQuaHocTapTable";
+import {
   type KetQuaHocTapTableType,
 } from "../../components/table/KetQuaHocTapTable";
 import { KQHT_SERVICE } from "../../api/apiEndPoints";
 import useAuth from "../../hooks/useAuth";
 import type { HocKy } from "../../types/HocKy";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
+import BangDiemExportButton from "../../components/export/BangDiemExportButton";
 
 const KetQuaHocTapDetail = () => {
   const params = useParams();
@@ -231,15 +233,19 @@ const KetQuaHocTapDetail = () => {
   // Hàm để thay đổi học kỳ
   const handleHocKyChange = (hocKy: string) => {
     if (hocKy === selectedHocKy) return; // Tránh gọi lại không cần thiết
-    
+
     setNavigationLoading(true);
     setSelectedHocKy(hocKy);
-    
+
     const newParams = new URLSearchParams(searchParams);
     // Lấy ID học kỳ từ tên học kỳ và năm học hiện tại
     const hocKyId = hocKyNameToId[selectedNamHoc]?.[hocKy];
+
     if (hocKyId) {
       newParams.set("hocKyId", hocKyId.toString());
+    } else {
+      // Nếu không có hocKy (chọn "Tất cả") hoặc không tìm thấy ID, xóa param
+      newParams.delete("hocKyId");
     }
 
     // Cập nhật URL và tắt loading
@@ -275,9 +281,7 @@ const KetQuaHocTapDetail = () => {
       ) : (
         /* Nội dung hiển thị */
         <ContentDisplay
-          selectedNamHoc={selectedNamHoc}
-          selectedHocKy={selectedHocKy}
-          maSo={maSo}
+          maSo={maSo ?? ""}
         />
       )}
     </div>
@@ -285,39 +289,28 @@ const KetQuaHocTapDetail = () => {
 };
 
 interface ContentDisplayProps {
-  selectedNamHoc: string;
-  selectedHocKy: string;
   maSo: string;
 }
 
 const ContentDisplay = ({
-  selectedNamHoc,
-  selectedHocKy,
   maSo,
 }: ContentDisplayProps) => {
   const [tableLoading, setTableLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [ketQuaData, setKetQuaData] = useState<KetQuaHocTapTableType[]>([]);
   const [searchParams] = useSearchParams();
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    pageSize: 10,
-    totalElements: 0,
-  });
   const axiosPrivate = useAxiosPrivate(); // Fetch dữ liệu kết quả học tập từ API với phân trang
   const fetchKetQuaHocTap = useCallback(
     async (
       hocKyId?: number,
-      page: number = 1,
-      size: number = 10
+      // namHocId?: number, 
     ) => {
       try {
         setTableLoading(true);
         setError(null);
 
         let url: string;
-        let params: Record<string, string>;
+        let params: Record<string, string | number>;
 
         if (hocKyId) {
           // Sử dụng API không phân trang khi có học kỳ cụ thể
@@ -326,15 +319,14 @@ const ContentDisplay = ({
             maSo: maSo,
             maHocKy: hocKyId.toString(),
           };
-        } else {
-          // Sử dụng API phân trang khi lấy tất cả
-          url = KQHT_SERVICE.GET_KETQUA;
+        }else{
+          // Sử dụng API phân trang khi không có học kỳ cụ thể
+          url = KQHT_SERVICE.GET_KETQUA_ALL;
           params = {
             maSo: maSo,
-            page: page.toString(), // API sử dụng 1-based indexing (bắt đầu từ 1)
-            size: size.toString(),
           };
-        }        const response = await axiosPrivate.get(url, {
+        }
+        const response = await axiosPrivate.get(url, {
           params,
           headers: {
             "Content-Type": "application/json",
@@ -344,34 +336,24 @@ const ContentDisplay = ({
 
         // Kiểm tra response code trước khi xử lý data
         if (response.status !== 200 || response.data?.code !== 200) {
-          throw new Error(`API returned code: ${response.data?.code || response.status} - ${response.data?.message || 'Unknown error'}`);
+          throw new Error(
+            `API returned code: ${response.data?.code || response.status} - ${
+              response.data?.message || "Unknown error"
+            }`
+          );
         }
 
         // Xử lý response từ API
         const responseData = response.data.data;
-
+        console.log("Response data:", responseData);
         let data: any[] = [];
-
         if (hocKyId) {
           // Không có phân trang, data từ ketQuaHocTapList
           data = Array.isArray(responseData?.ketQuaHocTapList)
             ? responseData.ketQuaHocTapList
             : [];
-          setPagination({
-            currentPage: 1,
-            totalPages: 1,
-            pageSize: data.length,
-            totalElements: data.length,
-          });
         } else {
-          // Có phân trang, lấy từ responseData.data
-          data = Array.isArray(responseData?.data) ? responseData.data : [];
-          setPagination({
-            currentPage: responseData?.currentPage || 1,
-            totalPages: responseData?.totalPages || 1,
-            pageSize: responseData?.pageSize || size,
-            totalElements: responseData?.totalElements || 0,
-          });
+          data = responseData;
         }
 
         // Kiểm tra data có phải là array không trước khi transform
@@ -384,8 +366,7 @@ const ContentDisplay = ({
           (item: any) => {
             // For semester-specific data, use the top-level hocKy info
             const hocKyInfo =
-              hocKyId && responseData?.hocKy ? responseData.hocKy : item.hocKy;
-
+              hocKyId && responseData?.hocKy.maHocKy ? responseData.hocKy.maHocKy : item.hocKy;
             return {
               id: item.id,
               maHp: item.hocPhan?.maHp || "",
@@ -406,41 +387,29 @@ const ContentDisplay = ({
                   namKetThuc: hocKyInfo?.namHoc?.namKetThuc || "",
                 },
               },
-              namHoc: {
-                id: hocKyInfo?.namHoc?.id || 0,
-                namBatDau: hocKyInfo?.namHoc?.namBatDau || "",
-                namKetThuc: hocKyInfo?.namHoc?.namKetThuc || "",
-              },
             };
           }
         );
+        console.log("Transformed data:", transformedData);
         setKetQuaData(transformedData);
       } catch (error) {
         console.error("Error fetching ket qua hoc tap:", error);
         setError("Không thể lấy thông tin kết quả học tập. Vui lòng thử lại.");
         setKetQuaData([]);
-        setPagination({
-          currentPage: 1,
-          totalPages: 1,
-          pageSize: 10,
-          totalElements: 0,
-        });
       } finally {
         setTableLoading(false);
       }
     },
     [axiosPrivate, maSo]
   );
+
   useEffect(() => {
     if (maSo) {
-      // Lấy hocKyId từ URL params nếu có
+      // Lấy hocKyId và namHocId từ URL params nếu có
       const hocKyIdParam = searchParams.get("hocKyId");
       const hocKyId = hocKyIdParam ? parseInt(hocKyIdParam) : undefined;
-
       fetchKetQuaHocTap(
         hocKyId,
-        pagination.currentPage,
-        pagination.pageSize
       );
     } else {
       setError("Không tìm thấy mã số sinh viên");
@@ -449,60 +418,8 @@ const ContentDisplay = ({
   }, [
     maSo,
     searchParams,
-    pagination.currentPage,
-    pagination.pageSize,
     fetchKetQuaHocTap,
-  ]);  // Hàm xử lý thay đổi trang
-  const handlePageChange = (newPage: number) => {
-    if (newPage === pagination.currentPage) return; // Tránh gọi API không cần thiết
-    
-    setTableLoading(true);
-    // Cập nhật pagination ngay lập tức để UX tốt hơn
-    setPagination((prev) => ({ ...prev, currentPage: newPage }));
-  };
-
-  // Hàm xử lý thay đổi kích thước trang
-  const handlePageSizeChange = (newSize: number) => {
-    if (newSize === pagination.pageSize) return; // Tránh gọi API không cần thiết
-    
-    setTableLoading(true);
-    // Reset về trang 1 khi thay đổi page size
-    setPagination((prev) => ({ 
-      ...prev, 
-      pageSize: newSize, 
-      currentPage: 1 
-    }));
-  };
-
-  // Hàm để lọc dữ liệu theo năm học và học kỳ (chỉ dùng cho client-side filter nếu cần)
-  const filterDataByParams = (data: KetQuaHocTapTableType[]) => {
-    if (!data || data.length === 0) return [];
-    let filteredData = [...data];
-
-    // Nếu đã fetch theo học kỳ cụ thể thì không cần filter thêm
-    const hocKyIdParam = searchParams.get("hocKyId");
-    if (hocKyIdParam) {
-      return filteredData; // API đã filter theo học kỳ
-    }
-
-    // Lọc theo năm học nếu không phải "Tất cả"
-    if (selectedNamHoc !== "Tất cả") {
-      filteredData = filteredData.filter((item) => {
-        const namHoc = `${item.namHoc.namBatDau}-${item.namHoc.namKetThuc}`;
-        return namHoc === selectedNamHoc;
-      });
-    }
-
-    // Lọc theo học kỳ nếu có chọn học kỳ cụ thể
-    if (selectedHocKy) {
-      filteredData = filteredData.filter(
-        (item) => item.hocKy.tenHocKy === selectedHocKy
-      );
-    }
-
-    return filteredData;
-  }; // Tạo dữ liệu đã lọc
-  const filteredData = filterDataByParams(ketQuaData);
+  ]);
 
   if (error) {
     return (
@@ -510,7 +427,8 @@ const ContentDisplay = ({
         Lỗi: {error}
       </div>
     );
-  }  const renderContent = () => {
+  }
+  const renderContent = () => {
     // Nếu đang loading lần đầu, hiển thị loading toàn bộ content area
     if (tableLoading && ketQuaData.length === 0) {
       return (
@@ -522,16 +440,22 @@ const ContentDisplay = ({
 
     return (
       <div className="p-4">
-        <KetQuaHocTapTable
+        {/* Export Controls */}
+        {ketQuaData.length > 0 && (
+          <div className="mb-4 flex justify-end">
+            <BangDiemExportButton
+              data={ketQuaData}
+              maSo={maSo}
+              title="Bảng Ghi Điểm Thi Học Kỳ"
+              variant="primary"
+              size="md"
+            />
+          </div>
+        )}
+        
+        <GroupedKetQuaHocTapTable
           name="Kết quả học tập"
-          data={filteredData}
-          enableServerPagination={!searchParams.get("hocKyId")} // Chỉ dùng server pagination khi không filter theo học kỳ
-          currentPage={pagination.currentPage}
-          totalPages={pagination.totalPages}
-          pageSize={pagination.pageSize}
-          totalElements={pagination.totalElements}
-          onPageChange={handlePageChange}
-          onPageSizeChange={handlePageSizeChange}
+          data={ketQuaData}
           loading={tableLoading}
         />
       </div>
