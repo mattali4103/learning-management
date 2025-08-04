@@ -471,6 +471,51 @@ const ThongTinLopHoc = () => {
     );
   }
 
+  // Hiển thị thông báo khi lớp không có sinh viên nào
+  if (!loading && (!previewProfiles || previewProfiles.length === 0)) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
+        {/* Header */}
+        <PageHeader
+          title={`Quản lý lớp ${maLop}`}
+          description="Lớp học chưa có sinh viên"
+          icon={Users}
+          iconColor="from-blue-500 to-indigo-600"
+          backButton={
+            <button
+              onClick={backToClassList}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+          }
+        />
+
+        {/* Empty State */}
+        <div className="bg-white rounded-2xl shadow-lg p-12 border border-gray-100">
+          <div className="text-center">
+            <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Users className="w-12 h-12 text-gray-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">
+              Lớp {maLop} chưa có sinh viên
+            </h2>
+            
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center space-y-3 sm:space-y-0 sm:space-x-4">
+              <button
+                onClick={backToClassList}
+                className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Quay lại danh sách lớp
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Bỏ qua trường hợp không có sinh viên nào trong lớp
   // Bỏ qua kiểm tra selectedClass vì giờ chúng ta sử dụng previewProfiles trực tiếp
 
@@ -559,6 +604,26 @@ const ThongTinLopHoc = () => {
                 students={getProcessedStudentsForCharts()}
                 onRangeClick={handleCreditRangeClick}
               />
+            </div>
+          </div>
+        )}
+
+      {/* Empty Statistics Message */}
+      {previewProfiles &&
+        previewProfiles.length === 0 &&
+        activeTab === "statistics" && (
+          <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-12">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <BarChart3 className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-semibold text-gray-600 mb-3">
+                Chưa có dữ liệu thống kê
+              </h3>
+              <p className="text-gray-500 max-w-md mx-auto leading-relaxed">
+                Biểu đồ thống kê sẽ hiển thị khi lớp có sinh viên. 
+                Các biểu đồ sẽ bao gồm phân loại học lực và thống kê tín chỉ tích lũy.
+              </p>
             </div>
           </div>
         )}
@@ -737,7 +802,81 @@ const ThongTinLopHoc = () => {
             <>
               {/* Student Display */}
               <div className="p-4 flex-1 overflow-y-auto">
-                {viewMode === "grid" ? (
+                {getFilteredAndSortedStudents().length === 0 ? (
+                  /* No students match current filters */
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mb-6">
+                      <Search className="w-8 h-8 text-gray-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-600 mb-2">
+                      Không tìm thấy sinh viên
+                    </h3>
+                    <p className="text-gray-500 text-center max-w-md mb-4">
+                      Không có sinh viên nào phù hợp với bộ lọc hiện tại. 
+                      Vui lòng thử điều chỉnh các tiêu chí tìm kiếm.
+                    </p>
+                    
+                    {/* Quick filter reset options */}
+                    <div className="flex flex-wrap justify-center gap-2">
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm("")}
+                          className="px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                        >
+                          Xóa từ khóa: "{searchTerm}"
+                        </button>
+                      )}
+                      {filterClassification !== "all" && (
+                        <button
+                          onClick={() => setFilterClassification("all")}
+                          className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                        >
+                          Xóa lọc xếp loại: {filterClassification}
+                        </button>
+                      )}
+                      {filterGender !== "all" && (
+                        <button
+                          onClick={() => setFilterGender("all")}
+                          className="px-3 py-1 text-sm bg-purple-100 text-purple-700 rounded-lg hover:bg-purple-200 transition-colors"
+                        >
+                          Xóa lọc giới tính
+                        </button>
+                      )}
+                      {filterCanhBao !== "all" && (
+                        <button
+                          onClick={() => setFilterCanhBao("all")}
+                          className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors"
+                        >
+                          Xóa lọc cảnh báo
+                        </button>
+                      )}
+                      {filterCreditRange && (
+                        <button
+                          onClick={() => setFilterCreditRange(null)}
+                          className="px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors"
+                        >
+                          Xóa lọc tín chỉ: {filterCreditRange}
+                        </button>
+                      )}
+                      
+                      {/* Reset all filters button */}
+                      {(searchTerm || filterClassification !== "all" || filterGender !== "all" || filterCanhBao !== "all" || filterCreditRange) && (
+                        <button
+                          onClick={() => {
+                            setSearchTerm("");
+                            setFilterClassification("all");
+                            setFilterGender("all");
+                            setFilterCanhBao("all");
+                            setFilterCreditRange(null);
+                          }}
+                          className="px-4 py-1 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                        >
+                          Xóa tất cả bộ lọc
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ) : viewMode === "grid" ? (
                   /* Grid View - Card Layout with Avatar Left + Info Right */
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                     {getPaginatedStudents().students.map((previewProfile) => {

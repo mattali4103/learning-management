@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useSearchParams, useParams } from "react-router-dom";
-import NavigationPanel from "../../components/navigation/NavigationPanel";
+import TabNavigationPanel from "../../components/navigation/TabNavigationPanel";
 import Loading from "../../components/Loading";
 import { GroupedKetQuaHocTapTable } from "../../components/table/GroupedKetQuaHocTapTable";
 import {
@@ -10,7 +10,6 @@ import { KQHT_SERVICE } from "../../api/apiEndPoints";
 import useAuth from "../../hooks/useAuth";
 import type { HocKy } from "../../types/HocKy";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
-import BangDiemExportButton from "../../components/export/BangDiemExportButton";
 
 const KetQuaHocTapDetail = () => {
   const params = useParams();
@@ -21,10 +20,13 @@ const KetQuaHocTapDetail = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [navigationLoading, setNavigationLoading] = useState<boolean>(false);
   const [hocKyFromAPI, setHocKyFromAPI] = useState<HocKy[]>([]);
+  const [allKetQuaData, setAllKetQuaData] = useState<KetQuaHocTapTableType[]>([]);
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
   const { maSo: authMaSo } = auth.user || {};
-  const maSo = params.maSo || authMaSo;  // Fetch dữ liệu học kỳ từ API
+  const maSo = params.maSo || authMaSo;
+
+  // Fetch dữ liệu học kỳ từ API
   const fetchHocKy = useCallback(async (maSo: string) => {
     try {
       setLoading(true);
@@ -70,17 +72,58 @@ const KetQuaHocTapDetail = () => {
       setLoading(false);
     }
   }, [axiosPrivate]);
+
+  // Fetch all academic results for counting
+  const fetchAllKetQuaHocTap = useCallback(async () => {
+    try {
+      const response = await axiosPrivate.get(KQHT_SERVICE.GET_KETQUA_ALL, {
+        params: { maSo: maSo },
+        headers: { "Content-Type": "application/json" },
+        withCredentials: true,
+      });
+
+      if (response.status === 200 && response.data?.code === 200) {
+        const data = Array.isArray(response.data.data) ? response.data.data : [];
+        const transformedData: KetQuaHocTapTableType[] = data.map((item: any) => ({
+          id: item.id,
+          maHp: item.hocPhan?.maHp || "",
+          tenHp: item.hocPhan?.tenHp || "",
+          dieuKien: item.dieuKien || false,
+          nhomHp: item.hocPhan?.loaiHp || "",
+          soTinChi: item.soTinChi || item.hocPhan?.tinChi || 0,
+          diemChu: item.diemChu || "",
+          diemSo: item.diemSo ? Math.round(item.diemSo * 10) / 10 : 0,
+          hocKy: {
+            maHocKy: item.hocKy?.maHocKy || 0,
+            tenHocKy: item.hocKy?.tenHocKy || "",
+            ngayBatDau: item.hocKy?.ngayBatDau || "",
+            ngayKetThuc: item.hocKy?.ngayKetThuc || "",
+            namHoc: {
+              id: item.hocKy?.namHoc?.id || 0,
+              namBatDau: item.hocKy?.namHoc?.namBatDau || "",
+              namKetThuc: item.hocKy?.namHoc?.namKetThuc || "",
+            },
+          },
+        }));
+        setAllKetQuaData(transformedData);
+      }
+    } catch (error) {
+      console.error("Error fetching all ket qua hoc tap:", error);
+      setAllKetQuaData([]);
+    }
+  }, [axiosPrivate, maSo]);
   
   // Lấy dữ liệu học kỳ từ API khi component mount
   useEffect(() => {
     if (maSo) {
       fetchHocKy(maSo);
+      fetchAllKetQuaHocTap();
     } else {
       // Nếu không có maSo, hiển thị lỗi
       setError("Không tìm thấy mã số sinh viên");
       setLoading(false);
     }
-  }, [maSo, fetchHocKy]);
+  }, [maSo, fetchHocKy, fetchAllKetQuaHocTap]);
 
   // Lấy dữ liệu học kỳ từ state
   const hocKyFromStorage: HocKy[] = useMemo(() => {
@@ -185,6 +228,19 @@ const KetQuaHocTapDetail = () => {
     return mapping;
   }, [hocKyFromStorage]);
 
+  // Function to get count for specific academic year
+  const getCountForNamHoc = useCallback((namHoc: string) => {
+    if (namHoc === "Tất cả") return allKetQuaData.length;
+    
+    return allKetQuaData.filter((item) => {
+      if (item.hocKy?.namHoc?.namBatDau && item.hocKy?.namHoc?.namKetThuc) {
+        const itemNamHoc = `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}`;
+        return itemNamHoc === namHoc;
+      }
+      return false;
+    }).length;
+  }, [allKetQuaData]);
+
   useEffect(() => {
     const namHocIdParam = searchParams.get("namHocId");
     const hocKyIdParam = searchParams.get("hocKyId");
@@ -204,7 +260,9 @@ const KetQuaHocTapDetail = () => {
         setSelectedHocKy(hocKyIdToName[hocKyId]);
       }
     }
-  }, [searchParams, namHocIdToName, hocKyIdToName]);   // Hàm để thay đổi năm học và cập nhật URL
+  }, [searchParams, namHocIdToName, hocKyIdToName]);
+
+  // Hàm để thay đổi năm học và cập nhật URL
   const handleNamHocChange = (namHoc: string) => {
     if (namHoc === selectedNamHoc) return; // Tránh gọi lại không cần thiết
     
@@ -253,16 +311,20 @@ const KetQuaHocTapDetail = () => {
     setTimeout(() => {
       setNavigationLoading(false);
     }, 300); // Giảm thời gian timeout để responsive hơn
-  };return (
+  };
+
+  return (
     <div className="w-full space-y-4">
       {/* Thanh điều hướng luôn hiển thị */}
-      <NavigationPanel
+      <TabNavigationPanel
         namHocList={namHocList}
         selectedNamHoc={selectedNamHoc}
         selectedHocKy={selectedHocKy}
         hocKyData={hocKyData}
         onNamHocChange={handleNamHocChange}
         onHocKyChange={handleHocKyChange}
+        totalCount={allKetQuaData.length}
+        getCountForNamHoc={getCountForNamHoc}
       />
       
       {/* Content area với loading states */}
@@ -299,7 +361,9 @@ const ContentDisplay = ({
   const [error, setError] = useState<string | null>(null);
   const [ketQuaData, setKetQuaData] = useState<KetQuaHocTapTableType[]>([]);
   const [searchParams] = useSearchParams();
-  const axiosPrivate = useAxiosPrivate(); // Fetch dữ liệu kết quả học tập từ API với phân trang
+  const axiosPrivate = useAxiosPrivate();
+
+  // Fetch dữ liệu kết quả học tập từ API với phân trang
   const fetchKetQuaHocTap = useCallback(
     async (
       hocKyId?: number,
@@ -361,12 +425,21 @@ const ContentDisplay = ({
           console.error("API response data is not an array:", data);
           setKetQuaData([]);
           return;
-        } // Transform API data to match KetQuaHocTapTableType
+        }
+
+        // Transform API data to match KetQuaHocTapTableType
         const transformedData: KetQuaHocTapTableType[] = data.map(
           (item: any) => {
             // For semester-specific data, use the top-level hocKy info
-            const hocKyInfo =
-              hocKyId && responseData?.hocKy.maHocKy ? responseData.hocKy.maHocKy : item.hocKy;
+            let hocKyInfo;
+            if (hocKyId && responseData?.hocKy) {
+              // Khi chọn học kỳ cụ thể, sử dụng thông tin từ responseData.hocKy
+              hocKyInfo = responseData.hocKy;
+            } else {
+              // Khi lấy tất cả, sử dụng thông tin từ từng item
+              hocKyInfo = item.hocKy;
+            }
+            
             return {
               id: item.id,
               maHp: item.hocPhan?.maHp || "",
@@ -391,6 +464,9 @@ const ContentDisplay = ({
           }
         );
         console.log("Transformed data:", transformedData);
+        console.log("Debug - hocKyId:", hocKyId);
+        console.log("Debug - responseData.hocKy:", responseData?.hocKy);
+        console.log("Debug - First item hocKy info:", transformedData[0]?.hocKy);
         setKetQuaData(transformedData);
       } catch (error) {
         console.error("Error fetching ket qua hoc tap:", error);
@@ -428,6 +504,7 @@ const ContentDisplay = ({
       </div>
     );
   }
+
   const renderContent = () => {
     // Nếu đang loading lần đầu, hiển thị loading toàn bộ content area
     if (tableLoading && ketQuaData.length === 0) {
@@ -440,23 +517,15 @@ const ContentDisplay = ({
 
     return (
       <div className="p-4">
-        {/* Export Controls */}
-        {ketQuaData.length > 0 && (
-          <div className="mb-4 flex justify-end">
-            <BangDiemExportButton
-              data={ketQuaData}
-              maSo={maSo}
-              title="Bảng Ghi Điểm Thi Học Kỳ"
-              variant="primary"
-              size="md"
-            />
-          </div>
-        )}
-        
         <GroupedKetQuaHocTapTable
           name="Kết quả học tập"
           data={ketQuaData}
           loading={tableLoading}
+          exportData={{
+            data: ketQuaData,
+            maSo: maSo,
+            title: "Bảng Ghi Điểm Thi Học Kỳ"
+          }}
         />
       </div>
     );

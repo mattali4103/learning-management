@@ -24,6 +24,7 @@ import {
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
 import type { KetQuaHocTapTableType } from "./KetQuaHocTapTable"; // Import the correct type
+import BangDiemExportButton from "../export/BangDiemExportButton";
 
 interface GroupedKetQuaHocTapTableProps {
   name: string;
@@ -31,6 +32,11 @@ interface GroupedKetQuaHocTapTableProps {
   loading?: boolean;
   emptyStateTitle?: string;
   emptyStateDescription?: string;
+  exportData?: {
+    data: KetQuaHocTapTableType[];
+    maSo: string;
+    title: string;
+  };
 }
 
 interface CourseTypeGroup {
@@ -59,6 +65,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
   loading = false,
   emptyStateTitle,
   emptyStateDescription,
+  exportData,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [diemChuFilter, setDiemChuFilter] = useState<string>("");
@@ -580,46 +587,59 @@ export const GroupedKetQuaHocTapTable: React.FC<
     <div className="overflow-x-auto rounded-lg shadow-xl bg-gray-200 transition-all duration-200 hover:shadow-2xl">
       {/* Filter Bar */}
       <div className="p-4 bg-gray-50 border-b border-gray-200">
-        <div className="flex items-center space-x-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              value={globalFilter ?? ""}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              placeholder="Tìm kiếm học phần..."
-              className="border pl-9 pr-3 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm placeholder-gray-500 transition-all duration-200 w-48"
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={globalFilter ?? ""}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                placeholder="Tìm kiếm học phần..."
+                className="border pl-9 pr-3 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm placeholder-gray-500 transition-all duration-200 w-48"
+              />
+            </div>
+            <div className="relative">
+              <select
+                value={diemChuFilter}
+                onChange={(e) => setDiemChuFilter(e.target.value)}
+                className="border pl-3 pr-8 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm placeholder-gray-500 transition-all duration-200"
+              >
+                <option value="">Tất cả điểm</option>
+                <option value="A">A</option>
+                <option value="B+">B+</option>
+                <option value="B">B</option>
+                <option value="C+">C+</option>
+                <option value="C">C</option>
+                <option value="D+">D+</option>
+                <option value="D">D</option>
+                <option value="F">F</option>
+              </select>
+            </div>
+            <div className="relative">
+              <select
+                value={completionStatusFilter}
+                onChange={(e) => setCompletionStatusFilter(e.target.value)}
+                className="border pl-3 pr-8 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm placeholder-gray-500 transition-all duration-200"
+              >
+                <option value="all">Tất cả trạng thái</option>
+                <option value="completed">Đã hoàn thành</option>
+                <option value="failed">Rớt</option>
+                <option value="needs_improvement">Có thể cải thiện</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Export Button */}
+          {exportData && exportData.data.length > 0 && (
+            <BangDiemExportButton
+              data={exportData.data}
+              maSo={exportData.maSo}
+              title={exportData.title}
+              variant="primary"
+              size="sm"
             />
-          </div>
-          <div className="relative">
-            <select
-              value={diemChuFilter}
-              onChange={(e) => setDiemChuFilter(e.target.value)}
-              className="border pl-3 pr-8 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm placeholder-gray-500 transition-all duration-200"
-            >
-              <option value="">Tất cả điểm</option>
-              <option value="A">A</option>
-              <option value="B+">B+</option>
-              <option value="B">B</option>
-              <option value="C+">C+</option>
-              <option value="C">C</option>
-              <option value="D+">D+</option>
-              <option value="D">D</option>
-              <option value="F">F</option>
-            </select>
-          </div>
-          <div className="relative">
-            <select
-              value={completionStatusFilter}
-              onChange={(e) => setCompletionStatusFilter(e.target.value)}
-              className="border pl-3 pr-8 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm placeholder-gray-500 transition-all duration-200"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              <option value="completed">Đã hoàn thành</option>
-              <option value="failed">Rớt</option>
-              <option value="needs_improvement">Có thể cải thiện</option>
-            </select>
-          </div>
+          )}
         </div>
       </div>
       <div className="text-center flex bg-gradient-to-r from-blue-400 to-blue-500 py-3 text-lg text-white relative">

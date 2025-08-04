@@ -65,49 +65,79 @@ const DanhSachLopHoc = () => {
     }
   }, [axiosPrivate, maKhoa]);
 
-  // Fetch thống kê lớp theo từng ngành
+  // Fetch thống kê lớp theo từng ngành hoặc theo chủ nhiệm
   const fetchThongKeLop = useCallback(async () => {
-    if (!khoa?.dsnganh || khoa.dsnganh.length === 0) return;
-    
     try {
       setLoading(true);
-      const requests = khoa.dsnganh.map((nganh) =>
-        axiosPrivate.get(PROFILE_SERVICE.THONGKE_LOP, {
-          params: {
-            maNganh: nganh.maNganh,
-          },
-        })
-      );
       
-      const responses = await Promise.all(requests);
-
-      let soLopHoc = 0;
-      let tongSoSinhVien = 0;
-      
-      responses.forEach((response) => {
+      if (auth.user?.roles === "GIANGVIEN") {
+        // Lấy thống kê lớp chủ nhiệm cho giảng viên
+        const maSoGiangVien = auth.user.maSo;
+        const response = await axiosPrivate.get(
+          PROFILE_SERVICE.THONGKE_LOP_BY_CHUNHIEM.replace(":maSo", maSoGiangVien)
+        );
+        
         if (response.data.code === 200 && response.data.data) {
           const data = response.data.data;
-          soLopHoc += data.soLopHoc || 0;
-          tongSoSinhVien += data.tongSoSinhVien || 0;
+          setThongKe({
+            soLopHoc: data.soLopHoc || 0,
+            tongSoSinhVien: data.tongSoSinhVien || 0,
+            siSoTrungBinh: data.siSoTrungBinh || 0,
+          });
+        } else {
+          setThongKe({
+            soLopHoc: 0,
+            tongSoSinhVien: 0,
+            siSoTrungBinh: 0,
+          });
         }
-      });
-      
-      const siSoTrungBinh = soLopHoc > 0 ? tongSoSinhVien / soLopHoc : 0;
-      
-      setThongKe({
-        soLopHoc,
-        tongSoSinhVien,
-        siSoTrungBinh,
-      });
+      } else {
+        // Admin hoặc vai trò khác - lấy theo khoa và ngành
+        if (!khoa?.dsnganh || khoa.dsnganh.length === 0) return;
+        
+        const requests = khoa.dsnganh.map((nganh) =>
+          axiosPrivate.get(PROFILE_SERVICE.THONGKE_LOP, {
+            params: {
+              maNganh: nganh.maNganh,
+            },
+          })
+        );
+        
+        const responses = await Promise.all(requests);
+
+        let soLopHoc = 0;
+        let tongSoSinhVien = 0;
+        
+        responses.forEach((response) => {
+          if (response.data.code === 200 && response.data.data) {
+            const data = response.data.data;
+            soLopHoc += data.soLopHoc || 0;
+            tongSoSinhVien += data.tongSoSinhVien || 0;
+          }
+        });
+        
+        const siSoTrungBinh = soLopHoc > 0 ? tongSoSinhVien / soLopHoc : 0;
+        
+        setThongKe({
+          soLopHoc,
+          tongSoSinhVien,
+          siSoTrungBinh,
+        });
+      }
       
       setError(null);
     } catch (error) {
       console.error("Error fetching class statistics:", error);
       setError(error instanceof Error ? error.message : "Lỗi không xác định");
+      setThongKe({
+        soLopHoc: 0,
+        tongSoSinhVien: 0,
+        siSoTrungBinh: 0,
+      });
     } finally {
       setLoading(false);
     }
-  }, [axiosPrivate, khoa]);
+  }, [axiosPrivate, khoa, auth]);
 
 
 
@@ -161,15 +191,21 @@ const DanhSachLopHoc = () => {
   // Load dữ liệu khi component mount
   useEffect(() => {
     fetchDanhSachLop();
-    fetchKhoaDataHandler();
-  }, [fetchDanhSachLop, fetchKhoaDataHandler]);
+    if (auth.user?.roles !== "GIANGVIEN") {
+      fetchKhoaDataHandler();
+    }
+  }, [fetchDanhSachLop, fetchKhoaDataHandler, auth]);
 
-  // Fetch thống kê khi đã có dữ liệu khoa
+  // Fetch thống kê khi đã có dữ liệu khoa (cho admin) hoặc ngay lập tức (cho giảng viên)
   useEffect(() => {
-    if (khoa?.dsnganh && khoa.dsnganh.length > 0) {
+    if (auth.user?.roles === "GIANGVIEN") {
+      // Giảng viên không cần đợi dữ liệu khoa
+      fetchThongKeLop();
+    } else if (khoa?.dsnganh && khoa.dsnganh.length > 0) {
+      // Admin cần có dữ liệu khoa trước
       fetchThongKeLop();
     }
-  }, [khoa, fetchThongKeLop]);
+  }, [khoa, fetchThongKeLop, auth]);
 
   // Hiển thị loading
   if (loading) {
@@ -199,7 +235,9 @@ const DanhSachLopHoc = () => {
             <div>
               <h1 className="text-2xl font-bold text-gray-800">Quản lý Lớp</h1>
               <p className="text-gray-600">
-                Xem thống kê và quản lý các lớp thuộc khoa
+                {auth.user?.roles === "GIANGVIEN" 
+                  ? "Xem thống kê và quản lý các lớp chủ nhiệm" 
+                  : "Xem thống kê và quản lý các lớp thuộc khoa"}
               </p>
             </div>
           </div>
@@ -218,7 +256,9 @@ const DanhSachLopHoc = () => {
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Tổng số lớp</p>
+              <p className="text-sm text-gray-600 mb-1">
+                {auth.user?.roles === "GIANGVIEN" ? "Số lớp chủ nhiệm" : "Tổng số lớp"}
+              </p>
               <p className="text-3xl font-bold text-blue-600">{thongKe.soLopHoc}</p>
             </div>
             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -230,7 +270,9 @@ const DanhSachLopHoc = () => {
         <div className="bg-white rounded-2xl shadow-lg p-6 border border-gray-100">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Tổng sinh viên</p>
+              <p className="text-sm text-gray-600 mb-1">
+                {auth.user?.roles === "GIANGVIEN" ? "Tổng SV chủ nhiệm" : "Tổng sinh viên"}
+              </p>
               <p className="text-3xl font-bold text-green-600">
                 {thongKe.tongSoSinhVien}
               </p>
@@ -276,13 +318,36 @@ const DanhSachLopHoc = () => {
           <div className="p-12 text-center">
             <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-semibold text-gray-600 mb-2">
-              {searchTerm ? "Không tìm thấy lớp phù hợp" : "Chưa có lớp nào"}
+              {searchTerm 
+                ? "Không tìm thấy lớp phù hợp" 
+                : auth.user?.roles === "GIANGVIEN" 
+                  ? "Chưa được phân công lớp chủ nhiệm" 
+                  : "Chưa có lớp nào"}
             </h3>
             <p className="text-gray-500">
               {searchTerm
                 ? "Thử thay đổi từ khóa tìm kiếm"
-                : "Hiện tại chưa có lớp nào trong hệ thống"}
+                : auth.user?.roles === "GIANGVIEN"
+                  ? "Vui lòng liên hệ phòng đào tạo để được phân công lớp chủ nhiệm"
+                  : "Hiện tại chưa có lớp nào trong hệ thống"}
             </p>
+            {auth.user?.roles === "GIANGVIEN" && !searchTerm && (
+              <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200 max-w-md mx-auto">
+                <div className="flex items-start space-x-3">
+                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <span className="text-blue-600 text-sm font-bold">ℹ</span>
+                  </div>
+                  <div className="text-left">
+                    <h4 className="font-semibold text-blue-800 mb-1">
+                      Thông tin
+                    </h4>
+                    <p className="text-sm text-blue-700 leading-relaxed">
+                      Chỉ giảng viên được phân công làm chủ nhiệm lớp mới có thể xem thông tin lớp tại đây.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <div className="p-6">

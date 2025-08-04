@@ -20,6 +20,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Trash2,
+  Search,
 } from "lucide-react";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
@@ -300,113 +301,132 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
     return courseGroups.flatMap(group => group.courses);
   }, [courseGroups]);
 
-  // Create flattened data structure - group headers with their courses directly below
-  const flattenedData = useMemo((): CourseWithGroup[] => {
-    const result: CourseWithGroup[] = [];
-    
-    // Add each group header followed immediately by its courses
-    courseGroups.forEach(group => {
-      // Add group header
-      result.push({
-        maHp: `group-header-${group.id}`,
-        tenHp: group.title,
-        tinChi: 0,
-        loaiHp: group.type,
-        hocPhanTienQuyet: '',
-        groupId: group.id,
-        groupOriginalId: group.originalId,
-        groupType: group.type,
-        isGroupHeader: true,
-        groupTitle: group.title,
-        groupSubtitle: group.subtitle,
-        groupTotalCredits: group.totalCredits,
-        groupRequiredCredits: group.requiredCredits,
-        colorScheme: group.colorScheme
-      } as CourseWithGroup);
-      
-      // Always add courses to the flattened data for search purposes
-      group.courses.forEach(course => {
-        result.push({
-          ...course,
-          groupId: group.id,
-          groupOriginalId: group.originalId,
-          groupType: group.type,
-          isGroupHeader: false,
-          colorScheme: group.colorScheme
-        } as CourseWithGroup);
-      });
-    });
-    
-    return result;
-  }, [courseGroups]);
-
   // Filter data based on global filter (apply to both headers and courses)
   // Auto-expand groups that contain matching courses when searching
   const filteredData = useMemo(() => {
-    if (globalFilter) {
-      const matchingGroupIds = new Set<string>();
-      const matchingCourses = new Set<string>();
+    const result: CourseWithGroup[] = [];
+    const textFilter = globalFilter.toLowerCase().trim();
+
+    // For each original group...
+    courseGroups.forEach(group => {
+      // If no text filter is active, show groups normally based on expansion state
+      if (!textFilter) {
+        // Add group header
+        result.push({
+          maHp: `group-header-${group.id}`,
+          tenHp: group.title,
+          tinChi: 0,
+          loaiHp: group.type,
+          hocPhanTienQuyet: '',
+          groupId: group.id,
+          groupOriginalId: group.originalId,
+          groupType: group.type,
+          isGroupHeader: true,
+          groupTitle: group.title,
+          groupSubtitle: group.subtitle,
+          groupTotalCredits: group.totalCredits,
+          groupRequiredCredits: group.requiredCredits,
+          colorScheme: group.colorScheme
+        } as CourseWithGroup);
+        
+        // Add courses if group is expanded
+        if (expandedGroups.has(group.id)) {
+          group.courses.forEach(course => {
+            result.push({
+              ...course,
+              groupId: group.id,
+              groupOriginalId: group.originalId,
+              groupType: group.type,
+              isGroupHeader: false,
+              colorScheme: group.colorScheme
+            } as CourseWithGroup);
+          });
+        }
+        return; // continue to next group
+      }
+
+      // If a text filter IS active...
+      const groupTitleMatches = (
+        group.title?.toLowerCase().includes(textFilter) ||
+        group.subtitle?.toLowerCase().includes(textFilter)
+      );
       
-      // First pass: find all groups and courses that should be shown
+      const coursesMatchingText = group.courses.filter(course => (
+        course.maHp?.toLowerCase().includes(textFilter) ||
+        course.tenHp?.toLowerCase().includes(textFilter) ||
+        course.loaiHp?.toLowerCase().includes(textFilter) ||
+        course.hocPhanTienQuyet?.toLowerCase().includes(textFilter)
+      ));
+
+      // Show the group if the title matches OR if it has courses that match the text filter
+      if (groupTitleMatches || coursesMatchingText.length > 0) {
+        const coursesToShow = groupTitleMatches ? group.courses : coursesMatchingText;
+        const subtitle = `${coursesToShow.length} học phần • ${coursesToShow.reduce((sum, c) => sum + (c.tinChi || 0), 0)} tín chỉ`;
+        
+        // Add group header
+        result.push({
+          maHp: `group-header-${group.id}`,
+          tenHp: group.title,
+          tinChi: 0,
+          loaiHp: group.type,
+          hocPhanTienQuyet: '',
+          groupId: group.id,
+          groupOriginalId: group.originalId,
+          groupType: group.type,
+          isGroupHeader: true,
+          groupTitle: group.title,
+          groupSubtitle: subtitle,
+          groupTotalCredits: group.totalCredits,
+          groupRequiredCredits: group.requiredCredits,
+          colorScheme: group.colorScheme
+        } as CourseWithGroup);
+
+        // Always show matching courses when searching (auto-expand effect)
+        coursesToShow.forEach(course => {
+          result.push({
+            ...course,
+            groupId: group.id,
+            groupOriginalId: group.originalId,
+            groupType: group.type,
+            isGroupHeader: false,
+            colorScheme: group.colorScheme
+          } as CourseWithGroup);
+        });
+      }
+    });
+
+    return result;
+  }, [courseGroups, globalFilter, expandedGroups]);
+
+  // Auto-expand groups that have matches when searching
+  useEffect(() => {
+    if (globalFilter && globalFilter.trim()) {
+      const searchTerm = globalFilter.toLowerCase().trim();
+      const matchingGroupIds = new Set<string>();
+      
       courseGroups.forEach(group => {
-        // Check if group header matches
-        const groupHeaderMatches = (
-          group.title?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-          group.subtitle?.toLowerCase().includes(globalFilter.toLowerCase())
+        const groupTitleMatches = (
+          group.title?.toLowerCase().includes(searchTerm) ||
+          group.subtitle?.toLowerCase().includes(searchTerm)
         );
         
-        // Check courses in this group
-        const matchingCoursesInGroup = group.courses.filter(course => (
-          course.maHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-          course.tenHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-          course.loaiHp?.toLowerCase().includes(globalFilter.toLowerCase()) ||
-          course.hocPhanTienQuyet?.toLowerCase().includes(globalFilter.toLowerCase())
+        const coursesMatchingText = group.courses.filter(course => (
+          course.maHp?.toLowerCase().includes(searchTerm) ||
+          course.tenHp?.toLowerCase().includes(searchTerm) ||
+          course.loaiHp?.toLowerCase().includes(searchTerm) ||
+          course.hocPhanTienQuyet?.toLowerCase().includes(searchTerm)
         ));
-        
-        if (groupHeaderMatches || matchingCoursesInGroup.length > 0) {
+
+        if (groupTitleMatches || coursesMatchingText.length > 0) {
           matchingGroupIds.add(group.id);
-          // Add matching courses to the set
-          matchingCoursesInGroup.forEach(course => {
-            matchingCourses.add(course.maHp || '');
-          });
-          // If group header matches, include all courses in that group
-          if (groupHeaderMatches) {
-            group.courses.forEach(course => {
-              matchingCourses.add(course.maHp || '');
-            });
-          }
         }
       });
       
-      // Auto-expand groups that have matches
       if (matchingGroupIds.size > 0) {
         setExpandedGroups(prev => new Set([...prev, ...matchingGroupIds]));
       }
-      
-      // Filter the flattened data to only show matching groups and courses
-      return flattenedData.filter((item) => {
-        if (item.isGroupHeader) {
-          // Show group header if it has matches
-          return matchingGroupIds.has(item.groupId);
-        } else {
-          // Show course if its group has matches and either:
-          // 1. The course itself matches the search criteria, or
-          // 2. The group header matches (showing all courses in matching group)
-          return matchingGroupIds.has(item.groupId) && matchingCourses.has(item.maHp || '');
-        }
-      });
-    } else {
-      // When not searching, respect the expansion state
-      return flattenedData.filter((item) => {
-        if (item.isGroupHeader) {
-          return true; // Always show group headers
-        } else {
-          // Show courses only if their group is expanded
-          return expandedGroups.has(item.groupId);
-        }
-      });
     }
-  }, [flattenedData, globalFilter, courseGroups, expandedGroups]);  // Use filteredData directly for display with pagination
+  }, [globalFilter, courseGroups]);  // Use filteredData directly for display with pagination
   const displayData = useMemo((): CourseWithGroup[] => {
     return filteredData;
   }, [filteredData]);
@@ -751,16 +771,35 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
 
   return (
     <div className="overflow-x-auto rounded-lg shadow-xl bg-gray-200 transition-all duration-200 hover:shadow-2xl">
-      <div className="text-center flex bg-gradient-to-r from-blue-400 to-blue-500 py-3 text-lg text-white relative">
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-          <input
-            type="text"
-            value={globalFilter ?? ""}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            placeholder="Tìm kiếm học phần..."
-            className="border-none px-3 py-1.5 rounded-lg bg-white/90 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white text-sm placeholder-gray-500 transition-all duration-200 w-48"
-          />
+      {/* Filter Bar */}
+      <div className="p-4 bg-gray-50 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={globalFilter ?? ""}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+                placeholder="Tìm kiếm học phần..."
+                className="border pl-9 pr-3 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm placeholder-gray-500 transition-all duration-200 w-48"
+              />
+            </div>
+          </div>
+
+          {/* PDF Export Button */}
+          {totalCourses > 0 && (
+            <KeHoachHocTapExportButton
+              data={allCourses}
+              title={name}
+              variant="primary"
+              size="sm"
+            />
+          )}
         </div>
+      </div>
+      
+      <div className="text-center flex bg-gradient-to-r from-blue-400 to-blue-500 py-3 text-lg text-white relative">
         <div className="flex-1 flex justify-center items-center">
           <h3 className="font-bold uppercase tracking-wide">{name}</h3>
           {totalCourses > 0 && (
@@ -773,18 +812,6 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
           )}
         </div>
         <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center gap-2">
-          {/* PDF Export Button */}
-          {totalCourses > 0 && (
-            <KeHoachHocTapExportButton
-              data={allCourses}
-              title={name}
-              variant="minimal"
-              size="sm"
-              showText={false}
-              className="text-white hover:bg-white/20 border-white/30"
-            />
-          )}
-          
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="group p-2 rounded-lg bg-white/10 hover:bg-white/20 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-white/30 backdrop-blur-sm"
@@ -926,25 +953,34 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
                     );
                   } else {
                     return (
-                      <tr 
+                      <tr
                         key={row.id}
-                        className="hover:bg-gray-50 transition-colors group"
+                        className="bg-white hover:bg-gray-100 transition-colors group"
                       >
                         {row.getVisibleCells().map((cell, index) => (
                           <td
                             key={cell.id}
-                            className={`px-3 py-2 text-center border-b border-gray-100 ${
-                              index === 0 ? 'border-l-4 border-l-transparent group-hover:border-l-gray-300' : ''
+                            className={`px-3 py-2 text-center border-b border-gray-200 ${
+                              index === 0
+                                ? "border-l-4 border-l-transparent group-hover:border-l-blue-300"
+                                : ""
                             }`}
-                            style={index === 0 ? { 
-                              paddingLeft: '2rem',
-                              position: 'relative'
-                            } : undefined}
+                            style={
+                              index === 0
+                                ? {
+                                    paddingLeft: "2rem",
+                                    position: "relative",
+                                  }
+                                : undefined
+                            }
                           >
                             {index === 0 && (
                               <div className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3 h-px bg-gray-300"></div>
                             )}
-                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
                           </td>
                         ))}
                       </tr>
@@ -956,9 +992,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
           </table>
 
           {/* Pagination Controls */}
-          {!loading && displayRows.length > 0 && (
-            <PaginationControls />
-          )}
+          {displayRows.length > 0 && <PaginationControls />}
         </div>
       </div>
     </div>

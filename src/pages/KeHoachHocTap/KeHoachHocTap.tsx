@@ -134,6 +134,9 @@ export const KeHoachHocTapPage = () => {
           <p className="text-lg text-center font-bold uppercase mb-4">
             Số tín chỉ đăng ký và cải thiện theo học kỳ
           </p>
+          <p className="text-sm text-center text-gray-600 mb-4">
+            Nhấn vào cột biểu đồ để xem chi tiết học kỳ tương ứng
+          </p>
           <KHHTBarChart rawData={tinChiThongKe} height={400} />
         </div>
       )}
