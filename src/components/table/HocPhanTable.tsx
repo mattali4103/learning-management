@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getSortedRowModel,
+  getPaginationRowModel,
   useReactTable,
   type ColumnDef,
   type SortingState,
@@ -108,6 +109,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
   const courseGroupsResult = useMemo((): CourseGroupResult => {
     // Define the desired order for required course types
     const requiredOrder = [
+      "Quốc phòng",
       "Anh văn",
       "chính trị",
       "thể chất",
@@ -118,7 +120,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
 
     // Define the desired order for elective group types by matching course types inside them
     const electiveOrder = [
-      "Đại c��ơng",
+      "Đại cương",
       "Cơ sở ngành",
       "Chuyên ngành",
     ];
@@ -160,7 +162,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
         
         // Determine color scheme based on course type
         let colorScheme = 'blue';
-        if (courseType.includes('Đại cương') || courseType.includes('Anh văn') || courseType.includes('chính trị') || courseType.includes('thể chất')) {
+        if (courseType.includes('Đại cương') || courseType.includes('Anh văn') || courseType.includes('chính trị') || courseType.includes('thể chất') || courseType.includes('Quốc phòng')) {
           colorScheme = 'purple';
         } else if (courseType.includes('Cơ sở ngành')) {
           colorScheme = 'blue';
@@ -235,27 +237,43 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
     });
 
     // Combine groups in the requested order:
-    // Anh văn, chính trị, thể chất, đại cương,
-    // nhóm học phần tự chọn đại cương,
+    // Anh văn, chính trị, thể chất, 
+    // nhóm học phần tự chọn đại cương, đại cương,
     // cơ sở ngành, nhóm học phần tự chọn cơ sở ngành,
     // chuyên ngành, nhóm học phần tự chọn chuyên ngành
 
     const combinedGroups: CourseGroup[] = [];
 
-    // Add required groups in order
-    requiredOrder.forEach(orderType => {
+    // Add groups in the specific order requested
+    const addGroupsByType = (orderType: string) => {
+      // First add required groups of this type
       requiredGroups.forEach(group => {
         if (group.title.includes(orderType)) {
           combinedGroups.push(group);
         }
       });
-      // Add elective groups of this type after required group
+    };
+
+    const addElectiveGroupsByType = (orderType: string) => {
+      // Add elective groups of this type
       electiveGroupsFiltered.forEach(group => {
         if (group.groupType === orderType) {
           combinedGroups.push(group);
         }
       });
-    });
+    };
+
+    // Follow the exact order requested
+    addGroupsByType("Quốc phòng");
+    addGroupsByType("Anh văn");
+    addGroupsByType("chính trị");
+    addGroupsByType("thể chất");
+    addElectiveGroupsByType("Đại cương"); // Nhóm học phần tự chọn đại cương
+    addGroupsByType("Đại cương");
+    addGroupsByType("Cơ sở ngành");
+    addElectiveGroupsByType("Cơ sở ngành"); // Nhóm học phần tự chọn cơ sở ngành
+    addGroupsByType("Chuyên ngành");
+    addElectiveGroupsByType("Chuyên ngành"); // Nhóm học phần tự chọn chuyên ngành
 
     // Add any remaining groups not in order arrays
     requiredGroups.forEach(group => {
@@ -274,17 +292,6 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
 
   const courseGroups = courseGroupsResult.groups;
 
-
-  // Auto-expand only the first group when courseGroups change
-  useEffect(() => {
-    if (courseGroups.length > 0) {
-      const firstGroupId = courseGroups[0].id;
-      setExpandedGroups(new Set([firstGroupId]));
-    } else {
-      setExpandedGroups(new Set());
-    }
-  }, [courseGroups]);
-
   // Toggle group expansion
   const toggleGroup = useCallback((groupId: string) => {
     const newExpanded = new Set(expandedGroups);
@@ -301,135 +308,75 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
     return courseGroups.flatMap(group => group.courses);
   }, [courseGroups]);
 
-  // Filter data based on global filter (apply to both headers and courses)
-  // Auto-expand groups that contain matching courses when searching
-  const filteredData = useMemo(() => {
+  // Create flattened data structure - group headers with their courses directly below
+  const flattenedData = useMemo((): CourseWithGroup[] => {
     const result: CourseWithGroup[] = [];
-    const textFilter = globalFilter.toLowerCase().trim();
+    // Add each group header followed immediately by its courses
+    courseGroups.forEach((group) => {
+      // Add group header
+      result.push({
+        maHp: `group-header-${group.id}`,
+        tenHp: group.title,
+        tinChi: 0,
+        loaiHp: group.type,
+        hocPhanTienQuyet: "",
+        groupId: group.id,
+        groupOriginalId: group.originalId,
+        groupType: group.type,
+        isGroupHeader: true,
+        groupTitle: group.title,
+        groupSubtitle: group.subtitle,
+        groupTotalCredits: group.totalCredits,
+        groupRequiredCredits: group.requiredCredits,
+        colorScheme: group.colorScheme,
+      } as CourseWithGroup);
 
-    // For each original group...
-    courseGroups.forEach(group => {
-      // If no text filter is active, show groups normally based on expansion state
-      if (!textFilter) {
-        // Add group header
-        result.push({
-          maHp: `group-header-${group.id}`,
-          tenHp: group.title,
-          tinChi: 0,
-          loaiHp: group.type,
-          hocPhanTienQuyet: '',
-          groupId: group.id,
-          groupOriginalId: group.originalId,
-          groupType: group.type,
-          isGroupHeader: true,
-          groupTitle: group.title,
-          groupSubtitle: group.subtitle,
-          groupTotalCredits: group.totalCredits,
-          groupRequiredCredits: group.requiredCredits,
-          colorScheme: group.colorScheme
-        } as CourseWithGroup);
-        
-        // Add courses if group is expanded
-        if (expandedGroups.has(group.id)) {
-          group.courses.forEach(course => {
-            result.push({
-              ...course,
-              groupId: group.id,
-              groupOriginalId: group.originalId,
-              groupType: group.type,
-              isGroupHeader: false,
-              colorScheme: group.colorScheme
-            } as CourseWithGroup);
-          });
-        }
-        return; // continue to next group
-      }
-
-      // If a text filter IS active...
-      const groupTitleMatches = (
-        group.title?.toLowerCase().includes(textFilter) ||
-        group.subtitle?.toLowerCase().includes(textFilter)
-      );
-      
-      const coursesMatchingText = group.courses.filter(course => (
-        course.maHp?.toLowerCase().includes(textFilter) ||
-        course.tenHp?.toLowerCase().includes(textFilter) ||
-        course.loaiHp?.toLowerCase().includes(textFilter) ||
-        course.hocPhanTienQuyet?.toLowerCase().includes(textFilter)
-      ));
-
-      // Show the group if the title matches OR if it has courses that match the text filter
-      if (groupTitleMatches || coursesMatchingText.length > 0) {
-        const coursesToShow = groupTitleMatches ? group.courses : coursesMatchingText;
-        const subtitle = `${coursesToShow.length} học phần • ${coursesToShow.reduce((sum, c) => sum + (c.tinChi || 0), 0)} tín chỉ`;
-        
-        // Add group header
-        result.push({
-          maHp: `group-header-${group.id}`,
-          tenHp: group.title,
-          tinChi: 0,
-          loaiHp: group.type,
-          hocPhanTienQuyet: '',
-          groupId: group.id,
-          groupOriginalId: group.originalId,
-          groupType: group.type,
-          isGroupHeader: true,
-          groupTitle: group.title,
-          groupSubtitle: subtitle,
-          groupTotalCredits: group.totalCredits,
-          groupRequiredCredits: group.requiredCredits,
-          colorScheme: group.colorScheme
-        } as CourseWithGroup);
-
-        // Always show matching courses when searching (auto-expand effect)
-        coursesToShow.forEach(course => {
+      // Add courses immediately after the header if group is expanded
+      if (expandedGroups.has(group.id)) {
+        group.courses.forEach((course) => {
           result.push({
             ...course,
             groupId: group.id,
             groupOriginalId: group.originalId,
             groupType: group.type,
             isGroupHeader: false,
-            colorScheme: group.colorScheme
+            colorScheme: group.colorScheme,
           } as CourseWithGroup);
         });
       }
     });
 
     return result;
-  }, [courseGroups, globalFilter, expandedGroups]);
+  }, [courseGroups, expandedGroups]);
 
-  // Auto-expand groups that have matches when searching
-  useEffect(() => {
-    if (globalFilter && globalFilter.trim()) {
-      const searchTerm = globalFilter.toLowerCase().trim();
-      const matchingGroupIds = new Set<string>();
-      
-      courseGroups.forEach(group => {
-        const groupTitleMatches = (
-          group.title?.toLowerCase().includes(searchTerm) ||
-          group.subtitle?.toLowerCase().includes(searchTerm)
-        );
-        
-        const coursesMatchingText = group.courses.filter(course => (
-          course.maHp?.toLowerCase().includes(searchTerm) ||
-          course.tenHp?.toLowerCase().includes(searchTerm) ||
-          course.loaiHp?.toLowerCase().includes(searchTerm) ||
-          course.hocPhanTienQuyet?.toLowerCase().includes(searchTerm)
-        ));
-
-        if (groupTitleMatches || coursesMatchingText.length > 0) {
-          matchingGroupIds.add(group.id);
+  // Filter data based on global filter (apply to both headers and courses)
+  const filteredData = useMemo(() => {
+    let filtered = flattenedData;
+    if (globalFilter && typeof globalFilter === "string" && globalFilter.trim() !== "") {
+      const filterValue = globalFilter.toLowerCase();
+      filtered = flattenedData.filter((item) => {
+        if (item.isGroupHeader) {
+          // For group headers, search in group title and subtitle
+          const title = item.groupTitle?.toLowerCase() ?? "";
+          const subtitle = item.groupSubtitle?.toLowerCase() ?? "";
+          return title.includes(filterValue) || subtitle.includes(filterValue);
+        } else {
+          // For courses, search in course properties
+          const maHp = typeof item.maHp === "string" ? item.maHp.toLowerCase() : "";
+          const tenHp = typeof item.tenHp === "string" ? item.tenHp.toLowerCase() : "";
+          const loaiHp = typeof item.loaiHp === "string" ? item.loaiHp.toLowerCase() : "";
+          const hocPhanTienQuyet = typeof item.hocPhanTienQuyet === "string" ? item.hocPhanTienQuyet.toLowerCase() : "";
+          return (
+            maHp.includes(filterValue) ||
+            tenHp.includes(filterValue) ||
+            loaiHp.includes(filterValue) ||
+            hocPhanTienQuyet.includes(filterValue)
+          );
         }
       });
-      
-      if (matchingGroupIds.size > 0) {
-        setExpandedGroups(prev => new Set([...prev, ...matchingGroupIds]));
-      }
     }
-  }, [globalFilter, courseGroups]);  // Use filteredData directly for display with pagination
-  const displayData = useMemo((): CourseWithGroup[] => {
-    return filteredData;
-  }, [filteredData]);
+    return filtered;
+  }, [flattenedData, globalFilter]);
 
   // Columns definition
   const columns = useMemo<ColumnDef<CourseWithGroup>[]>(
@@ -605,36 +552,35 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
     [showDeleteButton, onDelete]
   );
 
-  // Create table instance - use standard setup but handle pagination display manually
+  // Use filteredData directly for display with pagination
+  const displayData = useMemo((): CourseWithGroup[] => {
+    console.log("Filtered Data:", filteredData);
+    return filteredData;
+  }, [filteredData]);
+
+  const tableState = useMemo(
+    () => ({
+      pagination,
+      sorting,
+      globalFilter,
+    }),
+    [pagination, sorting, globalFilter]
+  );
+
   const table = useReactTable({
     data: displayData,
     columns: columns,
-    state: {
-      globalFilter,
-      sorting,
-      pagination,
-    },
+    state: tableState,
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
     getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    // Don't use built-in pagination for display
+    getPaginationRowModel: getPaginationRowModel(),
     manualPagination: false,
+    autoResetPageIndex: false,
   });
-
-  // Custom pagination logic for display
-  const displayRows = useMemo(() => {
-    const allRows = table.getFilteredRowModel().rows;
-    
-    // Apply pagination to all filtered data
-    const { pageIndex, pageSize } = pagination;
-    const pageStart = pageIndex * pageSize;
-    const pageEnd = pageStart + pageSize;
-    
-    return allRows.slice(pageStart, pageEnd);
-  }, [table, pagination]);
 
   // Custom pagination info
   const paginationInfo = useMemo(() => {
@@ -887,7 +833,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
                     <Loading />
                   </td>
                 </tr>
-              ) : displayRows.length === 0 ? (
+              ) : table.getRowModel().rows.length === 0 ? (
                 <tr>
                   <td colSpan={columns.length} className="px-6 py-8">
                     <EmptyTableState
@@ -897,8 +843,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
                   </td>
                 </tr>
               ) : (
-                // Show paginated rows with group headers and courses
-                displayRows.map((row) => {
+                table.getRowModel().rows.map((row) => {
                   const item = row.original;
                   
                   if (item.isGroupHeader) {
@@ -992,7 +937,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
           </table>
 
           {/* Pagination Controls */}
-          {displayRows.length > 0 && <PaginationControls />}
+          {!loading && table.getRowModel().rows.length > 0 && <PaginationControls />}
         </div>
       </div>
     </div>

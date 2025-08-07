@@ -15,7 +15,7 @@
 // export const PROFILE_SERVICE_URL = KONG_URL + "/profile-service";
 // export const KQHT_SERVICE_URL = KONG_URL + "/kqht-service";
 
-//
+
 const BASE_URL = "http://localhost"; // Base URL for the API
 export const USER_SERIVCE_URL = BASE_URL + ":8088";
 export const KHHT_SERVICE_URL = BASE_URL + ":8087";

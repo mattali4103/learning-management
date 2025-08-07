@@ -8,6 +8,7 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
+  Cell,
   type TooltipProps,
 } from "recharts";
 import {
@@ -28,15 +29,17 @@ import {
   HOCPHAN_SERVICE,
   PROFILE_SERVICE,
 } from "../../api/apiEndPoints";
-import { HocPhanTable } from "../../components/table/HocPhanTable";
+import { AllCoursesCollapsibleTable } from "../../components/table/AllCoursesCollapsibleTable";
 import type { PreviewProfile } from "../../types/PreviewProfile";
 
 interface CreditStatData {
   tenHocKy: string;
   soTinChi: number;
+  soTinChiConLai: number;
   hocKyId: number;
   namHocId: number;
   namHoc: string;
+  hasCourses: boolean;
 }
 
 const KeHoachHocTapView = () => {
@@ -62,6 +65,8 @@ const KeHoachHocTapView = () => {
   const [selectedHocKyChart, setSelectedHocKyChart] = useState<number | null>(
     null
   );
+
+  const MAX_CREDITS_PER_SEMESTER = 20;
 
   // Event handlers
   const handleChartBarClick = (data: any) => {
@@ -120,20 +125,48 @@ const KeHoachHocTapView = () => {
   // Credit statistics for chart
   const creditStatistics = useMemo(() => {
     const statsMap = new Map<string, CreditStatData>();
-
+    
+    // First, populate with semesters that have courses from allData
     allData.forEach((item) => {
-      if (item.tenHocKy && item.namBdNamKt) {
+      if (item.maHocKy) {
         const key = `${item.maHocKy}`;
         const existing = statsMap.get(key) || {
           tenHocKy: item.tenHocKy,
           soTinChi: 0,
+          soTinChiConLai: MAX_CREDITS_PER_SEMESTER,
           hocKyId: item.maHocKy,
-          namHocId: item.namHocId,
+          namHocId: item.namHocId || 0,
           namHoc: item.namBdNamKt,
+          hasCourses: false,
         };
-
         existing.soTinChi += item.tinChi;
+        existing.soTinChiConLai = Math.max(
+          0,
+          MAX_CREDITS_PER_SEMESTER - existing.soTinChi
+        );
+        existing.hasCourses = true;
         statsMap.set(key, existing);
+      }
+    });
+
+    // Then, add all other relevant semesters
+    danhSachHocKy.forEach((hk) => {
+      if (
+        hocKyHienTai &&
+        hk.maHocKy <= hocKyHienTai.maHocKy
+      ) {
+        const key = `${hk.maHocKy}`;
+        if (!statsMap.has(key)) {
+          statsMap.set(key, {
+            tenHocKy: hk.tenHocKy,
+            soTinChi: 0,
+            soTinChiConLai: MAX_CREDITS_PER_SEMESTER,
+            hocKyId: hk.maHocKy,
+            namHocId: hk.namHoc?.id || 0,
+            namHoc: `${hk.namHoc?.namBatDau}-${hk.namHoc?.namKetThuc}`,
+            hasCourses: false,
+          });
+        }
       }
     });
 
@@ -143,7 +176,7 @@ const KeHoachHocTapView = () => {
       }
       return a.hocKyId - b.hocKyId;
     });
-  }, [allData]);
+  }, [allData, danhSachHocKy, hocKyHienTai]);
 
   // Calculate statistics from all data
   const statistics = useMemo(() => {
@@ -286,7 +319,11 @@ const KeHoachHocTapView = () => {
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-800">{data.tenHocKy}</p>
           <p className="text-blue-600">
-            Số tín chỉ: <span className="font-bold">{data.soTinChi}</span>
+            Tín chỉ đã học: <span className="font-bold">{data.soTinChi}</span>
+          </p>
+          <p className="text-gray-600">
+            Tín chỉ có thể học:{" "}
+            <span className="font-bold">{data.soTinChiConLai}</span>
           </p>
           <p className="text-gray-500 text-xs mt-1">Nhấn để xem chi tiết</p>
         </div>
@@ -321,7 +358,11 @@ const KeHoachHocTapView = () => {
         ) {
           const studentData = profileResponse.data.data;
           setStudentInfo(studentData);
-          await Promise.all([fetchAllData(maSo), fetchDanhSachHocKy()]);
+          await Promise.all([
+            fetchAllData(maSo), 
+            fetchDanhSachHocKy(),
+            fetchNhomHocPhanTuChon(studentData.khoaHoc, studentData.maNganh)
+          ]);
         }
       } catch (err) {
         setError(
@@ -412,22 +453,45 @@ const KeHoachHocTapView = () => {
                     angle: -90,
                     position: "insideLeft",
                   }}
+                  domain={[0, MAX_CREDITS_PER_SEMESTER]}
                 />
                 <Tooltip content={<CreditChartTooltip />} />
                 <Bar
                   dataKey="soTinChi"
-                  fill="#3b82f6"
+                  stackId="a"
                   radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                >
+                  {creditStatistics.map((entry, index) => (
+                    <Cell 
+                      key={`cell-${index}`} 
+                      fill={entry.hasCourses ? "#3b82f6" : "#e5e7eb"} 
+                    />
+                  ))}
+                </Bar>
+                <Bar
+                  dataKey="soTinChiConLai"
+                  stackId="a"
+                  fill="#d1d5db"
+                  radius={[0, 0, 0, 0]}
                   cursor="pointer"
                 />
               </BarChart>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-400">
-                Chưa có dữ liệu
+                <div className="text-center">
+                  <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                  <p>Chưa có dữ liệu</p>
+                </div>
               </div>
             )}
           </ResponsiveContainer>
         </div>
+        <p className="text-xs text-gray-500 mt-2 text-center">
+          {creditStatistics.length > 0
+            ? "Nhấn vào cột để xem chi tiết học kỳ"
+            : "Biểu đồ sẽ hiển thị khi có học phần trong kế hoạch"}
+        </p>
       </div>
 
       {/* Tab Navigation for Edit Mode */}
@@ -476,12 +540,15 @@ const KeHoachHocTapView = () => {
         {selectedTabNamHoc && availableHocKy.length > 0 && (
           <div className="border-b border-gray-100 bg-gray-50">
             <nav className="flex items-center px-6 py-2">
-              <div className="flex space-x-4 overflow-x-auto">
+              <div className="flex items-center space-x-1 text-xs text-gray-500 mr-4">
+                <span>Học kỳ:</span>
+              </div>
+              <div className="flex space-x-3 overflow-x-auto">
                 {availableHocKy.map((hocKy) => (
                   <button
                     key={hocKy.id}
                     onClick={() => handleHocKyTabClick(hocKy.id)}
-                    className={`whitespace-nowrap py-1 px-2 rounded-lg text-xs font-medium transition-colors ${
+                    className={`whitespace-nowrap py-1 px-3 rounded-lg text-xs font-medium transition-colors ${
                       selectedHocKyChart === hocKy.id
                         ? "bg-blue-600 text-white"
                         : "bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600"
@@ -513,61 +580,62 @@ const KeHoachHocTapView = () => {
               </h4>
 
               {allData.length > 0 ? (
-                <HocPhanTable
+                <AllCoursesCollapsibleTable
+                  key={activeTab}
+                  activeTab={activeTab}
                   name="Tất cả học phần"
-                  requiredCourses={allData.map((item) => ({
-                    maHp: item.maHp,
-                    tenHp: item.tenHp,
-                    tinChi: item.tinChi,
-                    loaiHp: item.loaiHp,
-                    hocPhanTienQuyet: item.hocPhanTienQuyet,
-                  }))}
-                  electiveGroups={nhomHocPhanTuChon}
-                  activeTab="tatca"
+                  allData={allData}
+                  nhomHocPhanTuChon={nhomHocPhanTuChon}
+                  loading={false}
                   emptyStateTitle="Chưa có học phần nào"
-                  emptyStateDescription="Nhấn 'Thêm học phần' để bắt đầu"
+                  emptyStateDescription="Hiện tại chưa có học phần nào trong kế hoạch"
                 />
               ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 text-lg">
-                    Chưa có học phần nào trong kế hoạch
-                  </p>
-                  <p className="text-gray-500 mt-2">
-                    Nhấn "Thêm học phần" để bắt đầu thêm học phần vào kế hoạch
-                  </p>
+                <div className="text-center py-12 text-gray-500">
+                  <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">Chưa có học phần nào</p>
+                  <p className="text-sm">Hiện tại chưa có học phần nào trong kế hoạch học tập</p>
                 </div>
               )}
             </div>
           ) : (
             <div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                Học phần trong học kỳ đã chọn ({selectedSemesterData.length})
-              </h4>
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="text-lg font-semibold text-gray-800">
+                  Kế hoạch học tập
+                  {selectedHocKyChart && (
+                    <>
+                      {" - "}
+                      {availableHocKy.find((s) => s.id === selectedHocKyChart)?.ten}
+                    </>
+                  )}
+                </h4>
+                <div className="flex items-center space-x-3">
+                  <span className="text-sm text-gray-600">
+                    {selectedSemesterData.reduce((sum, item) => sum + item.tinChi, 0)} tín chỉ
+                  </span>
+                </div>
+              </div>
 
               {selectedSemesterData.length > 0 ? (
-                <HocPhanTable
-                  name={`Học phần trong học kỳ`}
-                  requiredCourses={selectedSemesterData.map((item) => ({
-                    maHp: item.maHp,
-                    tenHp: item.tenHp,
-                    tinChi: item.tinChi,
-                    loaiHp: item.loaiHp,
-                    hocPhanTienQuyet: item.hocPhanTienQuyet,
-                  }))}
-                  electiveGroups={[]}
-                  activeTab="tatca"
+                <AllCoursesCollapsibleTable
+                  key={activeTab}
+                  activeTab={activeTab}
+                  name="Học phần theo học kỳ"
+                  allData={selectedSemesterData}
+                  nhomHocPhanTuChon={nhomHocPhanTuChon}
+                  loading={false}
                   emptyStateTitle="Chưa có học phần nào trong học kỳ này"
-                  emptyStateDescription="Thêm học phần đầu tiên cho học kỳ này"
+                  emptyStateDescription="Hiện tại chưa có học phần nào trong học kỳ này"
                 />
               ) : (
-                <div className="text-center py-12 bg-gray-50 rounded-lg">
-                  <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-600 text-lg">
+                <div className="text-center py-12 text-gray-500">
+                  <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p className="text-lg font-medium">
                     Chưa có học phần nào trong học kỳ này
                   </p>
-                  <p className="text-gray-500 mt-2">
-                    Thêm học phần đầu tiên cho học kỳ này
+                  <p className="text-sm">
+                    Học kỳ này chưa có học phần nào được thêm vào kế hoạch
                   </p>
                 </div>
               )}

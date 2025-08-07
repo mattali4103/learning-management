@@ -9,10 +9,6 @@ import {
   FileText,
   ClipboardCheck,
   User,
-  Target,
-  AlertTriangle,
-  Clock,
-  BookOpen,
 } from "lucide-react";
 
 const ThongTinSinhVien = () => {
@@ -148,134 +144,6 @@ const ThongTinSinhVien = () => {
     />
   );
 
-  const additionalContent = (
-    <div className="space-y-6">
-      {/* Quick Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-6 border border-emerald-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-emerald-100 rounded-lg">
-              <Target className="w-6 h-6 text-emerald-600" />
-            </div>
-            <span className="text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
-              Tiến độ
-            </span>
-          </div>
-          <h3 className="text-lg font-bold text-emerald-800 mb-2">
-            {progressState.status}
-          </h3>
-          <p className="text-sm text-emerald-600">
-            {progressState.avg ? `${progressState.avg.toFixed(1)} tín chỉ/học kỳ` : 'Chưa có dữ liệu'}
-          </p>
-          <div className="mt-4 flex items-center justify-between text-xs text-emerald-600">
-            <span>Tổng: {progressState.totalCredits} TC</span>
-            <span>Học kỳ: {progressState.totalSemesters}</span>
-          </div>
-        </div>
-
-        <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <GraduationCap className="w-6 h-6 text-blue-600" />
-            </div>
-            <span className="text-xs font-medium text-blue-700 bg-blue-100 px-2 py-1 rounded-full">
-              Học tập
-            </span>
-          </div>
-          <h3 className="text-lg font-bold text-blue-800 mb-2">
-            {userInfo?.xepLoaiHocLuc || "Chưa xác định"}
-          </h3>
-          <p className="text-sm text-blue-600">
-            Xếp loại học lực hiện tại
-          </p>
-          <div className="mt-4 text-xs text-blue-600">
-            <span>Điểm TB: {userInfo?.diemTrungBinhTichLuy?.toFixed(2) || "0.00"}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* No Academic Data Message */}
-      {(!tinChiTichLuy || tinChiTichLuy.length === 0) && (!diemTrungBinhHocKy || diemTrungBinhHocKy.length === 0) && (
-        <div className="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-xl p-6 border-l-4 border-yellow-400">
-          <div className="flex items-center">
-            <div className="p-3 bg-yellow-100 rounded-lg mr-4">
-              <BookOpen className="w-6 h-6 text-yellow-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-yellow-800 mb-2 flex items-center">
-                📊 Chưa có dữ liệu học tập
-              </h3>
-              <div className="bg-white/70 p-4 rounded-lg">
-                <p className="text-sm text-yellow-700 leading-relaxed">
-                  Hiện tại chưa có thông tin về kết quả học tập và tín chỉ tích lũy của sinh viên. 
-                  Dữ liệu sẽ được cập nhật sau khi sinh viên hoàn thành các học kỳ.
-                </p>
-              </div>
-              <div className="mt-4 flex items-center text-xs text-yellow-600">
-                <Clock className="w-4 h-4 mr-1" />
-                <span>Vui lòng kiểm tra lại sau</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Academic Warning Card */}
-      {userInfo?.canhBaoHocVu?.lyDo && (
-        <div className="bg-gradient-to-r from-red-50 to-pink-50 rounded-xl p-6 border-l-4 border-red-400">
-          <div className="flex items-start">
-            <div className="p-3 bg-red-100 rounded-lg mr-4">
-              <AlertTriangle className="w-6 h-6 text-red-600" />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-bold text-red-800 mb-2 flex items-center">
-                🚨 Cảnh báo học vụ
-              </h3>
-              <div className="bg-white/70 p-4 rounded-lg">
-                <p className="text-sm text-red-700 leading-relaxed">
-                  {userInfo.canhBaoHocVu.lyDo}
-                </p>
-              </div>
-              <div className="mt-4 flex items-center text-xs text-red-600">
-                <Clock className="w-4 h-4 mr-1" />
-                <span>Cần được xem xét và giải quyết</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Study Guide Card - Only show if there's academic data */}
-      {((tinChiTichLuy && tinChiTichLuy.length > 0) || (diemTrungBinhHocKy && diemTrungBinhHocKy.length > 0)) && (
-        <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
-          <div className="flex items-center mb-4">
-            <div className="p-3 bg-purple-100 rounded-lg mr-4">
-              <BookOpen className="w-6 h-6 text-purple-600" />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-purple-800">Hướng dẫn học tập</h3>
-              <p className="text-sm text-purple-600">Một số lời khuyên dành cho bạn</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-            <div className="bg-white/50 p-4 rounded-lg">
-              <h4 className="font-semibold text-purple-800 mb-2">📚 Học tập hiệu quả</h4>
-              <p className="text-sm text-purple-700">
-                Duy trì lịch học đều đặn và tham gia đầy đủ các buổi học
-              </p>
-            </div>
-            <div className="bg-white/50 p-4 rounded-lg">
-              <h4 className="font-semibold text-purple-800 mb-2">⏰ Quản lý thời gian</h4>
-              <p className="text-sm text-purple-700">
-                Lập kế hoạch học tập rõ ràng cho từng học kỳ
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-
   return (
     <StudentProfileLayout
       userInfo={userInfo}
@@ -283,7 +151,6 @@ const ThongTinSinhVien = () => {
       diemTrungBinhHocKy={diemTrungBinhHocKy}
       progressState={progressState}
       header={header}
-      additionalContent={additionalContent}
       showWelcomeHeader={false}
     />
   );

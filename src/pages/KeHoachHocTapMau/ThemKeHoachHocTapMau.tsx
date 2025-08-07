@@ -125,16 +125,40 @@ const ThemKeHoachHocTapMau = () => {
   const [loading, setLoading] = useState(false);  
 
   const maKhoa = auth.user?.maKhoa || "";
-  const hocKyHienTai: HocKy | null = useMemo(() => {
-    const storedHocKy = localStorage.getItem("hocKyHienTai");
-    return storedHocKy ? JSON.parse(storedHocKy) : null;
+
+  // Helper function để xác định học kỳ bắt đầu dựa trên khóa học
+  // K47: học kỳ bắt đầu = 1, K48: học kỳ bắt đầu = 4
+  // K49: học kỳ bắt đầu = 7, K50: học kỳ bắt đầu = 10
+  const getStartingSemester = useCallback((khoaHoc: string): number => {
+    if (khoaHoc.includes('47')) return 1;
+    if (khoaHoc.includes('48')) return 4;
+    if (khoaHoc.includes('49')) return 7;
+    if (khoaHoc.includes('50')) return 10;
+    // Mặc định trả về 1 nếu không khớp với các khóa học trên
+    return 1;
   }, []);
 
   const availableNamHoc = useMemo(() => {
+    const startingSemester = getStartingSemester(selectedKhoaHoc);
     const years = new Map<number, { id: number; tenNh: string }>();
+    
+    // Thêm các năm học từ selectedHocPhans (có học phần được thêm)
+    selectedHocPhans.forEach((item) => {
+      if (item.hocKy && item.hocKy.namHoc && item.hocKy.namHoc.namBatDau && item.hocKy.namHoc.namKetThuc) {
+        if (item.hocKy.maHocKy >= startingSemester) {
+          years.set(item.hocKy.namHoc.id, {
+            id: item.hocKy.namHoc.id,
+            tenNh: `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}`,
+          });
+        }
+      }
+    });
+    
+    // Thêm các năm học từ danhSachHocKy (tất cả học kỳ có thể thêm)
     danhSachHocKy.forEach((hk) => {
       if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        if (hocKyHienTai && hk.maHocKy <= hocKyHienTai.maHocKy) {
+        // Cho kế hoạch học tập mẫu: hiển thị từ học kỳ bắt đầu đến tất cả học kỳ có trong danh sách
+        if (hk.maHocKy >= startingSemester) {
           years.set(hk.namHoc.id, {
             id: hk.namHoc.id,
             tenNh: `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`,
@@ -142,28 +166,49 @@ const ThemKeHoachHocTapMau = () => {
         }
       }
     });
+    
     return Array.from(years.values()).sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, hocKyHienTai]);
+  }, [danhSachHocKy, selectedKhoaHoc, getStartingSemester, selectedHocPhans]);
 
   const availableHocKy = useMemo(() => {
     if (!selectedTabNamHoc) return [];
-    return danhSachHocKy
+    const startingSemester = getStartingSemester(selectedKhoaHoc);
+    const semesters = new Map<number, { id: number; ten: string; namHoc: any }>();
+    
+    // Thêm các học kỳ từ selectedHocPhans (có học phần được thêm)
+    selectedHocPhans.forEach((item) => {
+      if (item.hocKy && item.hocKy.namHoc?.id === selectedTabNamHoc && item.hocKy.maHocKy >= startingSemester) {
+        semesters.set(item.hocKy.maHocKy, {
+          id: item.hocKy.maHocKy,
+          ten: item.hocKy.tenHocKy,
+          namHoc: item.hocKy.namHoc,
+        });
+      }
+    });
+    
+    // Thêm các học kỳ từ danhSachHocKy
+    danhSachHocKy
       .filter(
         (item) =>
           item.namHoc?.id === selectedTabNamHoc &&
-          (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy)
+          item.maHocKy >= startingSemester
       )
-      .map((item) => ({
-        id: item.maHocKy,
-        ten: item.tenHocKy,
-        namHoc: item.namHoc,
-      }))
-      .sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai]);
+      .forEach((item) => {
+        semesters.set(item.maHocKy, {
+          id: item.maHocKy,
+          ten: item.tenHocKy,
+          namHoc: item.namHoc,
+        });
+      });
+    
+    return Array.from(semesters.values()).sort((a, b) => a.id - b.id);
+  }, [danhSachHocKy, selectedTabNamHoc, selectedKhoaHoc, getStartingSemester, selectedHocPhans]);
 
   const MAX_CREDITS_PER_SEMESTER = 20;
   const creditStatistics = useMemo(() => {
+    const startingSemester = getStartingSemester(selectedKhoaHoc);
     const statsMap = new Map<string, CreditStatData>();
+    
     selectedHocPhans.forEach((item) => {
       if (item.hocKy) {
         const key = `${item.hocKy.maHocKy}`;
@@ -185,8 +230,10 @@ const ThemKeHoachHocTapMau = () => {
         statsMap.set(key, existing);
       }
     });
+    
     danhSachHocKy.forEach((hk) => {
-      if (hocKyHienTai && hk.maHocKy <= hocKyHienTai.maHocKy) {
+      // Cho kế hoạch học tập mẫu: hiển thị từ học kỳ bắt đầu đến tất cả học kỳ có trong danh sách
+      if (hk.maHocKy >= startingSemester) {
         const key = `${hk.maHocKy}`;
         if (!statsMap.has(key)) {
           statsMap.set(key, {
@@ -201,13 +248,14 @@ const ThemKeHoachHocTapMau = () => {
         }
       }
     });
+    
     return Array.from(statsMap.values()).sort((a, b) => {
       if (a.namHocId !== b.namHocId) {
         return a.namHocId - b.namHocId;
       }
       return a.hocKyId - b.hocKyId;
     });
-  }, [selectedHocPhans, danhSachHocKy, hocKyHienTai]);
+  }, [selectedHocPhans, danhSachHocKy, selectedKhoaHoc, getStartingSemester]);
 
   const selectedSemesterData = useMemo(() => {
     if (!selectedHocKyChart) return [];
@@ -425,6 +473,7 @@ const ThemKeHoachHocTapMau = () => {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-800">{data.tenHocKy}</p>
+          <p className="text-sm text-gray-600 mb-2">Năm học: {data.namHoc}</p>
           <p className="text-blue-600">
             Tín chỉ đã nhập: <span className="font-bold">{data.soTinChi}</span>
           </p>
