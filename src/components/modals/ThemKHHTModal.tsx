@@ -167,6 +167,8 @@ const ThemKHHTModal = ({
   const [availableHocPhans, setAvailableHocPhans] = useState<HocPhan[]>([]);
   const [hocPhanGoiY, setHocPhanGoiY] = useState<HocPhan[]>([]);
   const [hocPhanCaiThien, setHocPhanCaiThien] = useState<HocPhan[]>([]);
+  const [hocPhanTheChat, setHocPhanTheChat] = useState<HocPhan[]>([]);
+  const [hocPhanDaHoc, setHocPhanDaHoc] = useState<string[]>([]);
   const [loadingAvailableSubjects, setLoadingAvailableSubjects] =
     useState(false);
   const [danhSachHocKy, setDanhSachHocKy] = useState<HocKy[]>([]);
@@ -266,6 +268,59 @@ const ThemKHHTModal = ({
       setHocPhanCaiThien([]);
     }
   }, [axiosPrivate, maSo]);
+
+  const fetchHocPhanTheChat = useCallback(async () => {
+    try {
+      const response = await axiosPrivate.get(HOCPHAN_SERVICE.HOCPHAN_THECHAT);
+      if (response.data.code === 200 && response.data.data) {
+        setHocPhanTheChat(response.data.data);
+      } else {
+        setHocPhanTheChat([]);
+      }
+    } catch (error) {
+      console.error("Error fetching physical education courses:", error);
+      setHocPhanTheChat([]);
+    }
+  }, [axiosPrivate]);
+
+  const fetchHocPhanDaHoc = useCallback(async () => {
+    if (!maSo) return;
+    try {
+      const response = await axiosPrivate.get(
+        KQHT_SERVICE.GET_KETQUA_ALL,
+        {
+          params: { maSo: maSo }
+        }
+      );
+      if (response.data.code === 200 && response.data.data) {
+        // Lọc các học phần đã hoàn thành (có điểm đạt)
+        const completedCourses = response.data.data
+          .filter((item: any) => {
+            // Kiểm tra điểm có đạt yêu cầu (>= 4.0 cho thang 10, >= D cho thang chữ)
+            const diem10 = item.diem10;
+            const diemChu = item.diemChu;
+            const diemSo = item.diemSo;
+            
+            // Kiểm tra điều kiện đạt
+            const isPass = 
+              (diem10 && diem10 >= 4.0) ||
+              (diemChu && !['F', 'I'].includes(diemChu)) ||
+              (diemSo && diemSo >= 2.0);
+            
+            return isPass;
+          })
+          .map((item: any) => item.hocPhan?.maHp)
+          .filter((maHp: string) => maHp); // Loại bỏ các giá trị null/undefined
+
+        setHocPhanDaHoc(completedCourses);
+      } else {
+        setHocPhanDaHoc([]);
+      }
+    } catch (error) {
+      console.error("Error fetching completed courses:", error);
+      setHocPhanDaHoc([]);
+    }
+  }, [axiosPrivate, maSo]);
   const fetchDanhSachHocKy = useCallback(async () => {
     try {
       const response = await axiosPrivate.get(HOCPHAN_SERVICE.GET_ALL_HOCKY);
@@ -302,6 +357,8 @@ const ThemKHHTModal = ({
       fetchDanhSachHocKy();
       fetchHocPhanGoiY();
       fetchHocPhanCaiThien();
+      fetchHocPhanTheChat();
+      fetchHocPhanDaHoc();
     } else {
       // Reset states when modal closes
       setActiveTab("available");
@@ -311,6 +368,8 @@ const ThemKHHTModal = ({
       setAvailableHocPhans([]); // Clear available subjects when modal closes
       setHocPhanGoiY([]);
       setHocPhanCaiThien([]);
+      setHocPhanTheChat([]);
+      setHocPhanDaHoc([]);
       setLoadingAvailableSubjects(false);
       setDanhSachHocKy([]);
       setErrorMessage("");
@@ -326,6 +385,8 @@ const ThemKHHTModal = ({
     fetchDanhSachHocKy,
     fetchHocPhanGoiY,
     fetchHocPhanCaiThien,
+    fetchHocPhanTheChat,
+    fetchHocPhanDaHoc,
   ]);
 
   // Tab button classes
@@ -755,10 +816,12 @@ const ThemKHHTModal = ({
                   hocPhans={availableHocPhans}
                   hocPhanGoiY={hocPhanGoiY}
                   hocPhanCaiThien={hocPhanCaiThien}
+                  hocPhanTheChat={hocPhanTheChat}
                   onAddToPending={handleAddToPending}
                   pendingHocPhans={pendingHocPhans}
                   currentHocPhans={currentHocPhans}
                   enableImprovementCourses={true}
+                  hocPhanDaHoc={hocPhanDaHoc}
                 />
               )}
             </>

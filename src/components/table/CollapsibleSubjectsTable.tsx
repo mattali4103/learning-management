@@ -17,6 +17,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Plus,
+  AlertCircle,
 } from "lucide-react";
 import type { HocPhan } from "../../types/HocPhan";
 import type { KeHoachHocTapDetail } from "../../types/KeHoachHocTapMau";
@@ -52,9 +53,13 @@ interface CollapsibleSubjectsTableProps {
   // Optional special groups for ThemKHHTModal
   hocPhanGoiY?: HocPhan[];
   hocPhanCaiThien?: HocPhan[];
+  hocPhanTheChat?: HocPhan[]; // Danh sách học phần thể chất từ API
   
   // Configuration
   enableImprovementCourses?: boolean; // Enable special logic for improvement courses
+  
+  // Danh sách học phần đã học (để kiểm tra điều kiện tiên quyết)
+  hocPhanDaHoc?: string[]; // Mảng chứa mã học phần đã hoàn thành
 }
 
 // Helper function to extract maHp from different data types
@@ -114,8 +119,32 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
   currentHocPhans,
   hocPhanGoiY = [],
   hocPhanCaiThien = [],
+  hocPhanTheChat = [],
   enableImprovementCourses = false,
+  hocPhanDaHoc = [],
 }) => {
+  // Helper function to check prerequisite courses
+  const checkPrerequisites = useCallback((hocPhan: HocPhan): { canAdd: boolean; missingPrerequisites: string[] } => {
+    if (!hocPhan.hocPhanTienQuyet || hocPhan.hocPhanTienQuyet.trim() === "") {
+      return { canAdd: true, missingPrerequisites: [] };
+    }
+
+    // Parse prerequisites (assuming they are comma-separated)
+    const prerequisites = hocPhan.hocPhanTienQuyet
+      .split(',')
+      .map(code => code.trim())
+      .filter(code => code !== "");
+
+    const missingPrerequisites = prerequisites.filter(prereq => 
+      !hocPhanDaHoc.includes(prereq)
+    );
+
+    return {
+      canAdd: missingPrerequisites.length === 0,
+      missingPrerequisites
+    };
+  }, [hocPhanDaHoc]);
+
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -152,7 +181,8 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
       }
 
       // Group 2: Improvement Courses (not filtered against current plan)
-      if (hocPhanCaiThien.length > 0) {
+      // Chỉ hiển thị nếu có ít nhất 3 môn cải thiện
+      if (hocPhanCaiThien.length >= 3) {
         const totalCredits = hocPhanCaiThien.reduce((sum, course) => sum + (course.tinChi || 0), 0);
         newGroups.push({
           id: "group-improvement",
@@ -161,6 +191,95 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
           courses: hocPhanCaiThien,
           totalCredits,
           colorScheme: "red",
+        });
+      }
+
+      // Group 3: Physical Education Courses (từ API) với logic ưu tiên
+      if (hocPhanTheChat.length > 0) {
+        // Kiểm tra số tín chỉ thể chất đã hoàn thành
+        const completedPhysicalEd = hocPhanTheChat.filter(course => 
+          hocPhanDaHoc.includes(course.maHp || '')
+        );
+        const completedCredits = completedPhysicalEd.reduce((sum, course) => sum + (course.tinChi || 0), 0);
+        
+        // Kiểm tra trạng thái hoàn thành
+        const isCompleted = completedCredits >= 3;
+        const isInProgress = completedCredits > 0 && completedCredits < 3;
+        
+        let availablePhysicalEd = hocPhanTheChat.filter(course => 
+          !hocPhanDaHoc.includes(course.maHp || '')
+        );
+        
+        // Nếu đang trong quá trình hoàn thành, ưu tiên gợi ý học phần liên quan
+        // Nếu đang trong quá trình hoàn thành, ưu tiên gợi ý học phần liên quan
+        const prioritizedCourses: HocPhan[] = [];
+        const otherCourses: HocPhan[] = [];
+        
+        if (isInProgress && completedPhysicalEd.length > 0) {
+          // Lấy tên học phần đã hoàn thành để tìm series liên quan
+          const completedNames = completedPhysicalEd.map(course => 
+            course.tenHp?.toLowerCase().replace(/\s+/g, ' ').trim() || ''
+          );
+          
+          // Tìm học phần cùng series (ví dụ: "điền kinh 1" -> ưu tiên "điền kinh 2", "điền kinh 3")
+          
+          availablePhysicalEd.forEach(course => {
+            const courseName = course.tenHp?.toLowerCase().replace(/\s+/g, ' ').trim() || '';
+            
+            // Kiểm tra xem có cùng series không (loại bỏ số ở cuối và so sánh)
+            const isRelated = completedNames.some(completedName => {
+              // Loại bỏ số ở cuối để so sánh tên cơ bản
+              const completedBaseName = completedName.replace(/\s*\d+\s*$/, '').trim();
+              const courseBaseName = courseName.replace(/\s*\d+\s*$/, '').trim();
+              
+              return completedBaseName.length > 0 && 
+                     courseBaseName.length > 0 && 
+                     completedBaseName === courseBaseName;
+            });
+            
+            if (isRelated) {
+              prioritizedCourses.push(course);
+            } else {
+              otherCourses.push(course);
+            }
+          });
+          
+          // Sắp xếp: học phần cùng series trước, sau đó các học phần khác
+          availablePhysicalEd = [...prioritizedCourses, ...otherCourses];
+        } else {
+          // Nếu không có học phần đã hoàn thành hoặc chưa bắt đầu, giữ nguyên danh sách
+          availablePhysicalEd = availablePhysicalEd.filter(course => 
+            !hocPhanDaHoc.includes(course.maHp || '')
+          );
+        }
+        
+        const totalCredits = availablePhysicalEd.reduce((sum, course) => sum + (course.tinChi || 0), 0);
+        
+        // Tạo subtitle phản ánh trạng thái
+        let subtitle = "";
+        if (isCompleted) {
+          subtitle = `Đã hoàn thành (${completedCredits}/3 tín chỉ) • ${availablePhysicalEd.length} học phần khác`;
+        } else if (isInProgress) {
+          // Hiển thị tên các học phần được ưu tiên để hoàn thành
+          const prioritizedNames = prioritizedCourses.slice(0, 3).map(course => course.tenHp).join(', ');
+          const remainingCount = Math.max(0, 3 - completedCredits);
+          
+          if (prioritizedNames) {
+            subtitle = `Đang hoàn thành (${completedCredits}/3 tín chỉ) • Gợi ý: ${prioritizedNames}${prioritizedCourses.length > 3 ? '...' : ''} • Cần ${remainingCount} tín chỉ nữa`;
+          } else {
+            subtitle = `Đang hoàn thành (${completedCredits}/3 tín chỉ) • ${availablePhysicalEd.length} học phần còn lại • Cần ${remainingCount} tín chỉ nữa`;
+          }
+        } else {
+          subtitle = `${availablePhysicalEd.length} học phần • ${totalCredits} tín chỉ (Cần 3 tín chỉ)`;
+        }
+        
+        newGroups.push({
+          id: "group-the-chat",
+          title: "Nhóm học phần thể chất",
+          subtitle: subtitle,
+          courses: availablePhysicalEd,
+          totalCredits,
+          colorScheme: isCompleted ? "green" : isInProgress ? "orange" : "purple",
         });
       }
     }
@@ -189,6 +308,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
       else if (loaiHp.includes("Cơ sở ngành")) colorScheme = "blue";
       else if (loaiHp.includes("Chuyên ngành")) colorScheme = "orange";
       else if (loaiHp.includes("Tự chọn")) colorScheme = "green";
+      else if (loaiHp.includes("Thể chất")) colorScheme = "purple";
 
       return {
         id: `group-${loaiHp.replace(/\s+/g, "-")}`,
@@ -201,7 +321,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
     });
 
     return [...newGroups, ...regularGroups];
-  }, [hocPhans, hocPhanGoiY, hocPhanCaiThien, currentHocPhans, pendingHocPhans, enableImprovementCourses]);
+  }, [hocPhans, hocPhanGoiY, hocPhanCaiThien, hocPhanTheChat, currentHocPhans, pendingHocPhans, enableImprovementCourses, hocPhanDaHoc]);
 
   useEffect(() => {
     if (subjectGroups.length > 0) {
@@ -330,7 +450,16 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
         header: "HP Tiên quyết",
         cell: ({ row }) => (
           <div className={enableImprovementCourses ? "text-base" : "text-center"}>
-            {row.original.hocPhanTienQuyet || "Không"}
+            {row.original.hocPhanTienQuyet ? (
+              <span 
+                className="text-blue-600 hover:text-blue-800 cursor-help"
+                title={`Học phần tiên quyết: ${row.original.hocPhanTienQuyet}`}
+              >
+                {row.original.hocPhanTienQuyet}
+              </span>
+            ) : (
+              <span className="text-gray-500">Không</span>
+            )}
           </div>
         ),
         size: 120,
@@ -352,32 +481,78 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
               (item) => extractMaHp(item) === hocPhan.maHp
             );
             const isAdded = isInPending || (isInCurrentPlan && !isImprovementCourse);
+            
+            // Kiểm tra điều kiện tiên quyết
+            const prerequisiteCheck = checkPrerequisites(hocPhan);
+            const canAdd = prerequisiteCheck.canAdd;
+            const missingPrerequisites = prerequisiteCheck.missingPrerequisites;
+
+            const buttonDisabled = isAdded || !canAdd;
+            let buttonTitle = "Thêm vào danh sách";
+            
+            if (isAdded) {
+              buttonTitle = "Đã thêm học phần này";
+            } else if (!canAdd) {
+              buttonTitle = `Chưa hoàn thành học phần tiên quyết: ${missingPrerequisites.join(', ')}`;
+            }
 
             return (
               <div className="text-center">
                 <button
-                  onClick={() => onAddToPending(hocPhan)}
-                  disabled={isAdded}
-                  className={`p-2 text-white bg-emerald-600 rounded-full transition-all duration-200 ${
-                    isAdded
-                      ? "opacity-40 cursor-not-allowed"
-                      : "hover:bg-emerald-700 hover:scale-105"
+                  onClick={() => {
+                    if (canAdd && !isAdded) {
+                      onAddToPending(hocPhan);
+                    }
+                  }}
+                  disabled={buttonDisabled}
+                  className={`p-2 text-white rounded-full transition-all duration-200 ${
+                    buttonDisabled
+                      ? "opacity-40 cursor-not-allowed bg-gray-400"
+                      : "bg-emerald-600 hover:bg-emerald-700 hover:scale-105"
                   }`}
-                  title={isAdded ? "Đã thêm học phần này" : "Thêm vào danh sách"}
+                  title={buttonTitle}
                 >
-                  <Plus className="w-4 h-4" />
+                  {!canAdd ? (
+                    <AlertCircle className="w-4 h-4" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             );
           }
 
+          // Logic cho trường hợp không phải improvement courses
+          const prerequisiteCheck = checkPrerequisites(hocPhan);
+          const canAdd = prerequisiteCheck.canAdd;
+          const missingPrerequisites = prerequisiteCheck.missingPrerequisites;
+          
+          let buttonTitle = "Thêm vào danh sách";
+          if (!canAdd) {
+            buttonTitle = `Chưa hoàn thành học phần tiên quyết: ${missingPrerequisites.join(', ')}`;
+          }
+
           return (
             <div className="text-center">
               <button
-                onClick={() => onAddToPending(hocPhan)}
-                className="p-2 text-white bg-emerald-600 hover:bg-emerald-700 rounded-full transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => {
+                  if (canAdd) {
+                    onAddToPending(hocPhan);
+                  }
+                }}
+                disabled={!canAdd}
+                className={`p-2 text-white rounded-full transition-all duration-200 ${
+                  !canAdd
+                    ? "opacity-40 cursor-not-allowed bg-gray-400"
+                    : "bg-emerald-600 hover:bg-emerald-700 hover:scale-105"
+                }`}
+                title={buttonTitle}
               >
-                <Plus className="w-4 h-4" />
+                {!canAdd ? (
+                  <AlertCircle className="w-4 h-4" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
               </button>
             </div>
           );
@@ -385,7 +560,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
         size: 100,
       },
     ],
-    [pendingHocPhans, currentHocPhans, onAddToPending, enableImprovementCourses]
+    [pendingHocPhans, currentHocPhans, onAddToPending, enableImprovementCourses, checkPrerequisites]
   );
 
   const table = useReactTable({
@@ -395,6 +570,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
     onGlobalFilterChange: setGlobalFilter,
     onSortingChange: setSorting,
     onPaginationChange: setPagination,
+    autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),

@@ -32,8 +32,7 @@ export const USER_SERVICE = {
   LOGOUT: USER_SERIVCE_URL + "/api/auth/logout",
 };
 export const PROFILE_SERVICE = {
-
-    NGANH_CREATE: PROFILE_SERVICE_URL + "/api/profile/nganh/create", // RequestBody
+  NGANH_CREATE: PROFILE_SERVICE_URL + "/api/profile/nganh/create", // RequestBody
   GET_DS_LOP_CHUNHIEM: PROFILE_SERVICE_URL + "/api/profile/lop/get_by_chu_nhiem/:maSo", // Return List không có cấu trúc API
   GET_KHOA_BY_MA_KHOA: PROFILE_SERVICE_URL + "/api/profile/khoa/id/:maKhoa", // Return Object
   GET_SINHVIEN_PREVIEW_PROFILE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/thongke/:maSo",
@@ -58,11 +57,10 @@ export const PROFILE_SERVICE = {
   UPLOAD_CERTIFICATE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/upload", // Upload văn bằng, chứng chỉ mới
   UPDATE_CERTIFICATE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/update/:id", // Cập nhật thông tin văn bằng, chứng chỉ
   DELETE_CERTIFICATE: PROFILE_SERVICE_URL + "/api/profile/sinhvien/certificate/delete/:id", // Xóa văn bằng, chứng chỉ
-
 };
 
 export const HOCPHAN_SERVICE = {
-
+  THE_CHAT: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/the_chat", // No Parameters, return HocPhan list 
   TU_CHON_UPDATE: HOCPHAN_SERVICE_URL + "/api/ctdt/update_hoc_phan_tu_chon", // RequestBody
   TU_CHON_ADD: HOCPHAN_SERVICE_URL + "/api/ctdt/add_hoc_phan_tu_chon", // RequestBody
   HOCPHAN_LIST: HOCPHAN_SERVICE_URL + "/api/hocphan/list", // No Parameters, return list

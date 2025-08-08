@@ -71,12 +71,13 @@ const CTDTDetail = () => {
       
       if (response.data && response.data.data) {
         const data = response.data.data;
+        console.log(data)
         setChuongTrinhDaoTao({
           id: data.id || 0,
           khoaHoc: data.khoaHoc || "",
           tongSoTinChi: data.tongSoTinChi || 0,
           tongSoTinChiTuChon: data.tongSoTinChiTuChon || 0,
-          nganh: data.nganh || { maNganh: maNganh, tenNganh: "Chưa có tên" },
+          nganh: data.nganh || { maNganh: maNganh, tenNganh: "Mạng máy tính và truyền thông dữ liệu" },
           hocPhanList: data.hocPhanList || [],
           nhomHocPhanTuChon: data.nhomHocPhanTuChon || [],
         });

@@ -132,21 +132,32 @@ const KeHoachHocTapDetail = () => {
     return storedHocKy ? JSON.parse(storedHocKy) : null;
   }, []);
 
-  const minHocKyInKHHT = useMemo(() => {
-    if (allData.length === 0) return null;
-    return Math.min(...allData.map(item => item.maHocKy));
-  }, [allData]);
+  // Helper function để xác định học kỳ bắt đầu dựa trên khóa học
+  // K47: từ mã học kỳ = 1, K48: từ mã học kỳ = 4
+  // K49: từ mã học kỳ = 7, K50: từ mã học kỳ = 10
+  const getStartingSemester = useCallback((khoaHoc: string): number => {
+    if (khoaHoc?.includes('47')) return 1;
+    if (khoaHoc?.includes('48')) return 4;
+    if (khoaHoc?.includes('49')) return 7;
+    if (khoaHoc?.includes('50')) return 10;
+    // Mặc định trả về 1 nếu không khớp với các khóa học trên
+    return 1;
+  }, []);
+
+  const startingSemester = useMemo(() => {
+    return getStartingSemester(khoaHoc || '');
+  }, [khoaHoc, getStartingSemester]);
   
   // Available academic years for navigation
   const availableNamHoc = useMemo(() => {
     const years = new Map<number, { id: number; tenNh: string }>();
     danhSachHocKy.forEach((hk) => {
       if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        // Chỉ lấy năm học có học kỳ <= hocKyHienTai?.maHocKy và >= minHocKyInKHHT
+        // Chỉ lấy năm học có học kỳ <= hocKyHienTai?.maHocKy và >= startingSemester
         if (
           hocKyHienTai &&
           hk.maHocKy <= hocKyHienTai.maHocKy &&
-          (!minHocKyInKHHT || hk.maHocKy >= minHocKyInKHHT)
+          hk.maHocKy >= startingSemester
         ) {
           years.set(hk.namHoc.id, {
             id: hk.namHoc.id,
@@ -156,7 +167,7 @@ const KeHoachHocTapDetail = () => {
       }
     });
     return Array.from(years.values()).sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, hocKyHienTai, minHocKyInKHHT]);
+  }, [danhSachHocKy, hocKyHienTai, startingSemester]);
 
   // Available semesters for selected academic year
   const availableHocKy = useMemo(() => {
@@ -166,7 +177,7 @@ const KeHoachHocTapDetail = () => {
         (item) =>
           item.namHoc?.id === selectedTabNamHoc &&
           (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy) &&
-          (!minHocKyInKHHT || item.maHocKy >= minHocKyInKHHT)
+          item.maHocKy >= startingSemester
       )
       .map((item) => ({
         id: item.maHocKy,
@@ -174,7 +185,7 @@ const KeHoachHocTapDetail = () => {
         namHoc: item.namHoc,
       }))
       .sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai, minHocKyInKHHT]);
+  }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai, startingSemester]);
 
   // Credit statistics for chart
   const creditStatistics = useMemo(() => {
@@ -208,7 +219,7 @@ const KeHoachHocTapDetail = () => {
       if (
         hocKyHienTai &&
         hk.maHocKy <= hocKyHienTai.maHocKy &&
-        (!minHocKyInKHHT || hk.maHocKy >= minHocKyInKHHT)
+        hk.maHocKy >= startingSemester
       ) {
         const key = `${hk.maHocKy}`;
         if (!statsMap.has(key)) {
@@ -231,7 +242,7 @@ const KeHoachHocTapDetail = () => {
       }
       return a.hocKyId - b.hocKyId;
     });
-  }, [selectedHocPhans, danhSachHocKy, hocKyHienTai, minHocKyInKHHT]);
+  }, [selectedHocPhans, danhSachHocKy, hocKyHienTai, startingSemester]);
 
   const handleChartBarClick = (data: any) => {
     if (data && data.activePayload && data.activePayload[0]) {
@@ -278,58 +289,6 @@ const KeHoachHocTapDetail = () => {
     setShowAvailableSubjectsModal(true);
   };
 
-  const fetchDeleteHocPhan = useCallback(
-    async (khht: KeHoachHocTap) => {
-      try {
-        setIsDeleting(true);
-        const numbericId = khht.id;
-        if (!isNaN(numbericId)) {
-          const response = await axiosPrivate.delete(
-            KHHT_SERVICE.DELETE.replace(":id", numbericId.toString()),
-            {
-              data: {
-                id: numbericId,
-              },
-            }
-          );
-          if (response.status === 200 && response.data?.code === 200) {
-            setSelectedHocPhans((prev) =>
-              prev.filter((item) => item.id !== khht.id)
-            );
-            setSuccessMessage(
-              "Đã xóa học phần khỏi kế hoạch học tập thành công!"
-            );
-            setShowSuccessModal(true);
-          }
-        }
-      } catch (error) {
-        console.error("Error deleting hoc phan:", error);
-        setErrorMessage("Không thể xóa học phần. Vui lòng thử lại.");
-        setShowErrorModal(true);
-      } finally {
-        //Re-Fetch all data to ensure UI is updated
-        fetchAllData();
-        setIsDeleting(false);
-      }
-    },
-    [axiosPrivate]
-  );
-
-  const handleConfirmDelete = useCallback(() => {
-    if (hocPhanToDelete && !isDeleting) {
-      fetchDeleteHocPhan(hocPhanToDelete);
-      setIsDeleteModalOpen(false);
-      setHocPhanToDelete(null);
-    }
-  }, [hocPhanToDelete, isDeleting, fetchDeleteHocPhan]);
-
-  const handleCloseDeleteModal = useCallback(() => {
-    if (!isDeleting) {
-      setIsDeleteModalOpen(false);
-      setHocPhanToDelete(null);
-    }
-  }, [isDeleting]);
-
   const CreditChartTooltip = ({
     active,
     payload,
@@ -339,6 +298,7 @@ const KeHoachHocTapDetail = () => {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-800">{data.tenHocKy}</p>
+          <p className="text-sm text-gray-600 mb-2">Năm học: {data.namHoc}</p>
           <p className="text-blue-600">
             Tín chỉ đã nhập: <span className="font-bold">{data.soTinChi}</span>
           </p>
@@ -362,6 +322,7 @@ const KeHoachHocTapDetail = () => {
     if (!selectedHocKyChart) return [];
     return allData.filter((item) => item.maHocKy === selectedHocKyChart);
   }, [allData, selectedHocKyChart]);
+  
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
@@ -396,6 +357,58 @@ const KeHoachHocTapDetail = () => {
       setLoading(false);
     }
   }, [axiosPrivate, maSo]);
+
+  const fetchDeleteHocPhan = useCallback(
+    async (khht: KeHoachHocTap) => {
+      try {
+        setIsDeleting(true);
+        const numbericId = khht.id;
+        if (!isNaN(numbericId)) {
+          const response = await axiosPrivate.delete(
+            KHHT_SERVICE.DELETE.replace(":id", numbericId.toString()),
+            {
+              data: {
+                id: numbericId,
+              },
+            }
+          );
+          if (response.status === 200 && response.data?.code === 200) {
+            setSelectedHocPhans((prev) =>
+              prev.filter((item) => item.id !== khht.id)
+            );
+            setSuccessMessage(
+              "Đã xóa học phần khỏi kế hoạch học tập thành công!"
+            );
+            setShowSuccessModal(true);
+          }
+        }
+      } catch (error) {
+        console.error("Error deleting hoc phan:", error);
+        setErrorMessage("Không thể xóa học phần. Vui lòng thử lại.");
+        setShowErrorModal(true);
+      } finally {
+        //Re-Fetch all data to ensure UI is updated
+        fetchAllData();
+        setIsDeleting(false);
+      }
+    },
+    [axiosPrivate, fetchAllData]
+  );
+
+  const handleConfirmDelete = useCallback(() => {
+    if (hocPhanToDelete && !isDeleting) {
+      fetchDeleteHocPhan(hocPhanToDelete);
+      setIsDeleteModalOpen(false);
+      setHocPhanToDelete(null);
+    }
+  }, [hocPhanToDelete, isDeleting, fetchDeleteHocPhan]);
+
+  const handleCloseDeleteModal = useCallback(() => {
+    if (!isDeleting) {
+      setIsDeleteModalOpen(false);
+      setHocPhanToDelete(null);
+    }
+  }, [isDeleting]);
 
   const fetchNhomHocPhanTuChon = useCallback(async () => {
     if (!khoaHoc || !maNganh) return;

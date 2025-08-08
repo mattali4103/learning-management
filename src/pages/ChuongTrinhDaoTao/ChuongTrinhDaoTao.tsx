@@ -190,7 +190,7 @@ const confirmDeleteCTDT = async () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-800">
-                Chương trình Đào tạo - {khoa?.tenKhoa}
+                Chương trình Đào tạo - Khoa {khoa?.tenKhoa}
               </h1>
               <p className="text-gray-600">
                 Xem thông tin chương trình đào tạo cho các ngành thuộc khoa
