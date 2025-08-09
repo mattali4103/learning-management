@@ -165,16 +165,17 @@ const ProfileManagement: React.FC = () => {
         setTempAvatar(null);
         setTempAvatarFile(null);
         setAvatarPreview(null);
+        // Hiển thị modal thành công
         setShowSuccessModal(true);
         // Fetch lại dữ liệu mới nhất
-        fetchProfile();
+        await fetchProfile();
       } else {
-        setErrorMessage("Lỗi khi tải lên avatar");
+        setErrorMessage("Cập nhật avatar thất bại. Vui lòng thử lại.");
         setShowErrorModal(true);
       }
     } catch (error: any) {
       console.error("Error updating avatar:", error);
-      setErrorMessage("Lỗi khi cập nhật avatar");
+      setErrorMessage("Lỗi khi cập nhật avatar. Vui lòng thử lại.");
       setShowErrorModal(true);
     } finally {
       setSaving(false);
@@ -247,21 +248,19 @@ const ProfileManagement: React.FC = () => {
         PROFILE_SERVICE.UPDATE_SINHVIEN_PROFILE,
         updateData
       );
-      
+      console.log(response)
       if (response.data.code === 200) {
         setProfile(editProfile);
         setIsEditing(false);
         setAvatarPreview(null);
+        // Hiển thị modal thành công
         setShowSuccessModal(true);
         // Fetch lại dữ liệu mới nhất
-        fetchProfile();
-      } else {
-        setErrorMessage("Lỗi khi cập nhật thông tin");
-        setShowErrorModal(true);
-      }
+        await fetchProfile();
+      } 
     } catch (error: any) {
       console.error("Error saving profile:", error);
-      setErrorMessage("Lỗi khi cập nhật thông tin");
+      setErrorMessage("Lỗi khi cập nhật thông tin. Vui lòng thử lại.");
       setShowErrorModal(true);
     } finally {
       setSaving(false);
@@ -415,7 +414,7 @@ const ProfileManagement: React.FC = () => {
                     </h3>
                     <p className="text-sm text-blue-700 mt-1">
                       <strong>Không thể chỉnh sửa:</strong> Mã số sinh viên, Họ
-                      và tên, Ngày sinh, Lớp, Khóa học, Ngành học
+                      và tên, Ngày sinh, Giới tính, Lớp, Khóa học, Ngành học
                     </p>
                     <p className="text-sm text-blue-700">
                       <strong>Có thể chỉnh sửa:</strong> Thông tin liên hệ, Địa
@@ -516,16 +515,16 @@ const ProfileManagement: React.FC = () => {
                 {/* Giới tính */}
                 <div className="form-group">
                   <label className="block text-sm font-semibold text-gray-800 mb-2">
-                    <User className="inline h-4 w-4 mr-2 text-blue-600" />
-                    Giới tính
+                    <div className="flex items-center">
+                      <User className="inline h-4 w-4 mr-2 text-blue-600" />
+                      <span>Giới tính</span>
+                      <Lock className="inline h-3 w-3 ml-2 text-gray-500" />
+                    </div>
                   </label>
                   <select
                     value={editProfile?.gioiTinh ? "true" : "false"}
-                    onChange={(e) =>
-                      handleInputChange("gioiTinh", e.target.value === "true")
-                    }
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-800 enabled:bg-white enabled:text-gray-900 enabled:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    disabled
+                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-md bg-gray-100 text-gray-800 font-medium"
                   >
                     <option value="true">Nam</option>
                     <option value="false">Nữ</option>

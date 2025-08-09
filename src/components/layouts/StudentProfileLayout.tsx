@@ -291,7 +291,7 @@ const StudentProfileLayout: React.FC<StudentProfileLayoutProps> = ({
             },
             {
               label: "Giới tính",
-              value: userInfo?.gioiTinh === true ? "Nữ" : "Nam",
+              value: userInfo?.gioiTinh === true ? "Nam" : "Nữ",
               icon: User,
             },
             { label: "Lớp", value: userInfo?.maLop, icon: GraduationCap },

@@ -881,6 +881,8 @@ const KeHoachHocTapDetail = () => {
             () => {
               setShowSuccessModal(true);
               setSuccessMessage("Đã thêm học phần thành công!");
+              // Reload lại dữ liệu sau khi thêm thành công
+              fetchAllData();
             }
           }
         />
