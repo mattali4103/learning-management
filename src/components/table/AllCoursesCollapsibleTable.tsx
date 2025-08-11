@@ -143,8 +143,11 @@
           );
       } else if (activeTab.startsWith("semester-")) {
           const hocKyId = Number(activeTab.replace("semester-", ""));
-          filteredRequiredCourses = filteredRequiredCourses.filter(
-            (hp: any) => hp.maHocKy === hocKyId
+          // Filter to only show courses from allData that belong to this semester
+          filteredRequiredCourses = allData.filter(course => 
+            course.maHocKy === hocKyId && 
+            uniqueRequiredCourses.some(reqCourse => reqCourse.maHp === course.maHp) &&
+            !electiveCourseCodes.has(course.maHp)
           );
       }
 
@@ -230,15 +233,19 @@
         } else if (activeTab.startsWith("semester-")) {
           // Extract hocKyId from tab name
           const hocKyId = Number(activeTab.replace("semester-", ""));
-          coursesInGroup = addedElectiveCourses.filter(
-            (hp: any) => hp.maHocKy === hocKyId
+          // Find matching courses from allData that belong to this semester and this group
+          coursesInGroup = allData.filter(course => 
+            course.maHocKy === hocKyId && 
+            allElectiveCoursesInGroup.some(hp => hp.maHp === course.maHp)
           );
+          console.log(`Semester ${hocKyId} - Group ${group.tenNhom}:`, coursesInGroup);
         } else {
           coursesInGroup = addedElectiveCourses.filter(
             (hp) => hp.loaiHp === activeTab
           );
         }
         console.log("Courses in Group:", coursesInGroup);
+        console.log("Group validation - coursesInGroup.length:", coursesInGroup.length);
         if (coursesInGroup.length > 0) {
           const totalCredits = coursesInGroup.reduce(
             (sum, course) => sum + (course.tinChi || 0),

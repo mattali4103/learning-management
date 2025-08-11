@@ -85,6 +85,10 @@ const CertificateManagement: React.FC = () => {
       if (file.size > 10 * 1024 * 1024) {
         setErrorMessage("Kích thước file không được vượt quá 10MB");
         setShowErrorModal(true);
+        // Reset input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         return;
       }
 
@@ -101,6 +105,10 @@ const CertificateManagement: React.FC = () => {
           "Chỉ chấp nhận file PDF hoặc hình ảnh (JPEG, PNG, GIF)"
         );
         setShowErrorModal(true);
+        // Reset input
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
         return;
       }
 
@@ -133,6 +141,11 @@ const CertificateManagement: React.FC = () => {
     setSelectedFile(null);
     setFilePreview(null);
     setEditingCertificate(null);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   // Bắt đầu thêm mới
@@ -511,6 +524,7 @@ const CertificateManagement: React.FC = () => {
                   className="hidden"
                 />
                 <button
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
                   className="px-4 py-2 bg-blue-50 text-blue-600 rounded-md border border-blue-200 hover:bg-blue-100 transition-colors flex items-center space-x-2"
                 >
@@ -518,15 +532,36 @@ const CertificateManagement: React.FC = () => {
                   <span>Chọn file</span>
                 </button>
                 {selectedFile && (
-                  <span className="text-sm text-gray-600">
-                    {selectedFile.name} (
-                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
-                  </span>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-600">
+                      {selectedFile.name} (
+                      {(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setFilePreview(null);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                      className="text-red-500 hover:text-red-700 transition-colors"
+                      title="Xóa file đã chọn"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
                 )}
               </div>
               <p className="text-xs text-gray-500 mt-1">
                 Hỗ trợ PDF, JPEG, PNG, GIF. Kích thước tối đa: 10MB
               </p>
+              {isAddingNew && !selectedFile && (
+                <p className="text-xs text-red-500 mt-1">
+                  * Bắt buộc phải chọn file khi thêm chứng chỉ mới
+                </p>
+              )}
             </div>
 
             {/* Preview của file */}

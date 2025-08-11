@@ -189,25 +189,9 @@ const CTDTDetail = () => {
       )}
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid gap-6">
         <StatisticsCard
-          title="Tổng số tín chỉ"
-          value={chuongTrinhDaoTao.tongSoTinChi}
-          icon={GraduationCap}
-          colorScheme="blue"
-          size="md"
-        />
-        
-        <StatisticsCard
-          title="Tín chỉ tự chọn"
-          value={chuongTrinhDaoTao.tongSoTinChiTuChon}
-          icon={Users}
-          colorScheme="green"
-          size="md"
-        />
-        
-        <StatisticsCard
-          title="Tổng môn học"
+          title="Tổng số học phần"
           value={
             (chuongTrinhDaoTao.hocPhanList?.length || 0) + 
             (chuongTrinhDaoTao.nhomHocPhanTuChon?.reduce((total, nhom) => total + (nhom.hocPhanTuChonList?.length || 0), 0) || 0)

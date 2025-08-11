@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import type { HocPhan } from "../../types/HocPhan";
 import type { KeHoachHocTapDetail } from "../../types/KeHoachHocTapMau";
+import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 
 // Types
 interface SubjectGroup {
@@ -54,6 +55,7 @@ interface CollapsibleSubjectsTableProps {
   hocPhanGoiY?: HocPhan[];
   hocPhanCaiThien?: HocPhan[];
   hocPhanTheChat?: HocPhan[]; // Danh sách học phần thể chất từ API
+  nhomHocPhanTuChon?: HocPhanTuChon[]; // Nhóm học phần tự chọn từ CTDT
   
   // Configuration
   enableImprovementCourses?: boolean; // Enable special logic for improvement courses
@@ -120,6 +122,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
   hocPhanGoiY = [],
   hocPhanCaiThien = [],
   hocPhanTheChat = [],
+  nhomHocPhanTuChon = [],
   enableImprovementCourses = false,
   hocPhanDaHoc = [],
 }) => {
@@ -145,6 +148,73 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
     };
   }, [hocPhanDaHoc]);
 
+  // Helper function để kiểm tra xem học phần có thuộc nhóm tự chọn đã hoàn thành không
+  const isFromCompletedElectiveGroup = useCallback((hocPhan: HocPhan): boolean => {
+    // Kiểm tra các nhóm học phần tự chọn
+    for (const nhom of nhomHocPhanTuChon) {
+      const nhomCourses = nhom.hocPhanTuChonList || [];
+      
+      // Kiểm tra nếu học phần thuộc nhóm này
+      const belongsToGroup = nhomCourses.some(course => course.maHp === hocPhan.maHp);
+      if (!belongsToGroup) continue;
+      
+      // Helper function để nhóm các học phần theo đánh số
+      const groupCoursesByNumber = (courses: HocPhan[]) => {
+        const numberedGroups: { [key: string]: HocPhan[] } = {};
+        const singleCourses: HocPhan[] = [];
+        
+        courses.forEach(course => {
+          const tenHp = course.tenHp || '';
+          const numberMatch = tenHp.match(/^(.+?)\s*-\s*(\d+)$/i);
+          if (numberMatch) {
+            const baseName = numberMatch[1].trim();
+            if (!numberedGroups[baseName]) {
+              numberedGroups[baseName] = [];
+            }
+            numberedGroups[baseName].push(course);
+          } else {
+            singleCourses.push(course);
+          }
+        });
+        
+        return { numberedGroups, singleCourses };
+      };
+      
+      const { numberedGroups, singleCourses } = groupCoursesByNumber(nhomCourses);
+      
+      // Tính tổng tín chỉ đã hoàn thành của nhóm
+      let completedCredits = 0;
+      const requiredCredits = nhom.tinChiYeuCau || 0;
+      
+      // Đối với single courses
+      singleCourses.forEach(course => {
+        if (hocPhanDaHoc.includes(course.maHp || '')) {
+          completedCredits += course.tinChi || 0;
+        }
+      });
+      
+      // Đối với numbered groups
+      Object.values(numberedGroups).forEach(groupCourses => {
+        const hasCompletedOne = groupCourses.some(course => 
+          hocPhanDaHoc.includes(course.maHp || '')
+        );
+        if (hasCompletedOne) {
+          const completedCourse = groupCourses.find(course => 
+            hocPhanDaHoc.includes(course.maHp || '')
+          ) || groupCourses[0];
+          completedCredits += completedCourse.tinChi || 0;
+        }
+      });
+      
+      // Nếu nhóm đã hoàn thành, return true
+      if (completedCredits >= requiredCredits) {
+        return true;
+      }
+    }
+    
+    return false;
+  }, [nhomHocPhanTuChon, hocPhanDaHoc]);
+
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -158,9 +228,12 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
     const currentMaHps = new Set(currentHocPhans.map(extractMaHp));
     const pendingMaHps = new Set(pendingHocPhans.map(extractMaHp));
 
-    // Helper function to filter courses
+    // Helper function to filter courses (cập nhật để loại bỏ học phần từ nhóm đã hoàn thành)
     const filterCourses = (courseList: HocPhan[]) => 
-      courseList.filter(hp => !currentMaHps.has(hp.maHp || ''));
+      courseList.filter(hp => 
+        !currentMaHps.has(hp.maHp || '') && 
+        !isFromCompletedElectiveGroup(hp)
+      );
 
     const newGroups: SubjectGroup[] = [];
 
@@ -282,6 +355,87 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
           colorScheme: isCompleted ? "green" : isInProgress ? "orange" : "purple",
         });
       }
+
+      // Group 4: Elective Course Groups from CTDT (Nhóm học phần tự chọn)
+      nhomHocPhanTuChon.forEach((nhom, index) => {
+        // Trước tiên, tính toán trạng thái hoàn thành của nhóm
+        const allCoursesInGroup = nhom.hocPhanTuChonList || [];
+        
+        // Helper function để nhóm các học phần theo đánh số
+        const groupCoursesByNumber = (courses: HocPhan[]) => {
+          const numberedGroups: { [key: string]: HocPhan[] } = {};
+          const singleCourses: HocPhan[] = [];
+          
+          courses.forEach(course => {
+            const tenHp = course.tenHp || '';
+            const numberMatch = tenHp.match(/^(.+?)\s*-\s*(\d+)$/i);
+            if (numberMatch) {
+              const baseName = numberMatch[1].trim();
+              if (!numberedGroups[baseName]) {
+                numberedGroups[baseName] = [];
+              }
+              numberedGroups[baseName].push(course);
+            } else {
+              singleCourses.push(course);
+            }
+          });
+          
+          return { numberedGroups, singleCourses };
+        };
+        
+        const { numberedGroups, singleCourses } = groupCoursesByNumber(allCoursesInGroup);
+        
+        // Tính tổng tín chỉ đã hoàn thành
+        let completedCredits = 0;
+        const requiredCredits = nhom.tinChiYeuCau || 0;
+        
+        // Đối với single courses
+        singleCourses.forEach(course => {
+          if (hocPhanDaHoc.includes(course.maHp || '')) {
+            completedCredits += course.tinChi || 0;
+          }
+        });
+        
+        // Đối với numbered groups
+        Object.values(numberedGroups).forEach(groupCourses => {
+          const hasCompletedOne = groupCourses.some(course => 
+            hocPhanDaHoc.includes(course.maHp || '')
+          );
+          if (hasCompletedOne) {
+            const completedCourse = groupCourses.find(course => 
+              hocPhanDaHoc.includes(course.maHp || '')
+            ) || groupCourses[0];
+            completedCredits += completedCourse.tinChi || 0;
+          }
+        });
+        
+        const isCompleted = completedCredits >= requiredCredits;
+        const isInProgress = completedCredits > 0 && completedCredits < requiredCredits;
+        
+        // Chỉ hiển thị nhóm chưa hoàn thành
+        if (!isCompleted) {
+          const electiveCourses = filterCourses(allCoursesInGroup);
+          if (electiveCourses.length > 0) {
+            let status = "";
+            if (isInProgress) {
+              status = ` • Đang thực hiện (${completedCredits}/${requiredCredits} tín chỉ)`;
+            } else {
+              status = ` • Chưa bắt đầu (0/${requiredCredits} tín chỉ)`;
+            }
+
+            const totalAvailableCredits = electiveCourses.reduce((sum, course) => sum + (course.tinChi || 0), 0);
+            
+            newGroups.push({
+              id: `group-elective-${index}`,
+              title: `Nhóm tự chọn: ${nhom.tenNhom}`,
+              subtitle: `${electiveCourses.length} học phần • ${totalAvailableCredits} tín chỉ có thể chọn${status}`,
+              courses: electiveCourses,
+              totalCredits: totalAvailableCredits,
+              colorScheme: isInProgress ? "orange" : "blue",
+            });
+          }
+        }
+      });
     }
 
     // Regular courses grouped by loaiHp
@@ -321,7 +475,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
     });
 
     return [...newGroups, ...regularGroups];
-  }, [hocPhans, hocPhanGoiY, hocPhanCaiThien, hocPhanTheChat, currentHocPhans, pendingHocPhans, enableImprovementCourses, hocPhanDaHoc]);
+  }, [hocPhans, hocPhanGoiY, hocPhanCaiThien, hocPhanTheChat, nhomHocPhanTuChon, currentHocPhans, pendingHocPhans, enableImprovementCourses, hocPhanDaHoc, isFromCompletedElectiveGroup]);
 
   useEffect(() => {
     if (subjectGroups.length > 0) {
@@ -432,7 +586,27 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
       {
         accessorKey: "tenHp",
         header: "Tên học phần",
-        cell: ({ row }) => row.original.tenHp,
+        cell: ({ row }) => {
+          const hocPhan = row.original;
+          const tenHp = hocPhan.tenHp || '';
+          
+          // Kiểm tra nếu là học phần có đánh số với pattern tổng quát: [tên] - [số]
+          const numberMatch = tenHp.match(/^(.+?)\s*-\s*(\d+)$/i);
+          
+          if (numberMatch) {
+            const baseName = numberMatch[1].trim();
+            return (
+              <div className="space-y-1">
+                <div>{tenHp}</div>
+                <div className="text-xs text-blue-600 font-medium">
+                  💡 Chỉ cần hoàn thành 1 trong các học phần "{baseName} - [số]"
+                </div>
+              </div>
+            );
+          }
+          
+          return tenHp;
+        },
         size: 300,
       },
       {
@@ -482,16 +656,50 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
             );
             const isAdded = isInPending || (isInCurrentPlan && !isImprovementCourse);
             
+            // Kiểm tra xem có học phần cùng nhóm (có đánh số) đã được hoàn thành chưa
+            let isGroupCompleted = false;
+            const tenHp = hocPhan.tenHp || '';
+            const numberMatch = tenHp.match(/^(.+?)\s*-\s*(\d+)$/i);
+            if (numberMatch) {
+              const baseName = numberMatch[1].trim();
+              
+              // Tìm tất cả học phần cùng nhóm trong subjectGroups
+              const currentGroup = subjectGroups.find(sg => sg.courses.some(c => c.maHp === hocPhan.maHp));
+              if (currentGroup) {
+                const sameGroupCourses = currentGroup.courses.filter(course => {
+                  const courseName = course.tenHp || '';
+                  const courseNumberMatch = courseName.match(/^(.+?)\s*-\s*(\d+)$/i);
+                  if (courseNumberMatch) {
+                    const courseBaseName = courseNumberMatch[1].trim();
+                    return courseBaseName === baseName;
+                  }
+                  return false;
+                });
+                
+                // Kiểm tra xem có học phần nào trong nhóm đã hoàn thành chưa
+                isGroupCompleted = sameGroupCourses.some(course => 
+                  hocPhanDaHoc.includes(course.maHp || '')
+                );
+              }
+            }
+            
+            // Kiểm tra xem học phần có thuộc nhóm tự chọn đã hoàn thành không
+            const isFromCompletedElectiveGroupCheck = isFromCompletedElectiveGroup(hocPhan);
+            
             // Kiểm tra điều kiện tiên quyết
             const prerequisiteCheck = checkPrerequisites(hocPhan);
             const canAdd = prerequisiteCheck.canAdd;
             const missingPrerequisites = prerequisiteCheck.missingPrerequisites;
 
-            const buttonDisabled = isAdded || !canAdd;
+            const buttonDisabled = isAdded || !canAdd || isGroupCompleted || isFromCompletedElectiveGroupCheck;
             let buttonTitle = "Thêm vào danh sách";
             
             if (isAdded) {
               buttonTitle = "Đã thêm học phần này";
+            } else if (isFromCompletedElectiveGroupCheck) {
+              buttonTitle = "Nhóm học phần tự chọn này đã hoàn thành";
+            } else if (isGroupCompleted) {
+              buttonTitle = "Đã hoàn thành học phần khác trong cùng nhóm";
             } else if (!canAdd) {
               buttonTitle = `Chưa hoàn thành học phần tiên quyết: ${missingPrerequisites.join(', ')}`;
             }
@@ -560,7 +768,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
         size: 100,
       },
     ],
-    [pendingHocPhans, currentHocPhans, onAddToPending, enableImprovementCourses, checkPrerequisites]
+    [pendingHocPhans, currentHocPhans, onAddToPending, enableImprovementCourses, checkPrerequisites, hocPhanDaHoc, subjectGroups, isFromCompletedElectiveGroup]
   );
 
   const table = useReactTable({

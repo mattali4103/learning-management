@@ -24,6 +24,7 @@ import SuccessMessageModal from "./SuccessMessageModal";
 import type { HocPhan } from "../../types/HocPhan";
 import type { HocKy } from "../../types/HocKy";
 import type { KeHoachHocTapDetail } from "../../types/KeHoachHocTapMau";
+import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 
 // API endpoints
 import { HOCPHAN_SERVICE, KHHT_SERVICE, KQHT_SERVICE } from "../../api/apiEndPoints";
@@ -169,6 +170,7 @@ const ThemKHHTModal = ({
   const [hocPhanCaiThien, setHocPhanCaiThien] = useState<HocPhan[]>([]);
   const [hocPhanTheChat, setHocPhanTheChat] = useState<HocPhan[]>([]);
   const [hocPhanDaHoc, setHocPhanDaHoc] = useState<string[]>([]);
+  const [nhomHocPhanTuChon, setNhomHocPhanTuChon] = useState<HocPhanTuChon[]>([]);
   const [loadingAvailableSubjects, setLoadingAvailableSubjects] =
     useState(false);
   const [danhSachHocKy, setDanhSachHocKy] = useState<HocKy[]>([]);
@@ -340,6 +342,35 @@ const ThemKHHTModal = ({
     }
   }, [axiosPrivate]);
 
+  const fetchNhomHocPhanTuChon = useCallback(async () => {
+    if (!selectedKhoaHoc || !selectedNganh) return;
+    try {
+      const response = await axiosPrivate.get(
+        HOCPHAN_SERVICE.CTDT_HOC_PHAN_TU_CHON_LIST,
+        {
+          params: {
+            khoaHoc: selectedKhoaHoc,
+            maNganh: selectedNganh,
+          },
+        }
+      );
+      if (response.data.code === 200 && response.data.data) {
+        const uniqueNhomHocPhanTuChon = (response.data.data || []).map(
+          (nhom: HocPhanTuChon) => ({
+            ...nhom,
+            hocPhanTuChonList: nhom.hocPhanTuChonList.filter(
+              (hocPhan, index, self) =>
+                self.findIndex((hp) => hp.maHp === hocPhan.maHp) === index
+            ),
+          })
+        );
+        setNhomHocPhanTuChon(uniqueNhomHocPhanTuChon);
+      }
+    } catch (err) {
+      console.error("Error fetching NhomHocPhanTuChon:", err);
+    }
+  }, [axiosPrivate, selectedKhoaHoc, selectedNganh]);
+
   // Effect to reset form when modal opens or closes
   useEffect(() => {
     if (isOpen) {
@@ -355,6 +386,7 @@ const ThemKHHTModal = ({
       // Fetch data when modal opens
       fetchChuongTrinhDaoTao();
       fetchDanhSachHocKy();
+      fetchNhomHocPhanTuChon();
       fetchHocPhanGoiY();
       fetchHocPhanCaiThien();
       fetchHocPhanTheChat();
@@ -370,6 +402,7 @@ const ThemKHHTModal = ({
       setHocPhanCaiThien([]);
       setHocPhanTheChat([]);
       setHocPhanDaHoc([]);
+      setNhomHocPhanTuChon([]);
       setLoadingAvailableSubjects(false);
       setDanhSachHocKy([]);
       setErrorMessage("");
@@ -383,6 +416,7 @@ const ThemKHHTModal = ({
     currentFilterHocKy,
     fetchChuongTrinhDaoTao,
     fetchDanhSachHocKy,
+    fetchNhomHocPhanTuChon,
     fetchHocPhanGoiY,
     fetchHocPhanCaiThien,
     fetchHocPhanTheChat,
@@ -817,6 +851,7 @@ const ThemKHHTModal = ({
                   hocPhanGoiY={hocPhanGoiY}
                   hocPhanCaiThien={hocPhanCaiThien}
                   hocPhanTheChat={hocPhanTheChat}
+                  nhomHocPhanTuChon={nhomHocPhanTuChon}
                   onAddToPending={handleAddToPending}
                   pendingHocPhans={pendingHocPhans}
                   currentHocPhans={currentHocPhans}
