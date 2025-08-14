@@ -151,13 +151,14 @@ const KeHoachHocTapDetail = () => {
   // Available academic years for navigation
   const availableNamHoc = useMemo(() => {
     const years = new Map<number, { id: number; tenNh: string }>();
+    const endSemester = startingSemester + 11; // Hiển thị 12 học kỳ (từ startingSemester đến startingSemester + 11)
+    
     danhSachHocKy.forEach((hk) => {
       if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        // Chỉ lấy năm học có học kỳ <= hocKyHienTai?.maHocKy và >= startingSemester
+        // Hiển thị từ học kỳ bắt đầu đến 12 học kỳ tiếp theo
         if (
-          hocKyHienTai &&
-          hk.maHocKy <= hocKyHienTai.maHocKy &&
-          hk.maHocKy >= startingSemester
+          hk.maHocKy >= startingSemester &&
+          hk.maHocKy <= endSemester
         ) {
           years.set(hk.namHoc.id, {
             id: hk.namHoc.id,
@@ -167,17 +168,19 @@ const KeHoachHocTapDetail = () => {
       }
     });
     return Array.from(years.values()).sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, hocKyHienTai, startingSemester]);
+  }, [danhSachHocKy, startingSemester]);
 
   // Available semesters for selected academic year
   const availableHocKy = useMemo(() => {
     if (!selectedTabNamHoc) return [];
+    const endSemester = startingSemester + 11; // Hiển thị 12 học kỳ
+    
     return danhSachHocKy
       .filter(
         (item) =>
           item.namHoc?.id === selectedTabNamHoc &&
-          (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy) &&
-          item.maHocKy >= startingSemester
+          item.maHocKy >= startingSemester &&
+          item.maHocKy <= endSemester
       )
       .map((item) => ({
         id: item.maHocKy,
@@ -185,11 +188,12 @@ const KeHoachHocTapDetail = () => {
         namHoc: item.namHoc,
       }))
       .sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai, startingSemester]);
+  }, [danhSachHocKy, selectedTabNamHoc, startingSemester]);
 
   // Credit statistics for chart
   const creditStatistics = useMemo(() => {
     const statsMap = new Map<string, CreditStatData>();
+    const endSemester = startingSemester + 11; // Hiển thị 12 học kỳ
     
     // First, populate with semesters that have courses from allData
     selectedHocPhans.forEach((item) => {
@@ -214,12 +218,11 @@ const KeHoachHocTapDetail = () => {
       }
     });
 
-    // Then, add all other relevant semesters
+    // Then, add all other relevant semesters (từ startingSemester đến endSemester)
     danhSachHocKy.forEach((hk) => {
       if (
-        hocKyHienTai &&
-        hk.maHocKy <= hocKyHienTai.maHocKy &&
-        hk.maHocKy >= startingSemester
+        hk.maHocKy >= startingSemester &&
+        hk.maHocKy <= endSemester
       ) {
         const key = `${hk.maHocKy}`;
         if (!statsMap.has(key)) {
@@ -242,7 +245,7 @@ const KeHoachHocTapDetail = () => {
       }
       return a.hocKyId - b.hocKyId;
     });
-  }, [selectedHocPhans, danhSachHocKy, hocKyHienTai, startingSemester]);
+  }, [selectedHocPhans, danhSachHocKy, startingSemester]);
 
   const handleChartBarClick = (data: any) => {
     if (data && data.activePayload && data.activePayload[0]) {
@@ -494,18 +497,26 @@ const KeHoachHocTapDetail = () => {
       hocKyHienTai &&
       danhSachHocKy.length > 0
     ) {
-      const currentSemester = danhSachHocKy.find(
-        (hk) => hk.maHocKy === hocKyHienTai.maHocKy
-      );
-      if (currentSemester && currentSemester.namHoc) {
-        setSelectedTabNamHoc(currentSemester.namHoc.id);
-        setActiveTab(`semester-${currentSemester.maHocKy}`);
-        setSelectedHocKyChart(currentSemester.maHocKy);
-        setSelectedFilterNamHoc(currentSemester.namHoc.id);
-        setSelectedFilterHocKy(currentSemester.maHocKy);
+      const endSemester = startingSemester + 11;
+      // Tìm học kỳ hiện tại trong khoảng cho phép
+      let targetSemester = hocKyHienTai;
+      
+      // Nếu học kỳ hiện tại nằm ngoài phạm vi cho phép, chọn học kỳ gần nhất trong phạm vi
+      if (hocKyHienTai.maHocKy < startingSemester) {
+        targetSemester = danhSachHocKy.find(hk => hk.maHocKy === startingSemester) || hocKyHienTai;
+      } else if (hocKyHienTai.maHocKy > endSemester) {
+        targetSemester = danhSachHocKy.find(hk => hk.maHocKy === endSemester) || hocKyHienTai;
+      }
+      
+      if (targetSemester && targetSemester.namHoc) {
+        setSelectedTabNamHoc(targetSemester.namHoc.id);
+        setActiveTab(`semester-${targetSemester.maHocKy}`);
+        setSelectedHocKyChart(targetSemester.maHocKy);
+        setSelectedFilterNamHoc(targetSemester.namHoc.id);
+        setSelectedFilterHocKy(targetSemester.maHocKy);
       }
     }
-  }, [loading, allData, hocKyHienTai, danhSachHocKy]);
+  }, [loading, allData, hocKyHienTai, danhSachHocKy, startingSemester]);
 
   if (loading) {
     return (
@@ -652,7 +663,8 @@ const KeHoachHocTapDetail = () => {
                     allData.filter(
                       (item) =>
                         item.namHocId === namHoc.id &&
-                        (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy)
+                        item.maHocKy >= startingSemester &&
+                        item.maHocKy <= startingSemester + 11
                     ).length
                   }
                   )

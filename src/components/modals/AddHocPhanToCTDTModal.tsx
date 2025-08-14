@@ -864,6 +864,10 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
         setShowSuccessModal(true);
         onSaveSuccess();
         setPendingHocPhans([]);
+        // Reload trang sau khi thêm thành công
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500); // Delay 1.5 giây để người dùng có thể thấy thông báo thành công
       } else {
         setErrorMessage(response.data.message || "Lỗi khi thêm học phần.");
         setShowErrorModal(true);

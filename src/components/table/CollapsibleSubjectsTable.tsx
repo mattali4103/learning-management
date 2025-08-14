@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -71,6 +71,62 @@ const extractMaHp = (item: HocPhan | KeHoachHocTapDetail): string => {
   return item.maHp || '';
 };
 
+// Helper function to check if course name has ID pattern (e.g., "Course Name - CN1")
+const checkCourseIdPattern = (tenHp: string): { hasPattern: boolean; baseName: string; id: string } => {
+  const lastDashIndex = tenHp.lastIndexOf(' - ');
+  if (lastDashIndex <= 0) {
+    return { hasPattern: false, baseName: tenHp, id: '' };
+  }
+  
+  const baseName = tenHp.substring(0, lastDashIndex).trim();
+  const suffix = tenHp.substring(lastDashIndex + 3).trim();
+  
+  // Check if suffix is like CN1, TC2, CS3 (letters + numbers) without regex
+  const isValidId = suffix.length >= 2 && 
+                   hasLettersAndNumbers(suffix);
+  
+  return {
+    hasPattern: isValidId,
+    baseName: baseName,
+    id: suffix
+  };
+};
+
+// Helper function to check if string contains letters followed by numbers
+const hasLettersAndNumbers = (str: string): boolean => {
+  if (str.length < 2) return false;
+  
+  let hasLetter = false;
+  let hasNumber = false;
+  let letterPhase = true; // Bắt đầu với phase chữ cái
+  
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    const isLetter = (char >= 'A' && char <= 'Z') || (char >= 'a' && char <= 'z');
+    const isNumber = char >= '0' && char <= '9';
+    
+    if (letterPhase) {
+      if (isLetter) {
+        hasLetter = true;
+      } else if (isNumber) {
+        letterPhase = false; // Chuyển sang phase số
+        hasNumber = true;
+      } else {
+        return false; // Ký tự không hợp lệ
+      }
+    } else {
+      // Đang trong phase số
+      if (isNumber) {
+        hasNumber = true;
+      } else {
+        return false; // Sau số không được có ký tự khác
+      }
+    }
+  }
+  
+  return hasLetter && hasNumber;
+};
+
 // Helper: Color Schemes
 const getColorClasses = (colorScheme: string) => {
   const schemes = {
@@ -125,13 +181,13 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
   enableImprovementCourses = false,
   hocPhanDaHoc = [],
 }) => {
-  // Helper function to check prerequisite courses
+  // Hàm kiểm tra điều kiện tiên quyết
   const checkPrerequisites = useCallback((hocPhan: HocPhan): { canAdd: boolean; missingPrerequisites: string[] } => {
     if (!hocPhan.hocPhanTienQuyet || hocPhan.hocPhanTienQuyet.trim() === "") {
       return { canAdd: true, missingPrerequisites: [] };
     }
 
-    // Parse prerequisites (assuming they are comma-separated)
+    // Phân tích các điều kiện tiên quyết (giả sử chúng được phân tách bằng dấu phẩy)
     const prerequisites = hocPhan.hocPhanTienQuyet
       .split(',')
       .map(code => code.trim())
@@ -164,13 +220,13 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
         
         courses.forEach(course => {
           const tenHp = course.tenHp || '';
-          const numberMatch = tenHp.match(/^(.+?)\s*-\s*(\d+)$/i);
-          if (numberMatch) {
-            const baseName = numberMatch[1].trim();
-            if (!numberedGroups[baseName]) {
-              numberedGroups[baseName] = [];
+          const pattern = checkCourseIdPattern(tenHp);
+          
+          if (pattern.hasPattern) {
+            if (!numberedGroups[pattern.baseName]) {
+              numberedGroups[pattern.baseName] = [];
             }
-            numberedGroups[baseName].push(course);
+            numberedGroups[pattern.baseName].push(course);
           } else {
             singleCourses.push(course);
           }
@@ -248,20 +304,6 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
           courses: suggestedSubjects,
           totalCredits,
           colorScheme: "green",
-        });
-      }
-
-      // Group 2: Improvement Courses (not filtered against current plan)
-      // Chỉ hiển thị nếu có ít nhất 3 môn cải thiện
-      if (hocPhanCaiThien.length >= 3) {
-        const totalCredits = hocPhanCaiThien.reduce((sum, course) => sum + (course.tinChi || 0), 0);
-        newGroups.push({
-          id: "group-improvement",
-          title: "Học phần cải thiện",
-          subtitle: `${hocPhanCaiThien.length} học phần • ${totalCredits} tín chỉ`,
-          courses: hocPhanCaiThien,
-          totalCredits,
-          colorScheme: "red",
         });
       }
 
@@ -353,10 +395,109 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
           colorScheme: isCompleted ? "green" : isInProgress ? "orange" : "purple",
         });
       }
+    }
 
-      // Group 4: Elective Course Groups from CTDT (Nhóm học phần tự chọn)
+    // Regular courses grouped by loaiHp
+    const availableSubjects = enableImprovementCourses 
+      ? filterCourses(hocPhans)
+      : hocPhans.filter(hp => !currentMaHps.has(hp.maHp || '') && !pendingMaHps.has(hp.maHp || ''));
+
+    const groupedByLoaiHp = availableSubjects.reduce(
+      (acc, course) => {
+        const type = course.loaiHp || "Khác";
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(course);
+        return acc;
+      },
+      {} as Record<string, HocPhan[]>
+    );
+
+    // Định nghĩa thứ tự ưu tiên cho các loại học phần
+    const groupOrder = [
+      "Quốc phòng",
+      "Anh văn căn bản", 
+      "Thể chất",
+      "Đại cương",
+      "Cơ sở ngành",
+      "Chuyên ngành",
+      "Luận văn",
+      "Thay thế luận văn",
+      "Khác"
+    ];
+
+    // Tạo groups theo thứ tự đã định nghĩa
+    const orderedRegularGroups: SubjectGroup[] = [];
+    
+    groupOrder.forEach(orderType => {
+      // Tìm các loại học phần phù hợp với orderType
+      Object.entries(groupedByLoaiHp).forEach(([loaiHp, courses]) => {
+        let shouldInclude = false;
+        
+        if (orderType === "Quốc phòng" && loaiHp.toLowerCase().includes("quốc phòng")) {
+          shouldInclude = true;
+        } else if (orderType === "Anh văn căn bản" && loaiHp.toLowerCase().includes("anh văn")) {
+          shouldInclude = true;
+        } else if (orderType === "Thể chất" && loaiHp.toLowerCase().includes("thể chất")) {
+          shouldInclude = true;
+        } else if (orderType === "Đại cương" && loaiHp.toLowerCase().includes("đại cương") && !loaiHp.toLowerCase().includes("tự chọn")) {
+          shouldInclude = true;
+        } else if (orderType === "Cơ sở ngành" && loaiHp.toLowerCase().includes("cơ sở ngành") && !loaiHp.toLowerCase().includes("tự chọn")) {
+          shouldInclude = true;
+        } else if (orderType === "Chuyên ngành" && loaiHp.toLowerCase().includes("chuyên ngành") && !loaiHp.toLowerCase().includes("tự chọn")) {
+          shouldInclude = true;
+        } else if (orderType === "Luận văn" && (loaiHp.toLowerCase().includes("luận văn") || loaiHp.toLowerCase().includes("khóa luận")) && !loaiHp.toLowerCase().includes("thay thế")) {
+          shouldInclude = true;
+        } else if (orderType === "Thay thế luận văn" && loaiHp.toLowerCase().includes("thay thế")) {
+          shouldInclude = true;
+        } else if (orderType === "Khác" && 
+          !loaiHp.toLowerCase().includes("quốc phòng") &&
+          !loaiHp.toLowerCase().includes("anh văn") &&
+          !loaiHp.toLowerCase().includes("thể chất") &&
+          !loaiHp.toLowerCase().includes("đại cương") &&
+          !loaiHp.toLowerCase().includes("cơ sở ngành") &&
+          !loaiHp.toLowerCase().includes("chuyên ngành") &&
+          !loaiHp.toLowerCase().includes("luận văn") &&
+          !loaiHp.toLowerCase().includes("khóa luận") &&
+          !loaiHp.toLowerCase().includes("thay thế")) {
+          shouldInclude = true;
+        }
+        
+        if (shouldInclude && courses.length > 0) {
+          const totalCredits = courses.reduce((sum, course) => sum + (course.tinChi || 0), 0);
+          let colorScheme = "blue";
+          
+          if (loaiHp.toLowerCase().includes("quốc phòng")) colorScheme = "red";
+          else if (loaiHp.toLowerCase().includes("anh văn")) colorScheme = "green";
+          else if (loaiHp.toLowerCase().includes("thể chất")) colorScheme = "purple";
+          else if (loaiHp.toLowerCase().includes("đại cương")) colorScheme = "purple";
+          else if (loaiHp.toLowerCase().includes("cơ sở ngành")) colorScheme = "blue";
+          else if (loaiHp.toLowerCase().includes("chuyên ngành")) colorScheme = "orange";
+          else if (loaiHp.toLowerCase().includes("luận văn") || loaiHp.toLowerCase().includes("khóa luận")) colorScheme = "red";
+          else if (loaiHp.toLowerCase().includes("thay thế")) colorScheme = "orange";
+
+          orderedRegularGroups.push({
+            id: `group-${loaiHp.replace(/\s+/g, "-")}`,
+            title: `Học phần ${loaiHp}`,
+            subtitle: `${courses.length} học phần • ${totalCredits} tín chỉ`,
+            courses,
+            totalCredits,
+            colorScheme,
+          });
+        }
+      });
+    });
+
+    // Tạo ordered groups cho nhóm tự chọn theo thứ tự
+    const orderedElectiveGroups: SubjectGroup[] = [];
+    
+    // Thêm nhóm tự chọn theo thứ tự: Đại cương -> Cơ sở ngành -> Chuyên ngành
+    const electiveOrder = ["đại cương", "cơ sở ngành", "chuyên ngành"];
+    
+    electiveOrder.forEach(electiveType => {
       nhomHocPhanTuChon.forEach((nhom, index) => {
-        // Trước tiên, tính toán trạng thái hoàn thành của nhóm
+        // Tính toán trạng thái hoàn thành của nhóm
         const allCoursesInGroup = nhom.hocPhanTuChonList || [];
         
         // Helper function để nhóm các học phần theo đánh số
@@ -366,13 +507,13 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
           
           courses.forEach(course => {
             const tenHp = course.tenHp || '';
-            const numberMatch = tenHp.match(/^(.+?)\s*-\s*(\d+)$/i);
-            if (numberMatch) {
-              const baseName = numberMatch[1].trim();
-              if (!numberedGroups[baseName]) {
-                numberedGroups[baseName] = [];
+            const pattern = checkCourseIdPattern(tenHp);
+            
+            if (pattern.hasPattern) {
+              if (!numberedGroups[pattern.baseName]) {
+                numberedGroups[pattern.baseName] = [];
               }
-              numberedGroups[baseName].push(course);
+              numberedGroups[pattern.baseName].push(course);
             } else {
               singleCourses.push(course);
             }
@@ -410,8 +551,12 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
         const isCompleted = completedCredits >= requiredCredits;
         const isInProgress = completedCredits > 0 && completedCredits < requiredCredits;
         
-        // Chỉ hiển thị nhóm chưa hoàn thành
-        if (!isCompleted) {
+        // Kiểm tra nhóm có thuộc loại đang xét không
+        const nhomName = nhom.tenNhom?.toLowerCase() || '';
+        const shouldInclude = nhomName.includes(electiveType);
+        
+        // Chỉ hiển thị nhóm chưa hoàn thành và thuộc loại đang xét
+        if (!isCompleted && shouldInclude) {
           const electiveCourses = filterCourses(allCoursesInGroup);
           if (electiveCourses.length > 0) {
             let status = "";
@@ -423,63 +568,42 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
 
             const totalAvailableCredits = electiveCourses.reduce((sum, course) => sum + (course.tinChi || 0), 0);
             
-            newGroups.push({
+            orderedElectiveGroups.push({
               id: `group-elective-${index}`,
               title: `Nhóm tự chọn: ${nhom.tenNhom}`,
               subtitle: `${electiveCourses.length} học phần • ${totalAvailableCredits} tín chỉ có thể chọn${status}`,
               courses: electiveCourses,
               totalCredits: totalAvailableCredits,
-              colorScheme: isInProgress ? "orange" : "blue",
+              colorScheme: isInProgress ? "orange" : "green",
             });
           }
         }
       });
-    }
-
-    // Regular courses grouped by loaiHp
-    const availableSubjects = enableImprovementCourses 
-      ? filterCourses(hocPhans)
-      : hocPhans.filter(hp => !currentMaHps.has(hp.maHp || '') && !pendingMaHps.has(hp.maHp || ''));
-
-    const groupedByLoaiHp = availableSubjects.reduce(
-      (acc, course) => {
-        const type = course.loaiHp || "Khác";
-        if (!acc[type]) {
-          acc[type] = [];
-        }
-        acc[type].push(course);
-        return acc;
-      },
-      {} as Record<string, HocPhan[]>
-    );
-
-    const regularGroups = Object.entries(groupedByLoaiHp).map(([loaiHp, courses]) => {
-      const totalCredits = courses.reduce((sum, course) => sum + (course.tinChi || 0), 0);
-      let colorScheme = "blue";
-      if (loaiHp.includes("Đại cương")) colorScheme = "purple";
-      else if (loaiHp.includes("Cơ sở ngành")) colorScheme = "blue";
-      else if (loaiHp.includes("Chuyên ngành")) colorScheme = "orange";
-      else if (loaiHp.includes("Tự chọn")) colorScheme = "green";
-      else if (loaiHp.includes("Thể chất")) colorScheme = "purple";
-
-      return {
-        id: `group-${loaiHp.replace(/\s+/g, "-")}`,
-        title: `Học phần ${loaiHp}`,
-        subtitle: `${courses.length} học phần • ${totalCredits} tín chỉ`,
-        courses,
-        totalCredits,
-        colorScheme,
-      };
     });
 
-    return [...newGroups, ...regularGroups];
+    // Group học phần cải thiện - đặt ở cuối cùng
+    const improvementGroup: SubjectGroup[] = [];
+    if (enableImprovementCourses && hocPhanCaiThien.length >= 3) {
+      const totalCredits = hocPhanCaiThien.reduce((sum, course) => sum + (course.tinChi || 0), 0);
+      improvementGroup.push({
+        id: "group-improvement",
+        title: "Học phần cải thiện",
+        subtitle: `${hocPhanCaiThien.length} học phần • ${totalCredits} tín chỉ`,
+        courses: hocPhanCaiThien,
+        totalCredits,
+        colorScheme: "red",
+      });
+    }
+
+    return [...newGroups, ...orderedRegularGroups, ...orderedElectiveGroups, ...improvementGroup];
   }, [hocPhans, hocPhanGoiY, hocPhanCaiThien, hocPhanTheChat, nhomHocPhanTuChon, currentHocPhans, pendingHocPhans, enableImprovementCourses, hocPhanDaHoc, isFromCompletedElectiveGroup]);
 
-  useEffect(() => {
-    if (subjectGroups.length > 0) {
-      setExpandedGroups(new Set(subjectGroups.map((g) => g.id)));
-    }
-  }, [subjectGroups]);
+  // Không tự động expand các groups khi mở lần đầu
+  // useEffect(() => {
+  //   if (subjectGroups.length > 0) {
+  //     setExpandedGroups(new Set(subjectGroups.map((g) => g.id)));
+  //   }
+  // }, [subjectGroups]);
 
   const toggleGroup = useCallback((groupId: string) => {
     setExpandedGroups((prev) => {
@@ -588,16 +712,15 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
           const hocPhan = row.original;
           const tenHp = hocPhan.tenHp || '';
           
-          // Kiểm tra nếu là học phần có đánh số với pattern tổng quát: [tên] - [số]
-          const numberMatch = tenHp.match(/^(.+?)\s*-\s*(\d+)$/i);
+          // Kiểm tra nếu là học phần có đánh số với pattern: [tên] - [ID] (ví dụ: - CN1)
+          const pattern = checkCourseIdPattern(tenHp);
           
-          if (numberMatch) {
-            const baseName = numberMatch[1].trim();
+          if (pattern.hasPattern) {
             return (
               <div className="space-y-1">
                 <div>{tenHp}</div>
                 <div className="text-xs text-blue-600 font-medium">
-                  💡 Chỉ cần hoàn thành 1 trong các học phần "{baseName} - [số]"
+                  💡 Chỉ cần hoàn thành 1 trong các học phần "{pattern.baseName} - [ID]"
                 </div>
               </div>
             );
@@ -657,21 +780,16 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
             // Kiểm tra xem có học phần cùng nhóm (có đánh số) đã được hoàn thành chưa
             let isGroupCompleted = false;
             const tenHp = hocPhan.tenHp || '';
-            const numberMatch = tenHp.match(/^(.+?)\s*-\s*(\d+)$/i);
-            if (numberMatch) {
-              const baseName = numberMatch[1].trim();
-              
+            const pattern = checkCourseIdPattern(tenHp);
+            
+            if (pattern.hasPattern) {
               // Tìm tất cả học phần cùng nhóm trong subjectGroups
               const currentGroup = subjectGroups.find(sg => sg.courses.some(c => c.maHp === hocPhan.maHp));
               if (currentGroup) {
                 const sameGroupCourses = currentGroup.courses.filter(course => {
                   const courseName = course.tenHp || '';
-                  const courseNumberMatch = courseName.match(/^(.+?)\s*-\s*(\d+)$/i);
-                  if (courseNumberMatch) {
-                    const courseBaseName = courseNumberMatch[1].trim();
-                    return courseBaseName === baseName;
-                  }
-                  return false;
+                  const coursePattern = checkCourseIdPattern(courseName);
+                  return coursePattern.hasPattern && coursePattern.baseName === pattern.baseName;
                 });
                 
                 // Kiểm tra xem có học phần nào trong nhóm đã hoàn thành chưa

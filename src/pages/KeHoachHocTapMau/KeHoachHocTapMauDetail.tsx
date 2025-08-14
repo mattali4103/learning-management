@@ -57,7 +57,6 @@ const KeHoachHocTapMauDetail = () => {
   const [selectedHocPhan, setSelectedHocPhan] =
     useState<KeHoachHocTapDetail | null>(null);
   const [showDeletePlanModal, setShowDeletePlanModal] = useState(false);
-  const [activeDetailTab, setActiveDetailTab] = useState("tatca");
 
   const maKhoa = auth.user?.maKhoa || "";
 
@@ -261,51 +260,17 @@ const KeHoachHocTapMauDetail = () => {
     };
   }, [templateDetails]);
 
-  // Get filtered data based on course type
+  // Get filtered data - show all courses (no tab filtering)
   const allCourses = useMemo(() => templateDetails || [], [templateDetails]);
 
   const filteredCoursesByType = useMemo(() => {
-    if (activeDetailTab === "tatca") {
-      return allCourses;
-    }
-    return allCourses.filter(
-      (detail) => detail.hocPhan.loaiHp === activeDetailTab
-    );
-  }, [allCourses, activeDetailTab]);
-
-  // Calculate statistics by course type
-  const courseTypeStatistics = useMemo(() => {
-    const totalCourses = allCourses.length;
-    const daiCuongCourses = allCourses.filter(
-      (detail) => detail.hocPhan.loaiHp === "Đại cương"
-    ).length;
-    const coSoNganhCourses = allCourses.filter(
-      (detail) => detail.hocPhan.loaiHp === "Cơ sở ngành"
-    ).length;
-    const chuyenNganhCourses = allCourses.filter(
-      (detail) => detail.hocPhan.loaiHp === "Chuyên ngành"
-    ).length;
-
-    return {
-      totalCourses,
-      daiCuongCourses,
-      coSoNganhCourses,
-      chuyenNganhCourses,
-    };
+    return allCourses;
   }, [allCourses]);
 
-  // Get elective course groups for the current active tab
+  // Get all elective course groups (no tab filtering)
   const filteredElectiveGroups = useMemo(() => {
-    const allGroups = hocPhanTuChon || [];
-    if (activeDetailTab === "tatca") {
-      return allGroups;
-    }
-
-    // Filter groups that have courses of the selected type
-    return allGroups.filter((nhom) =>
-      nhom.hocPhanTuChonList?.some((hp) => hp.loaiHp === activeDetailTab)
-    );
-  }, [hocPhanTuChon, activeDetailTab]);
+    return hocPhanTuChon || [];
+  }, [hocPhanTuChon]);
 
   // Loading state
   if (loading) {
@@ -427,58 +392,6 @@ const KeHoachHocTapMauDetail = () => {
       <>
         {/* Main Content */}
         <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-          {/* Course Type Tab Navigation */}
-          <div className="flex border-b border-gray-200">
-            <button
-              onClick={() => setActiveDetailTab("tatca")}
-              className={`flex-1 px-6 py-3 text-center transition-colors ${
-                activeDetailTab === "tatca"
-                  ? "bg-blue-50 text-blue-700 border-b-2 border-blue-500"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <span className="font-medium">
-                Tất cả ({courseTypeStatistics.totalCourses})
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveDetailTab("Đại cương")}
-              className={`flex-1 px-6 py-3 text-center transition-colors ${
-                activeDetailTab === "Đại cương"
-                  ? "bg-green-50 text-green-700 border-b-2 border-green-500"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <span className="font-medium">
-                Đại Cương ({courseTypeStatistics.daiCuongCourses})
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveDetailTab("Cơ sở ngành")}
-              className={`flex-1 px-6 py-3 text-center transition-colors ${
-                activeDetailTab === "Cơ sở ngành"
-                  ? "bg-purple-50 text-purple-700 border-b-2 border-purple-500"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <span className="font-medium">
-                Cơ Sở Ngành ({courseTypeStatistics.coSoNganhCourses})
-              </span>
-            </button>
-            <button
-              onClick={() => setActiveDetailTab("Chuyên ngành")}
-              className={`flex-1 px-6 py-4 text-center transition-colors ${
-                activeDetailTab === "Chuyên ngành"
-                  ? "bg-orange-50 text-orange-700 border-b-2 border-orange-500"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              <span className="font-medium">
-                Chuyên Ngành ({courseTypeStatistics.chuyenNganhCourses})
-              </span>
-            </button>
-          </div>
-
           {/* Course Content */}
           <div className="p-3">
             {filteredCoursesByType.length === 0 &&
@@ -486,32 +399,24 @@ const KeHoachHocTapMauDetail = () => {
               <div className="text-center py-12">
                 <BookOpen className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-gray-600 mb-2">
-                  {activeDetailTab === "tatca"
-                    ? "Chưa có học phần nào"
-                    : `Chưa có học phần ${activeDetailTab}`}
+                  Chưa có học phần nào
                 </h3>
                 <p className="text-gray-500">
-                  {activeDetailTab === "tatca"
-                    ? "Kế hoạch học tập mẫu này chưa có học phần nào được thêm vào."
-                    : `Hiện tại chưa có học phần ${activeDetailTab} nào`}
+                  Kế hoạch học tập mẫu này chưa có học phần nào được thêm vào.
                 </p>
               </div>
             ) : (
               <div className="space-y-8">
                 {/* Required Courses Section */}
                 {filteredCoursesByType.length > 0 && (
-                  <div className="overflow-hidden mb-8">
+                  <div className="overflow-hidden">
                     <HocPhanTable
-                      name={
-                        activeDetailTab === "tatca"
-                          ? "Kế hoạch học tập"
-                          : `Học phần ${activeDetailTab}`
-                      }
+                      name="Kế hoạch học tập mẫu"
                       requiredCourses={filteredCoursesByType.map(
                         (detail) => detail.hocPhan
                       )}
                       electiveGroups={filteredElectiveGroups as any}
-                      activeTab={activeDetailTab}
+                      activeTab="tatca"
                       loading={loading}
                       emptyStateTitle="Không có học phần"
                       emptyStateDescription="Không có học phần phù hợp với bộ lọc hiện tại."

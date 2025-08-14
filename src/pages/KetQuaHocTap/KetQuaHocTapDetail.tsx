@@ -463,10 +463,6 @@ const ContentDisplay = ({
             };
           }
         );
-        console.log("Transformed data:", transformedData);
-        console.log("Debug - hocKyId:", hocKyId);
-        console.log("Debug - responseData.hocKy:", responseData?.hocKy);
-        console.log("Debug - First item hocKy info:", transformedData[0]?.hocKy);
         setKetQuaData(transformedData);
       } catch (error) {
         console.error("Error fetching ket qua hoc tap:", error);

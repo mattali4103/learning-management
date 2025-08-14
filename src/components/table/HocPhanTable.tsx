@@ -21,7 +21,6 @@ import {
 } from "lucide-react";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
-import { KeHoachHocTapExportButton } from "../PDFExportButton";
 import type { HocPhan } from "../../types/HocPhan";
 import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 interface HocPhanTableProps {
@@ -651,11 +650,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
   const PaginationControls = () => (
     <div className="flex items-center justify-between px-4 py-3 bg-white border-t border-gray-200">
       <div className="flex items-center space-x-2 text-sm text-gray-700">
-        <span>
-          Hiển thị {pagination.pageSize} dòng trong tổng số {paginationInfo.coursesCount} học phần
-        </span>
       </div>
-
       <div className="flex items-center space-x-2">
         <span className="text-sm text-gray-700">
           Trang {paginationInfo.currentPage} / {paginationInfo.totalPages}
@@ -705,7 +700,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
   return (
     <div className="overflow-x-auto rounded-lg shadow-xl bg-gray-200 transition-all duration-200 hover:shadow-2xl">
       {/* Filter Bar */}
-      <div className="p-4 bg-gray-50 border-b border-gray-200">
+      <div className="p-2 bg-gray-50 border-b border-gray-200">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="relative">
@@ -719,19 +714,9 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
               />
             </div>
           </div>
-
-          {/* PDF Export Button */}
-          {totalCourses > 0 && (
-            <KeHoachHocTapExportButton
-              data={allCourses}
-              title={name}
-              variant="primary"
-              size="sm"
-            />
-          )}
         </div>
       </div>
-      
+    
       <div className="text-center flex bg-gradient-to-r from-blue-400 to-blue-500 py-3 text-lg text-white relative">
         <div className="flex-1 flex justify-center items-center">
           <h3 className="font-bold uppercase tracking-wide">{name}</h3>

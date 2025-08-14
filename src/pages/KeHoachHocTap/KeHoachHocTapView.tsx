@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useParams, useLocation, useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
   BarChart,
@@ -16,6 +16,7 @@ import {
   GraduationCap,
   BarChart3,
   AlertCircle,
+  Calendar,
 } from "lucide-react";
 
 import PageHeader from "../../components/PageHeader";
@@ -45,10 +46,14 @@ interface CreditStatData {
 const KeHoachHocTapView = () => {
   const { auth } = useAuth();
   const params = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { maSo: authMaSo } = auth.user || {};
   const maSo = params.maSo || authMaSo;
   const axiosPrivate = useAxiosPrivate();
-
+  
+  // States
+  const tableRef = useRef<HTMLDivElement>(null);
   const [studentInfo, setStudentInfo] = useState<PreviewProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +62,7 @@ const KeHoachHocTapView = () => {
   const [nhomHocPhanTuChon, setNhomHocPhanTuChon] = useState<HocPhanTuChon[]>(
     []
   );
+  
   // UI States
   const [activeTab, setActiveTab] = useState<string>("all");
   const [selectedTabNamHoc, setSelectedTabNamHoc] = useState<number | null>(
@@ -65,29 +71,67 @@ const KeHoachHocTapView = () => {
   const [selectedHocKyChart, setSelectedHocKyChart] = useState<number | null>(
     null
   );
+  const [selectedFilterNamHoc, setSelectedFilterNamHoc] = useState<
+    number | null
+  >(null);
+  const [selectedFilterHocKy, setSelectedFilterHocKy] = useState<number | null>(
+    null
+  );
 
   const MAX_CREDITS_PER_SEMESTER = 20;
 
-  // Event handlers
-  const handleChartBarClick = (data: any) => {
-    if (data && data.activePayload && data.activePayload[0]) {
-      const clickedData = data.activePayload[0].payload as CreditStatData;
-      setSelectedHocKyChart(clickedData.hocKyId);
-      setActiveTab(`semester-${clickedData.hocKyId}`);
+  const fetchDanhSachHocKy = useCallback(async () => {
+    try {
+      const response = await axiosPrivate.get(HOCPHAN_SERVICE.GET_ALL_HOCKY);
+      if (response.data.code === 200 && response.data.data) {
+        const result: HocKy[] = response.data.data.map((item: any) => ({
+          maHocKy: item.maHocKy,
+          tenHocKy: item.tenHocKy,
+          ngayBatDau: item.ngayBatDau,
+          ngayKetThuc: item.ngayKetThuc,
+          namHoc: item.namHocDTO,
+        }));
+        result.sort((a, b) => a.maHocKy - b.maHocKy);
+        setDanhSachHocKy(result);
+      }
+    } catch (error) {
+      console.error("Error fetching danh sach hoc ky:", error);
     }
-  };
+  }, [axiosPrivate]);
 
-  const hocKyHienTai: HocKy = useMemo(() => {
+  const hocKyHienTai: HocKy | null = useMemo(() => {
     const storedHocKy = localStorage.getItem("hocKyHienTai");
     return storedHocKy ? JSON.parse(storedHocKy) : null;
   }, []);
+
+  // Helper function để xác định học kỳ bắt đầu dựa trên khóa học
+  // K47: từ mã học kỳ = 1, K48: từ mã học kỳ = 4
+  // K49: từ mã học kỳ = 7, K50: từ mã học kỳ = 10
+  const getStartingSemester = useCallback((khoaHoc: string): number => {
+    if (khoaHoc?.includes('47')) return 1;
+    if (khoaHoc?.includes('48')) return 4;
+    if (khoaHoc?.includes('49')) return 7;
+    if (khoaHoc?.includes('50')) return 10;
+    // Mặc định trả về 1 nếu không khớp với các khóa học trên
+    return 1;
+  }, []);
+
+  const startingSemester = useMemo(() => {
+    return getStartingSemester(studentInfo?.khoaHoc || '');
+  }, [studentInfo?.khoaHoc, getStartingSemester]);
+
   // Available academic years for navigation
   const availableNamHoc = useMemo(() => {
     const years = new Map<number, { id: number; tenNh: string }>();
+    const endSemester = startingSemester + 11; // Hiển thị 12 học kỳ (từ startingSemester đến startingSemester + 11)
+    
     danhSachHocKy.forEach((hk) => {
       if (hk.namHoc && hk.namHoc.namBatDau && hk.namHoc.namKetThuc) {
-        // Chỉ lấy năm học có học kỳ <= hocKyHienTai?.maHocKy
-        if (hocKyHienTai && hk.maHocKy <= hocKyHienTai.maHocKy) {
+        // Hiển thị từ học kỳ bắt đầu đến 12 học kỳ tiếp theo
+        if (
+          hk.maHocKy >= startingSemester &&
+          hk.maHocKy <= endSemester
+        ) {
           years.set(hk.namHoc.id, {
             id: hk.namHoc.id,
             tenNh: `${hk.namHoc.namBatDau}-${hk.namHoc.namKetThuc}`,
@@ -96,7 +140,7 @@ const KeHoachHocTapView = () => {
       }
     });
     return Array.from(years.values()).sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, hocKyHienTai]);
+  }, [danhSachHocKy, startingSemester]);
 
   const handleAllTabClick = () => {
     setActiveTab("all");
@@ -104,15 +148,17 @@ const KeHoachHocTapView = () => {
     setSelectedHocKyChart(null);
   };
 
-
   // Available semesters for selected academic year
   const availableHocKy = useMemo(() => {
     if (!selectedTabNamHoc) return [];
+    const endSemester = startingSemester + 11; // Hiển thị 12 học kỳ
+    
     return danhSachHocKy
       .filter(
         (item) =>
           item.namHoc?.id === selectedTabNamHoc &&
-          (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy)
+          item.maHocKy >= startingSemester &&
+          item.maHocKy <= endSemester
       )
       .map((item) => ({
         id: item.maHocKy,
@@ -120,11 +166,12 @@ const KeHoachHocTapView = () => {
         namHoc: item.namHoc,
       }))
       .sort((a, b) => a.id - b.id);
-  }, [danhSachHocKy, selectedTabNamHoc, hocKyHienTai]);
+  }, [danhSachHocKy, selectedTabNamHoc, startingSemester]);
 
   // Credit statistics for chart
   const creditStatistics = useMemo(() => {
     const statsMap = new Map<string, CreditStatData>();
+    const endSemester = startingSemester + 11; // Hiển thị 12 học kỳ
     
     // First, populate with semesters that have courses from allData
     allData.forEach((item) => {
@@ -149,11 +196,11 @@ const KeHoachHocTapView = () => {
       }
     });
 
-    // Then, add all other relevant semesters
+    // Then, add all other relevant semesters (từ startingSemester đến endSemester)
     danhSachHocKy.forEach((hk) => {
       if (
-        hocKyHienTai &&
-        hk.maHocKy <= hocKyHienTai.maHocKy
+        hk.maHocKy >= startingSemester &&
+        hk.maHocKy <= endSemester
       ) {
         const key = `${hk.maHocKy}`;
         if (!statsMap.has(key)) {
@@ -176,7 +223,41 @@ const KeHoachHocTapView = () => {
       }
       return a.hocKyId - b.hocKyId;
     });
-  }, [allData, danhSachHocKy, hocKyHienTai]);
+  }, [allData, danhSachHocKy, startingSemester]);
+
+  const handleChartBarClick = (data: any) => {
+    if (data && data.activePayload && data.activePayload[0]) {
+      const clickedData = data.activePayload[0].payload as CreditStatData;
+      setSelectedHocKyChart(clickedData.hocKyId);
+      setSelectedFilterNamHoc(clickedData.namHocId);
+      setSelectedFilterHocKy(clickedData.hocKyId);
+      setSelectedTabNamHoc(clickedData.namHocId);
+      setActiveTab(`semester-${clickedData.hocKyId}`);
+      tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
+  const handleNamHocTabClick = (namHocId: number) => {
+    if (selectedTabNamHoc === namHocId) {
+      setSelectedTabNamHoc(null);
+      setActiveTab("all");
+    } else {
+      setSelectedTabNamHoc(namHocId);
+      setSelectedFilterNamHoc(namHocId);
+      setActiveTab("all");
+    }
+    setSelectedHocKyChart(null);
+  };
+
+  const handleHocKyTabClick = (hocKyId: number) => {
+    setSelectedHocKyChart(hocKyId);
+    setSelectedFilterHocKy(hocKyId);
+    setActiveTab(`semester-${hocKyId}`);
+    const selectedHocKy = danhSachHocKy.find((hk) => hk.maHocKy === hocKyId);
+    if (selectedHocKy) {
+      setSelectedTabNamHoc(selectedHocKy.namHoc?.id || null);
+    }
+  };
 
   // Calculate statistics from all data
   const statistics = useMemo(() => {
@@ -203,8 +284,6 @@ const KeHoachHocTapView = () => {
     return allData.filter((item) => item.maHocKy === selectedHocKyChart);
   }, [allData, selectedHocKyChart]);
 
-  // Filtered available subjects
-  // Current filter values
   // Fetch functions
   const fetchAllData = useCallback(
     async (studentMaSo: string) => {
@@ -266,47 +345,6 @@ const KeHoachHocTapView = () => {
     },
     [axiosPrivate]
   );
-  // Fetch functions
-  const fetchDanhSachHocKy = useCallback(async () => {
-    try {
-      const response = await axiosPrivate.get(HOCPHAN_SERVICE.GET_ALL_HOCKY);
-      if (response.data.code === 200 && response.data.data) {
-        const result: HocKy[] = response.data.data.map((item: any) => ({
-          maHocKy: item.maHocKy,
-          tenHocKy: item.tenHocKy,
-          ngayBatDau: item.ngayBatDau,
-          ngayKetThuc: item.ngayKetThuc,
-          namHoc: item.namHocDTO,
-        }));
-        result.sort((a, b) => a.maHocKy - b.maHocKy);
-        setDanhSachHocKy(result);
-      }
-    } catch (error) {
-      console.error("Error fetching danh sach hoc ky:", error);
-    }
-  }, [axiosPrivate]);
-
-  // Event handlers
-
-  const handleNamHocTabClick = (namHocId: number) => {
-    if (selectedTabNamHoc === namHocId) {
-      setSelectedTabNamHoc(null);
-      setActiveTab("all");
-    } else {
-      setSelectedTabNamHoc(namHocId);
-      setActiveTab("all");
-    }
-    setSelectedHocKyChart(null);
-  };
-  const handleHocKyTabClick = (hocKyId: number) => {
-    setSelectedHocKyChart(hocKyId);
-    setActiveTab(`semester-${hocKyId}`);
-
-    const selectedHocKy = danhSachHocKy.find((hk) => hk.maHocKy === hocKyId);
-    if (selectedHocKy) {
-      setSelectedTabNamHoc(selectedHocKy.namHoc?.id || null);
-    }
-  };
 
   // Chart tooltip component
   const CreditChartTooltip = ({
@@ -318,6 +356,7 @@ const KeHoachHocTapView = () => {
       return (
         <div className="bg-white p-3 border border-gray-300 rounded-lg shadow-lg">
           <p className="font-semibold text-gray-800">{data.tenHocKy}</p>
+          <p className="text-sm text-gray-600 mb-2">Năm học: {data.namHoc}</p>
           <p className="text-blue-600">
             Tín chỉ đã học: <span className="font-bold">{data.soTinChi}</span>
           </p>
@@ -331,6 +370,7 @@ const KeHoachHocTapView = () => {
     }
     return null;
   };
+
   // Effects
   useEffect(() => {
     fetchDanhSachHocKy();
@@ -382,6 +422,70 @@ const KeHoachHocTapView = () => {
     fetchDanhSachHocKy,
     fetchNhomHocPhanTuChon,
   ]);
+
+  // Read filters from URL on initial load
+  useEffect(() => {
+    const searchParams = new URLSearchParams(location.search);
+    const namHocId = searchParams.get("namHocId");
+    const hocKyId = searchParams.get("hocKyId");
+
+    if (namHocId) {
+      const namHocIdNum = parseInt(namHocId, 10);
+      setSelectedTabNamHoc(namHocIdNum);
+      setSelectedFilterNamHoc(namHocIdNum);
+      if (hocKyId) {
+        const hocKyIdNum = parseInt(hocKyId, 10);
+        setActiveTab(`semester-${hocKyIdNum}`);
+        setSelectedHocKyChart(hocKyIdNum);
+        setSelectedFilterHocKy(hocKyIdNum);
+      } else {
+        setActiveTab("all");
+      }
+    }
+  }, [location.search]);
+
+  // Update URL when filters change
+  useEffect(() => {
+    const searchParams = new URLSearchParams();
+    if (selectedTabNamHoc) {
+      searchParams.set("namHocId", selectedTabNamHoc.toString());
+    }
+    if (activeTab.startsWith("semester-")) {
+      const hocKyId = activeTab.replace("semester-", "");
+      searchParams.set("hocKyId", hocKyId);
+    }
+    navigate({ search: searchParams.toString() }, { replace: true });
+  }, [selectedTabNamHoc, activeTab, navigate]);
+
+  // Set initial view to current semester if no study plan exists
+  useEffect(() => {
+    if (
+      !loading &&
+      allData.length === 0 &&
+      hocKyHienTai &&
+      danhSachHocKy.length > 0
+    ) {
+      const endSemester = startingSemester + 11;
+      // Tìm học kỳ hiện tại trong khoảng cho phép
+      let targetSemester = hocKyHienTai;
+      
+      // Nếu học kỳ hiện tại nằm ngoài phạm vi cho phép, chọn học kỳ gần nhất trong phạm vi
+      if (hocKyHienTai.maHocKy < startingSemester) {
+        targetSemester = danhSachHocKy.find(hk => hk.maHocKy === startingSemester) || hocKyHienTai;
+      } else if (hocKyHienTai.maHocKy > endSemester) {
+        targetSemester = danhSachHocKy.find(hk => hk.maHocKy === endSemester) || hocKyHienTai;
+      }
+      
+      if (targetSemester && targetSemester.namHoc) {
+        setSelectedTabNamHoc(targetSemester.namHoc.id);
+        setActiveTab(`semester-${targetSemester.maHocKy}`);
+        setSelectedHocKyChart(targetSemester.maHocKy);
+        setSelectedFilterNamHoc(targetSemester.namHoc.id);
+        setSelectedFilterHocKy(targetSemester.maHocKy);
+      }
+    }
+  }, [loading, allData, hocKyHienTai, danhSachHocKy, startingSemester]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 space-y-6">
@@ -463,9 +567,9 @@ const KeHoachHocTapView = () => {
                   cursor="pointer"
                 >
                   {creditStatistics.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.hasCourses ? "#3b82f6" : "#e5e7eb"} 
+                    <Cell
+                      key={`cell-soTinChi-${index}`}
+                      fill={entry.hasCourses ? "#3b82f6" : "#9ca3af"}
                     />
                   ))}
                 </Bar>
@@ -481,7 +585,8 @@ const KeHoachHocTapView = () => {
               <div className="flex items-center justify-center h-full text-gray-400">
                 <div className="text-center">
                   <BarChart3 className="w-16 h-16 mx-auto mb-4 opacity-30" />
-                  <p>Chưa có dữ liệu</p>
+                  <p className="text-lg font-medium">Chưa có dữ liệu biểu đồ</p>
+                  <p className="text-sm">Chưa có học phần nào trong kế hoạch</p>
                 </div>
               </div>
             )}
@@ -494,7 +599,7 @@ const KeHoachHocTapView = () => {
         </p>
       </div>
 
-      {/* Tab Navigation for Edit Mode */}
+      {/* Tab Navigation for View Mode */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
         {/* Academic Year Level Navigation */}
         <div className="border-b border-gray-200">
@@ -526,7 +631,8 @@ const KeHoachHocTapView = () => {
                     allData.filter(
                       (item) =>
                         item.namHocId === namHoc.id &&
-                        (!hocKyHienTai || item.maHocKy <= hocKyHienTai.maHocKy)
+                        item.maHocKy >= startingSemester &&
+                        item.maHocKy <= startingSemester + 11
                     ).length
                   }
                   )
@@ -548,19 +654,16 @@ const KeHoachHocTapView = () => {
                   <button
                     key={hocKy.id}
                     onClick={() => handleHocKyTabClick(hocKy.id)}
-                    className={`whitespace-nowrap py-1 px-3 rounded-lg text-xs font-medium transition-colors ${
-                      selectedHocKyChart === hocKy.id
-                        ? "bg-blue-600 text-white"
-                        : "bg-white text-gray-600 hover:bg-blue-50 hover:text-blue-600"
+                    className={`whitespace-nowrap py-1.5 px-3 rounded-md text-xs font-medium transition-colors ${
+                      activeTab === `semester-${hocKy.id}`
+                        ? "bg-blue-100 text-blue-700 border border-blue-300 shadow-sm"
+                        : "text-gray-600 hover:text-gray-800 hover:bg-white border border-transparent hover:border-gray-200"
                     }`}
                   >
                     {hocKy.ten} (
                     {
                       allData.filter(
-                        (item) =>
-                          item.maHocKy === hocKy.id &&
-                          (!hocKyHienTai ||
-                            item.maHocKy <= hocKyHienTai.maHocKy)
+                        (item) => item.maHocKy === hocKy.id
                       ).length
                     }
                     )
@@ -572,7 +675,7 @@ const KeHoachHocTapView = () => {
         )}
 
         {/* Tab Content */}
-        <div className="p-6">
+        <div className="p-6" ref={tableRef}>
           {activeTab === "all" ? (
             <div>
               <h4 className="text-lg font-semibold text-gray-800 mb-4">
@@ -602,13 +705,18 @@ const KeHoachHocTapView = () => {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h4 className="text-lg font-semibold text-gray-800">
-                  Kế hoạch học tập
-                  {selectedHocKyChart && (
-                    <>
-                      {" - "}
-                      {availableHocKy.find((s) => s.id === selectedHocKyChart)?.ten}
-                    </>
-                  )}
+                  Kế hoạch học tập{" "}
+                  {
+                    creditStatistics.find(
+                      (s) => s.hocKyId === selectedHocKyChart
+                    )?.tenHocKy
+                  }
+                  -{" "}
+                  {
+                    creditStatistics.find(
+                      (s) => s.hocKyId === selectedHocKyChart
+                    )?.namHoc
+                  }
                 </h4>
                 <div className="flex items-center space-x-3">
                   <span className="text-sm text-gray-600">
@@ -630,7 +738,7 @@ const KeHoachHocTapView = () => {
                 />
               ) : (
                 <div className="text-center py-12 text-gray-500">
-                  <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                   <p className="text-lg font-medium">
                     Chưa có học phần nào trong học kỳ này
                   </p>

@@ -117,10 +117,14 @@ const ThemChuongTrinhDaoTao = () => {
       "Đại cương": 0,
       "Cơ sở ngành": 0,
       "Chuyên ngành": 0,
+      "Khác": 0,
     };
     (chuongTrinhDaoTao.hocPhanList ?? []).forEach((hp) => {
       if (hp.loaiHp in stats) {
         stats[hp.loaiHp as keyof typeof stats] += hp.tinChi;
+      } else {
+        // Các loại học phần khác sẽ được gộp vào "Khác"
+        stats["Khác"] += hp.tinChi;
       }
     });
     return [
@@ -131,7 +135,8 @@ const ThemChuongTrinhDaoTao = () => {
         soTinChi: stats["Chuyên ngành"],
         color: "#10b981",
       },
-    ];
+      { name: "Khác", soTinChi: stats["Khác"], color: "#f59e0b" },
+    ].filter(item => item.soTinChi > 0); // Chỉ hiển thị các loại có tín chỉ > 0
   }, [chuongTrinhDaoTao]);
 
   // Fetch ngành, khóa học
@@ -562,7 +567,10 @@ const ThemChuongTrinhDaoTao = () => {
                   width={80}
                   tick={{ fontSize: 12 }}
                 />
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value: number) => [value, "số tín chỉ"]}
+                  labelFormatter={(label: string) => label}
+                />
                 <Bar dataKey="soTinChi" radius={[0, 4, 4, 0]}>
                   {creditStatistics.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />

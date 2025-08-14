@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { createElement, useState } from "react";
 import {
   BookOpen,
@@ -10,6 +10,7 @@ import {
   Users,
   FileText,
   User,
+  LogOut,
 } from "lucide-react";
 import { useSidebar } from "../hooks/UseSidebar";
 import useAuth from "../hooks/useAuth";
@@ -27,12 +28,21 @@ export default function Sidebar() {
     [key: number]: boolean;
   }>({});
   const location = useLocation();
+  const navigate = useNavigate();
   const { auth } = useAuth();
 
   // Check if user is giangvien or admin
   const isGiangVienOrAdmin =
     auth.user?.roles === "GIANGVIEN" || auth.user?.roles === "ADMIN";
   const isTruongKhoa = auth.user?.roles === "TRUONGKHOA";
+
+  // Logout function
+  const handleLogout = () => {
+    // Xóa tất cả dữ liệu trong localStorage
+    localStorage.clear();
+    // Chuyển về trang login
+    navigate("/login");
+  };
   const sidebarItems: SidebarItem[] = [
     // Menu cho sinh viên
     ...(auth.user?.roles === "SINHVIEN"
@@ -278,6 +288,21 @@ export default function Sidebar() {
           );
         })}
       </nav>{" "}
+      {/* Logout Button */}
+      <div className="p-3 border-t border-blue-700">
+        <button
+          onClick={handleLogout}
+          className={`w-full flex items-center px-3 py-2.5 rounded-lg group transition-colors text-blue-100 hover:bg-blue-700 hover:text-white ${
+            !isOpen ? "justify-center" : ""
+          }`}
+          title={!isOpen ? "Đăng xuất" : ""}
+        >
+          <LogOut className="w-5 h-5 flex-shrink-0 text-blue-200 group-hover:text-white" />
+          {isOpen && (
+            <span className="ml-3 text-sm font-medium">Đăng xuất</span>
+          )}
+        </button>
+      </div>
       {/* Footer */}
       {isOpen && (
         <div className="p-4 border-t border-blue-700">

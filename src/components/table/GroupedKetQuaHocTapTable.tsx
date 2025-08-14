@@ -76,7 +76,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
   // Group results by course type (nhomHp)
   const courseTypeGroups = useMemo((): CourseTypeGroup[] => {
     const groupsMap = new Map<string, CourseTypeGroup>();
-    const definedOrder = [ "Anh văn", "chính trị", "thể chất", "Quốc phòng-An ninh", "Đại cương", "Cơ sở ngành", "Chuyên ngành", "Tự chọn", "Khác"];
+    const definedOrder = [ "Quốc phòng", "Anh văn căn bản", "Chính trị", "Thể Chất", "Đại cương", "Cơ sở ngành", "Chuyên ngành", "Tự chọn", "Khác"];
 
     data.forEach((item) => {
       const courseType = item.nhomHp || "Khác";
@@ -84,7 +84,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
 
       if (!groupsMap.has(groupId)) {
         let colorScheme = "blue"; // Default
-        if (courseType.includes("Đại cương") || courseType.includes("Anh văn") || courseType.includes("chính trị") || courseType.includes("thể chất") || courseType.includes("Quốc phòng")) {
+        if (courseType.includes("Đại cương") || courseType.includes("Anh văn") || courseType.includes("Chính trị") || courseType.includes("thể chất") || courseType.includes("Quốc phòng")) {
           colorScheme = "purple";
         } else if (courseType.includes("Cơ sở ngành")) {
           colorScheme = "blue";
@@ -139,52 +139,14 @@ export const GroupedKetQuaHocTapTable: React.FC<
     [expandedGroups]
   );
 
-  // Create flattened data structure - group headers with their courses directly below
-  // const flattenedData = useMemo((): CourseWithGroup[] => {
-  //   const result: CourseWithGroup[] = [];
-  //   courseTypeGroups.forEach((group) => {
-  //     // Add group header
-  //     result.push({
-  //       id: `group-header-${group.id}`, // Unique ID for header
-  //       maHp: "", // Not applicable for header
-  //       tenHp: group.title, // Use title for header display
-  //       soTinChi: 0,
-  //       diemChu: "",
-  //       diemSo: 0,
-  //       dieuKien: false,
-  //       nhomHp: "",
-  //       hocKy: null, // Not applicable for header
-  //       groupId: group.id,
-  //       isGroupHeader: true,
-  //       groupTitle: group.title,
-  //       groupSubtitle: group.subtitle,
-  //       groupTotalCredits: group.totalCredits,
-  //       colorScheme: group.colorScheme,
-  //     } as CourseWithGroup);
-
-  //     // Add courses immediately after the header if group is expanded
-  //     if (expandedGroups.has(group.id)) {
-  //       group.courses.forEach((course) => {
-  //         result.push({
-  //           ...course,
-  //           groupId: group.id,
-  //           isGroupHeader: false,
-  //           colorScheme: group.colorScheme,
-  //         } as CourseWithGroup);
-  //       });
-  //     }
-  //   });
-  //   return result;
-  // }, [courseTypeGroups, expandedGroups]);
-
   // Filter data based on all active filters, ensuring search works on collapsed groups
   const filteredData = useMemo(() => {
     const result: CourseWithGroup[] = [];
     const textFilter = globalFilter.toLowerCase().trim();
 
-    // For each original group...
+    // Cho mỗi nhóm gốc
     courseTypeGroups.forEach(group => {
-        // 1. Filter its courses based on the dropdowns first.
+        // 1. Lọc các khóa học của nó dựa trên các dropdown trước.
         const coursesAfterDropdowns = group.courses.filter(course => {
             if (diemChuFilter && course.diemChu !== diemChuFilter) return false;
             

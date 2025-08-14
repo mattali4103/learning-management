@@ -102,7 +102,7 @@ const ThongTinLopHoc = () => {
   };
 
   const handleViewStudentDetails = (maSo: string) => {
-    navigate(`/giangvien/lop/${maLop}/student/${maSo}`);
+    window.open(`/giangvien/lop/${maLop}/student/${maSo}`, "_blank");
   };
 
   // Close tooltip when clicking outside
@@ -524,7 +524,7 @@ const ThongTinLopHoc = () => {
       {/* Header */}
       <PageHeader
         title={`Quản lý lớp ${maLop}`}
-        description={`Sĩ số: ${previewProfiles?.length || 0} sinh viên • Chủ nhiệm: N/A`}
+        description={`Sĩ số: ${previewProfiles?.length || 0} sinh viên`}
         icon={Users}
         iconColor="from-blue-500 to-indigo-600"
         backButton={

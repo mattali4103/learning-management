@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { BookOpen, ArrowLeft, Users, GraduationCap, Edit, Trash2 } from "lucide-react";
+import { BookOpen, ArrowLeft, Edit, Trash2 } from "lucide-react";
 import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import type { HocPhan } from "../../types/HocPhan";
 import type { Nganh } from "../../types/Nganh";
 import Loading from "../../components/Loading";
 import PageHeader from "../../components/PageHeader";
-import StatisticsCard from "../../components/StatisticsCard";
 import { HOCPHAN_SERVICE } from "../../api/apiEndPoints";
 import { HocPhanTable } from "../../components/table/HocPhanTable";
 import DeleteModal from "../../components/modals/DeleteModal";
@@ -187,24 +186,9 @@ const CTDTDetail = () => {
           <p className="text-red-700">{error}</p>
         </div>
       )}
-
-      {/* Statistics */}
-      <div className="grid gap-6">
-        <StatisticsCard
-          title="Tổng số học phần"
-          value={
-            (chuongTrinhDaoTao.hocPhanList?.length || 0) + 
-            (chuongTrinhDaoTao.nhomHocPhanTuChon?.reduce((total, nhom) => total + (nhom.hocPhanTuChonList?.length || 0), 0) || 0)
-          }
-          icon={BookOpen}
-          colorScheme="purple"
-          size="md"
-        />
-      </div>
-
       {/* Content */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="p-6">
+        <div className="p-3">
           <HocPhanTable
             name="Chi tiết chương trình đào tạo"
             requiredCourses={allCourses}
