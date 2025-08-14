@@ -3,7 +3,6 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
@@ -76,14 +75,13 @@ const SelectedHocPhanTable = ({
         size: 150,
       },
     ],
-    []
+    [removeHocPhan]
   );
 
   const table = useReactTable({
     data: selectedHocPhan,
     columns,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     initialState: {

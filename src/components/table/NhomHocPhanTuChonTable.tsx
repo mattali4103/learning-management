@@ -1,7 +1,6 @@
 import { type ColumnDef } from "@tanstack/react-table";
 import { CirclePlus } from "lucide-react";
 import { KeHoachHocTapTable } from "./KeHoachHocTapTable";
-import { SortableHeader } from "./SortableHeader";
 import type { HocPhan } from "../../types/HocPhan";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
 
@@ -33,36 +32,28 @@ const NhomHocPhanTuChonTable: React.FC<NhomHocPhanTuChonTableProps> = ({
   const createHocPhanTuChonColumns = (nhomId: number): ColumnDef<HocPhan>[] => [
     {
       accessorKey: "maHp",
-      header: ({ column }) => (
-        <SortableHeader column={column} title="Mã học phần" />
-      ),
+      header: "Mã học phần",
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("maHp")}</div>
       ),
     },
     {
       accessorKey: "tenHp",
-      header: ({ column }) => (
-        <SortableHeader column={column} title="Tên học phần" />
-      ),
+      header: "Tên học phần",
       cell: ({ row }) => (
         <div className="text-left">{row.getValue("tenHp")}</div>
       ),
     },
     {
       accessorKey: "tinChi",
-      header: ({ column }) => (
-        <SortableHeader column={column} title="Tín chỉ" />
-      ),
+      header: "Tín chỉ",
       cell: ({ row }) => (
         <div className="text-center">{row.getValue("tinChi")}</div>
       ),
     },
     {
       accessorKey: "hocPhanTienQuyet",
-      header: ({ column }) => (
-        <SortableHeader column={column} title="Tiên quyết" />
-      ),
+      header: "Tiên quyết",
       cell: ({ row }) => (
         <div className="text-center">
           {row.getValue("hocPhanTienQuyet") || "-"}

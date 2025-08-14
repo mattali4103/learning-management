@@ -125,4 +125,5 @@ export const KQHT_SERVICE = {
     KQHT_SERVICE_URL + "/api/kqht/diem/trung_binh_hoc_ky/list",
   GET_HOC_PHAN_CAI_THIEN:
     KQHT_SERVICE_URL + "/api/kqht/private/hoc-phan-cai-thien/:maSo",
+  GET_HOC_PHAN_DIEM_F: KQHT_SERVICE_URL + "/api/kqht/private/diem-chu-f/:maSo"
 };

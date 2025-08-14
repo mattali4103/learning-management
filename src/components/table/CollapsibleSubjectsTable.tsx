@@ -6,7 +6,6 @@ import {
   getPaginationRowModel,
   useReactTable,
   type ColumnDef,
-  type SortingState,
 } from "@tanstack/react-table";
 import {
   ChevronDown,
@@ -216,7 +215,6 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
   }, [nhomHocPhanTuChon, hocPhanDaHoc]);
 
   const [globalFilter, setGlobalFilter] = useState<string>("");
-  const [sorting, setSorting] = useState<SortingState>([]);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [pagination, setPagination] = useState({
     pageIndex: 0,
@@ -774,9 +772,8 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
   const table = useReactTable({
     data: filteredData,
     columns,
-    state: { globalFilter, sorting, pagination },
+    state: { globalFilter, pagination },
     onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
     onPaginationChange: setPagination,
     autoResetPageIndex: false,
     getCoreRowModel: getCoreRowModel(),

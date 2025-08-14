@@ -3,15 +3,11 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type SortingState,
 } from "@tanstack/react-table";
 import {
   ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   ChevronsLeft,
@@ -67,7 +63,6 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   onRowClick,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
-  const [sorting, setSorting] = useState<SortingState>([]);
 
   //  Khởi tạo trạng thái mở rộng của bảng
   // Điều chỉnh trạng thái mở rộng của bảng
@@ -86,7 +81,6 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
     columns: columns,
     state: {
       globalFilter,
-      sorting,
       ...(enableServerPagination && {
         pagination: {
           pageIndex: currentPage - 1, // Convert to 0-based for react-table
@@ -96,8 +90,6 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
     },
     //   Thiết lập các tùy chọn cho bảng
     onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
-    getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     ...(enableServerPagination
@@ -205,37 +197,15 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className={`px-2 py-3 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600 ${
+                      className={`px-2 py-3 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b ${
                         header.id === "id" ? "hidden" : ""
-                      } ${
-                        header.column.getCanSort() ? "cursor-pointer select-none" : ""
                       }`}
-                      onClick={header.column.getToggleSortingHandler()}
-                      title={
-                        header.column.getCanSort()
-                          ? header.column.getNextSortingOrder() === 'asc'
-                            ? 'Sắp xếp tăng dần'
-                            : header.column.getNextSortingOrder() === 'desc'
-                              ? 'Sắp xếp giảm dần'
-                              : 'Xóa sắp xếp'
-                          : undefined
-                      }
                     >
                       {header.isPlaceholder ? null : (
                         <div className="flex items-center justify-center gap-1">
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
-                          )}
-                          {header.column.getCanSort() && (
-                            <span className="ml-1">
-                              {{
-                                asc: <ArrowUp className="w-4 h-4" />,
-                                desc: <ArrowDown className="w-4 h-4" />,
-                              }[header.column.getIsSorted() as string] ?? (
-                                <ArrowUpDown className="w-4 h-4 opacity-50" />
-                              )}
-                            </span>
                           )}
                         </div>
                       )}

@@ -6,9 +6,11 @@ import {
   Target,
   Calendar,
   BarChart3,
+  type LucideIcon,
 } from "lucide-react";
 import Loading from "../../components/Loading";
 import StatisticsCard from "../../components/StatisticsCard";
+import StatisticsCardWithTooltip from "../../components/StatisticsCardWithTooltip";
 import GPABarChart, {
   type RawSemesterData,
 } from "../../components/chart/GPABarChart";
@@ -22,20 +24,47 @@ import { KQHT_SERVICE } from "../../api/apiEndPoints";
 import type { HocKy } from "../../types/HocKy";
 import type { NamHoc } from "../../types/NamHoc";
 
-export interface KetQuaHocTapData {
+interface HocPhanCaiThien {
   id: number;
   maHp: string;
   tenHp: string;
-  dieuKien: boolean;
-  nhomHp: string;
   soTinChi: number;
   diemChu: string;
   diemSo: number;
-  hocKy: HocKy;
-  namHoc: NamHoc;
 }
-// Để tương thích với component cũ
-export interface KetQuaHocTapTableProps {
+
+interface HocPhanDiemF {
+  id: number;
+  maHp: string;
+  tenHp: string;
+  soTinChi: number;
+  diemChu: string;
+  diemSo: number;
+}
+
+interface ApiResponse<T> {
+  code: number;
+  data: T;
+  message?: string;
+}
+
+interface EmptyChartStateProps {
+  icon: LucideIcon;
+  title: string;
+  description: string;
+}
+
+const EmptyChartState = ({ icon: Icon, title, description }: EmptyChartStateProps) => (
+  <div className="flex items-center justify-center h-64 text-gray-500">
+    <div className="text-center">
+      <Icon className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+      <p className="text-lg font-medium">{title}</p>
+      <p className="text-sm">{description}</p>
+    </div>
+  </div>
+);
+
+export interface KetQuaHocTapData {
   id: number;
   maHp: string;
   tenHp: string;
@@ -52,53 +81,97 @@ export default function KetQuaHocTap() {
   const [error, setError] = useState<string | null>(null);
   const [ketQuaData, setKetQuaData] = useState<KetQuaHocTapData[]>([]);
   const [semesterData, setSemesterData] = useState<RawSemesterData[]>([]);
+  const [hocPhanCaiThien, setHocPhanCaiThien] = useState<HocPhanCaiThien[]>([]);
+  const [hocPhanDiemF, setHocPhanDiemF] = useState<HocPhanDiemF[]>([]);
+  const [loadingCaiThien, setLoadingCaiThien] = useState(false);
+  const [loadingDiemF, setLoadingDiemF] = useState(false);
 
   const axiosPrivate = useAxiosPrivate();
   const { auth } = useAuth();
-  const { maSo } = auth.user || {}; // Fetch dữ liệu kết quả học tập
+  const { maSo } = auth.user || {};
+
+  // Fetch dữ liệu học phần cải thiện
+  const fetchHocPhanCaiThien = useCallback(async () => {
+    if (!maSo) return;
+    
+    try {
+      setLoadingCaiThien(true);
+      const response = await axiosPrivate.get<ApiResponse<HocPhanCaiThien[]>>(
+        KQHT_SERVICE.GET_HOC_PHAN_CAI_THIEN.replace(":maSo", maSo)
+      );
+      
+      if (response.data.code === 200) {
+        setHocPhanCaiThien(response.data.data || []);
+      } else {
+        setHocPhanCaiThien([]);
+      }
+    } catch (error) {
+      console.error("Error fetching improvement courses:", error);
+      setHocPhanCaiThien([]);
+    } finally {
+      setLoadingCaiThien(false);
+    }
+  }, [maSo, axiosPrivate]);
+
+  // Fetch dữ liệu học phần điểm F
+  const fetchHocPhanDiemF = useCallback(async () => {
+    if (!maSo) return;
+    
+    try {
+      setLoadingDiemF(true);
+      const response = await axiosPrivate.get<ApiResponse<HocPhanDiemF[]>>(
+        KQHT_SERVICE.GET_HOC_PHAN_DIEM_F.replace(":maSo", maSo)
+      );
+      
+      if (response.data.code === 200) {
+        setHocPhanDiemF(response.data.data || []);
+      } else {
+        setHocPhanDiemF([]);
+      }
+    } catch (error) {
+      console.error("Error fetching F grade courses:", error);
+      setHocPhanDiemF([]);
+    } finally {
+      setLoadingDiemF(false);
+    }
+  }, [maSo, axiosPrivate]);
+
+  // Fetch dữ liệu kết quả học tập
   const fetchKetQuaHocTap = useCallback(async () => {
     if (!maSo) {
       setError("Không tìm thấy mã số sinh viên");
       setLoading(false);
       return;
     }
+
     try {
       setLoading(true);
       setError(null);
+
       // Fetch dữ liệu điểm trung bình đã tính toán từ server
       const response = await axiosPrivate.post(
         KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY,
+        { maSo },
         {
-          maSo: maSo,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
           withCredentials: true,
         }
       );
+
       if (response.status !== 200 || response.data?.code !== 200) {
         throw new Error(
           `API returned code: ${response.data?.code || response.status}`
         );
       }
+
       const responseData = response.data.data;
       const data = Array.isArray(responseData) ? responseData : [];
-
-      // Store raw semester data without transformation
       setSemesterData(data);
 
       // Fetch thêm dữ liệu chi tiết để tính thống kê tổng quan
       const detailResponse = await axiosPrivate.get(KQHT_SERVICE.GET_KETQUA, {
-        params: {
-          maSo: maSo,
-          page: 1,
-          size: 1000,
-        },
-        headers: {
-          "Content-Type": "application/json",
-        },
+        params: { maSo, page: 1, size: 1000 },
+        headers: { "Content-Type": "application/json" },
         withCredentials: true,
       });
 
@@ -149,46 +222,60 @@ export default function KetQuaHocTap() {
     }
   }, [maSo, axiosPrivate]);
   useEffect(() => {
-    fetchKetQuaHocTap();
-  }, [fetchKetQuaHocTap]); // Tính toán thống kê tổng quan từ dữ liệu semester và raw data
+    const fetchAllData = async () => {
+      try {
+        // Fetch tất cả API song song
+        await Promise.all([
+          fetchKetQuaHocTap(), 
+          fetchHocPhanCaiThien(),
+          fetchHocPhanDiemF()
+        ]);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+    
+    if (maSo) {
+      fetchAllData();
+    }
+  }, [maSo, fetchKetQuaHocTap, fetchHocPhanCaiThien, fetchHocPhanDiemF]);
+
+  // Tính toán thống kê tổng quan từ dữ liệu semester và raw data
   const statistics = useMemo(() => {
-    if (!ketQuaData.length || !semesterData.length)
+    if (!ketQuaData.length || !semesterData.length) {
       return {
         tongTinChi: 0,
         diemTBTichLuy: 0,
         tinChiCanCaiThien: 0,
         tinChiNo: 0,
       };
+    }
 
+    // Lọc dữ liệu hợp lệ (bỏ qua điểm W và I)
     const validData = ketQuaData.filter(
-      (item) => item.diemChu !== "W" && item.diemChu !== "I" // Bỏ qua điểm W và I
+      (item) => item.diemChu !== "W" && item.diemChu !== "I"
     );
 
+    // Tính tổng tín chỉ
     const tongTinChi = validData.reduce((sum, item) => sum + item.soTinChi, 0);
 
-    // Tín chỉ cần cải thiện: điểm số <= 6.5
-    const tinChiCanCaiThien = validData
-      .filter((item) => item.diemSo > 0 && item.diemSo <= 6.5)
-      .reduce((sum, item) => sum + item.soTinChi, 0);
-
-    // Tín chỉ nợ: điểm số < 5 hoặc điểm chữ F
-    const tinChiNo = validData
-      .filter((item) => item.diemSo < 5 || item.diemChu === "F")
-      .reduce((sum, item) => sum + item.soTinChi, 0);
+    // Số học phần có thể cải thiện từ API chuyên dụng
+    const soHocPhanCanCaiThien = hocPhanCaiThien.length;
+    
+    // Số học phần nợ từ API chuyên dụng
+    const soHocPhanNo = hocPhanDiemF.length;
 
     // Lấy điểm TB tích lũy từ học kỳ cuối cùng
     const latestSemester = semesterData[semesterData.length - 1];
-    const diemTBTichLuy = latestSemester
-      ? latestSemester.diemTrungBinhTichLuy
-      : 0;
+    const diemTBTichLuy = latestSemester?.diemTrungBinhTichLuy || 0;
 
     return {
       tongTinChi,
       diemTBTichLuy,
-      tinChiCanCaiThien,
-      tinChiNo,
+      tinChiCanCaiThien: soHocPhanCanCaiThien,
+      tinChiNo: soHocPhanNo,
     };
-  }, [ketQuaData, semesterData]); // Prepare raw data for pie chart component
+  }, [ketQuaData, semesterData, hocPhanCaiThien, hocPhanDiemF]);  // Prepare raw data for pie chart component
   const gradeRawData: RawGradeData[] = useMemo(() => {
     return ketQuaData.map((item) => ({
       tenHp: item.tenHp,
@@ -234,7 +321,8 @@ export default function KetQuaHocTap() {
             </p>
           </div>
         </div>
-      </div>{" "}
+      </div>
+
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatisticsCard
@@ -257,25 +345,27 @@ export default function KetQuaHocTap() {
           subtitle="Đã tích lũy"
           subtitleIcon={TrendingUp}
         />
-        <StatisticsCard
+        <StatisticsCardWithTooltip
           title="Có thể cải thiện"
-          value={statistics.tinChiCanCaiThien}
+          value={loadingCaiThien ? "..." : statistics.tinChiCanCaiThien}
           icon={Target}
           gradient="bg-gradient-to-br from-purple-500 to-indigo-600"
           textColor="text-purple-100"
           iconColor="text-purple-200"
-          subtitle="Số tín chỉ có thể cải thiện"
+          subtitle={loadingCaiThien ? "Đang tải..." : "Số học phần có thể cải thiện"}
           subtitleIcon={BarChart3}
+          enableHocPhanCaiThienTooltip={true}
         />
-        <StatisticsCard
-          title="Số tín chỉ nợ"
-          value={statistics.tinChiNo}
+        <StatisticsCardWithTooltip
+          title="Học phần nợ"
+          value={loadingDiemF ? "..." : statistics.tinChiNo}
           icon={Calendar}
           gradient="bg-gradient-to-br from-red-500 to-pink-600"
           textColor="text-red-100"
           iconColor="text-red-200"
-          subtitle="Số tín chỉ chưa đạt"
+          subtitle={loadingDiemF ? "Đang tải..." : "Số học phần chưa đạt"}
           subtitleIcon={Award}
+          enableHocPhanDiemFTooltip={true}
         />
       </div>
       {/* Charts Section - Two charts in one row */}
@@ -298,17 +388,14 @@ export default function KetQuaHocTap() {
           {semesterData.length > 0 ? (
             <GPABarChart rawData={semesterData} height={400} />
           ) : (
-            <div className="flex items-center justify-center h-64 text-gray-500">
-              <div className="text-center">
-                <BookOpen className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">Chưa có dữ liệu</p>
-                <p className="text-sm">
-                  Không có dữ liệu kết quả học tập để hiển thị biểu đồ
-                </p>
-              </div>
-            </div>
+            <EmptyChartState
+              icon={BookOpen}
+              title="Chưa có dữ liệu"
+              description="Không có dữ liệu kết quả học tập để hiển thị biểu đồ"
+            />
           )}
-        </div>       
+        </div>
+
         {/* Grade Distribution Pie Chart */}
         {gradeRawData.length > 0 ? (
           <GradeDistributionPieChart rawData={gradeRawData} />
@@ -327,15 +414,11 @@ export default function KetQuaHocTap() {
                 </p>
               </div>
             </div>
-            <div className="flex items-center justify-center h-64 text-gray-500">
-              <div className="text-center">
-                <Target className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                <p className="text-lg font-medium">Chưa có dữ liệu</p>
-                <p className="text-sm">
-                  Không có dữ liệu điểm số để hiển thị biểu đồ phân bổ
-                </p>
-              </div>
-            </div>
+            <EmptyChartState
+              icon={Target}
+              title="Chưa có dữ liệu"
+              description="Không có dữ liệu điểm số để hiển thị biểu đồ phân bổ"
+            />
           </div>
         )}
       </div>

@@ -4,15 +4,11 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
   type ColumnDef,
-  type SortingState,
 } from "@tanstack/react-table";
 import {
   ArrowUp,
-  ArrowDown,
-  ArrowUpDown,
   ChevronDown,
   ChevronRight,
   BookOpen, // Using BookOpen for course type groups
@@ -70,7 +66,6 @@ export const GroupedKetQuaHocTapTable: React.FC<
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [diemChuFilter, setDiemChuFilter] = useState<string>("");
   const [completionStatusFilter, setCompletionStatusFilter] = useState<string>("all");
-  const [sorting, setSorting] = useState<SortingState>([]);
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [pagination, setPagination] = useState({
@@ -300,8 +295,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
           return item.maHp || "";
         },
         size: 140,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
+        enableSorting: false,
       },
       {
         id: "tenHp",
@@ -315,8 +309,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
           return item.tenHp || "";
         },
         size: 200,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
+        enableSorting: false,
       },
       {
         id: "soTinChi",
@@ -336,8 +329,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
           );
         },
         size: 100,
-        enableSorting: true,
-        sortingFn: "basic",
+        enableSorting: false,
       },
       {
         id: "diemChu",
@@ -357,8 +349,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
           );
         },
         size: 120,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
+        enableSorting: false,
       },
       {
         id: "diemSo",
@@ -380,8 +371,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
           );
         },
         size: 120,
-        enableSorting: true,
-        sortingFn: "basic",
+        enableSorting: false,
       },
       {
         id: "nhomHp",
@@ -401,8 +391,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
           );
         },
         size: 150,
-        enableSorting: true,
-        sortingFn: "alphanumeric",
+        enableSorting: false,
       },
     ],
     []
@@ -411,10 +400,9 @@ export const GroupedKetQuaHocTapTable: React.FC<
   const tableState = useMemo(
     () => ({
       pagination,
-      sorting,
       globalFilter,
     }),
-    [pagination, sorting, globalFilter]
+    [pagination, globalFilter]
   );
 
   const table = useReactTable({
@@ -422,14 +410,19 @@ export const GroupedKetQuaHocTapTable: React.FC<
     columns,
     state: tableState,
     onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
     onPaginationChange: setPagination,
-    getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     manualPagination: false,
     autoResetPageIndex: false,
+    // Add custom data accessor to handle group headers properly
+    getRowId: (row, index) => {
+      if (row.isGroupHeader) {
+        return `group-header-${row.groupId}`;
+      }
+      return `course-${row.id || index}`;
+    },
   });
 
   // Custom pagination info
@@ -681,38 +674,13 @@ export const GroupedKetQuaHocTapTable: React.FC<
                   {headerGroup.headers.map((header) => (
                     <th
                       key={header.id}
-                      className={`px-2 py-2 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600 ${
-                        header.column.getCanSort()
-                          ? "cursor-pointer select-none"
-                          : ""
-                      }`}
-                      onClick={header.column.getToggleSortingHandler()}
-                      title={
-                        header.column.getCanSort()
-                          ? header.column.getNextSortingOrder() === "asc"
-                            ? "Sắp xếp tăng dần"
-                            : header.column.getNextSortingOrder() === "desc"
-                              ? "Sắp xếp giảm dần"
-                              : "Xóa sắp xếp"
-                          : undefined
-                      }
+                      className="px-2 py-2 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b"
                     >
                       {header.isPlaceholder ? null : (
                         <div className="flex items-center justify-center gap-1">
                           {flexRender(
                             header.column.columnDef.header,
                             header.getContext()
-                          )}
-                          {header.column.getCanSort() && (
-                            <span className="ml-1">
-                              {header.column.getIsSorted() === "asc" ? (
-                                <ArrowUp className="w-4 h-4" />
-                              ) : header.column.getIsSorted() === "desc" ? (
-                                <ArrowDown className="w-4 h-4" />
-                              ) : (
-                                <ArrowUpDown className="w-4 h-4 opacity-50" />
-                              )}
-                            </span>
                           )}
                         </div>
                       )}

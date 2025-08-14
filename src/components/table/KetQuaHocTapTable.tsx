@@ -3,7 +3,6 @@ import {
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   useReactTable,
   type ColumnDef,
 } from "@tanstack/react-table";
@@ -16,7 +15,6 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import React, { useMemo, useState, useEffect } from "react";
-import { SortableHeader } from "./SortableHeader";
 import type { HocKy } from "../../types/HocKy";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
@@ -41,18 +39,18 @@ const columns: ColumnDef<KetQuaHocTapTableType>[] = [
     header: () => <span className="text-center hidden"></span>,
   },  {
     accessorKey: "maHp",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Mã học phần" className="ml-2 hover:text-white/80 transition-colors" />
+    header: () => (
+      <span className="text-center">Mã học phần</span>
     ),
   },  {
     accessorKey: "tenHp",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Tên học phần" className="ml-2 hover:text-white/80 transition-colors" />
+    header: () => (
+      <span className="text-center">Tên học phần</span>
     ),
   },  {
     accessorKey: "dieuKien",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Điều kiện" className="ml-2 hover:text-white/80 transition-colors" />
+    header: () => (
+      <span className="text-center">Điều kiện</span>
     ),
     cell: ({ row }) => (
       <div className="flex items-center justify-center">
@@ -65,25 +63,25 @@ const columns: ColumnDef<KetQuaHocTapTableType>[] = [
     ),
   },  {
     accessorKey: "nhomHp",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Nhóm học phần" className="ml-2 hover:text-white/80 transition-colors" />
+    header: () => (
+      <span className="text-center">Nhóm học phần</span>
     ),
   },
   {
     accessorKey: "soTinChi",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Số tín chỉ" className="ml-2 hover:text-white/80 transition-colors" />
+    header: () => (
+      <span className="text-center">Số tín chỉ</span>
     ),
   },  {
     accessorKey: "diemChu",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Điểm chữ" className="ml-2 hover:text-white/80 transition-colors" />
+    header: () => (
+      <span className="text-center">Điểm chữ</span>
     ),
   },
   {
     accessorKey: "diemSo",
-    header: ({ column }) => (
-      <SortableHeader column={column} title="Điểm số" className="ml-2 hover:text-white/80 transition-colors" />
+    header: () => (
+      <span className="text-center">Điểm số</span>
     ),
   },
 ];
@@ -134,7 +132,6 @@ const KetQuaHocTapTable: React.FC<KetQuaHocTapTableProps> = ({
     },
     onGlobalFilterChange: setGlobalFilter,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: enableServerPagination ? undefined : getFilteredRowModel(),
     getPaginationRowModel: enableServerPagination ? undefined : getPaginationRowModel(),
     manualPagination: enableServerPagination,
