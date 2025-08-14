@@ -21,8 +21,6 @@ import KeHoachHocTapMauDetail from "./pages/KeHoachHocTapMau/KeHoachHocTapMauDet
 import ProfileManagement from "./pages/Profile/ProfileManagement";
 import CertificateManagement from "./pages/Profile/CertificateManangement";
 import ProfileLayout from "./pages/Profile/ProfileLayout";
-import PDFExportExample from "./components/PDFExportExample";
-import PDFExportPaginationTest from "./components/PDFExportPaginationTest";
 import KeHoachHocTapView from "./pages/KeHoachHocTap/KeHoachHocTapView";
 import ThemChuongTrinhDaoTao from "./pages/ChuongTrinhDaoTao/ThemChuongTrinhDaoTao";
 import ChuongTrinhDaoTao from "./pages/ChuongTrinhDaoTao/ChuongTrinhDaoTao";
@@ -40,8 +38,6 @@ function App() {
   return (
     <Routes>
       {/* Public routes */}
-      <Route path="/test" element={<PDFExportExample />} />
-      <Route path="/pagination-test" element={<PDFExportPaginationTest />} />
       <Route path="/login" element={<Login />} />
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="*" element={<NotFound />} />
@@ -77,8 +73,7 @@ function App() {
             <RequireAuth allowedRoles={[ROLES.TRUONGKHOA, ROLES.GIANGVIEN]} />
           }
         >
-          {/* Teacher/Admin main routes */}
-          {/* Redirect to first available page */}
+          {/* GiangVien routes */}
           <Route path="/giangvien" element={<DanhSachLopHoc />} />
 
           {/* Quản Lí Lớp */}
@@ -121,8 +116,6 @@ function App() {
         </Route>
         <Route element={<RequireAuth allowedRoles={[ROLES.GIANGVIEN, ROLES.TRUONGKHOA]} />}>
           {/* TRUONG KHOA routes */}
-          {/* Teacher/Admin main routes */}
-          {/* Redirect to first available page */}
           <Route path="/truongkhoa" element={<DanhSachLopHoc />} />
 
           {/* Quản Lí Lớp */}

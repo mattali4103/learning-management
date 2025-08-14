@@ -150,7 +150,6 @@ const StudentProfileLayout: React.FC<StudentProfileLayoutProps> = ({
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4 lg:p-6 space-y-6">
       {/* Header */}
       {header}
-
       {/* Welcome Header - Only show if requested */}
       {showWelcomeHeader && (
         <PageHeader
@@ -273,7 +272,6 @@ const StudentProfileLayout: React.FC<StudentProfileLayoutProps> = ({
             Thông tin sinh viên
           </h2>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             {
@@ -318,7 +316,6 @@ const StudentProfileLayout: React.FC<StudentProfileLayoutProps> = ({
           })}
         </div>
       </div>
-
       {/* Additional Content */}
       {additionalContent && (
         <div className="space-y-6">

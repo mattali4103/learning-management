@@ -19,6 +19,7 @@ interface TinChiThongKe {
 export const KeHoachHocTapPage = () => {
   const { auth } = useAuth();
   const [tinChiThongKe, setTinChiThongKe] = useState<TinChiThongKe[]>([]); // Dữ liệu cho biểu đồ
+  const [totalSubjectsCount, setTotalSubjectsCount] = useState<number>(0); // Tổng số học phần thực tế
   const [loading, setLoading] = useState<boolean>(true); // Loading cho toàn bộ trang (lần đầu)
   const [error, setError] = useState<string | null>(null);
   const axiosPrivate = useAxiosPrivate();
@@ -47,13 +48,36 @@ export const KeHoachHocTapPage = () => {
     }
   }, [axiosPrivate, maSo]);
 
+  // Function fetch tổng số học phần
+  const fetchTotalSubjects = useCallback(async () => {
+    try {
+      const response = await axiosPrivate.get(
+        KHHT_SERVICE.KHHT_DETAIL.replace(":maSo", maSo)
+      );
+
+      if (response.status === 200 && response.data?.code === 200) {
+        const subjectsData = response.data.data;
+        setTotalSubjectsCount(subjectsData.length);
+        return subjectsData.length;
+      } else {
+        throw new Error(
+          `API returned code: ${response.data?.code || response.status}`
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching total subjects:", error);
+      setTotalSubjectsCount(0);
+      return 0;
+    }
+  }, [axiosPrivate, maSo]);
+
   // Calculate statistics from chart data
   const statistics = useMemo(() => {
     const totalCredits = tinChiThongKe.reduce(
       (sum, item) => sum + item.soTinChiDangKy + item.soTinChiCaiThien, 
       0
     );
-    const totalSubjects = tinChiThongKe.length;
+    const totalSubjects = totalSubjectsCount; // Sử dụng số học phần thực tế từ API
     const totalSemesters = tinChiThongKe.length;
 
     return {
@@ -61,7 +85,7 @@ export const KeHoachHocTapPage = () => {
       totalSubjects,
       totalSemesters,
     };
-  }, [tinChiThongKe]);
+  }, [tinChiThongKe, totalSubjectsCount]);
 
   // useEffect cho lần đầu load trang
   useEffect(() => {
@@ -70,7 +94,11 @@ export const KeHoachHocTapPage = () => {
 
       setLoading(true);
       try {
-        await fetchTinChiThongKe();
+        // Gọi đồng thời cả hai API để tối ưu hiệu suất
+        await Promise.all([
+          fetchTinChiThongKe(),
+          fetchTotalSubjects()
+        ]);
       } catch (error) {
         console.error("Error fetching initial data:", error);
         setError(
@@ -81,7 +109,7 @@ export const KeHoachHocTapPage = () => {
       }
     };
     fetchInitialData();
-  }, [maSo, fetchTinChiThongKe]);
+  }, [maSo, fetchTinChiThongKe, fetchTotalSubjects]);
 
   if (loading) {
     return (

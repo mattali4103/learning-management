@@ -7,8 +7,6 @@ import Loading from "../components/Loading";
 const Dashboard = () => {
   const { auth } = useAuth();
   const maSo = auth.user?.maSo;
-
-  // Use the common hook for student profile data
   const {
     userInfo,
     tinChiTichLuy,
@@ -17,14 +15,12 @@ const Dashboard = () => {
     loading,
     error,
   } = useStudentProfileData({ maSo });
-
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Chào buổi sáng";
     if (hour < 18) return "Chào buổi chiều";
     return "Chào buổi tối";
   };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-4">
