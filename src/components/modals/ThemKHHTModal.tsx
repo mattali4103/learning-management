@@ -54,6 +54,7 @@ interface KHHTCreatePayload {
   maNganh: string;
   maHocKy: number;
   maHocPhan: string;
+  hocPhanCaiThien: boolean
 }
 // --- Reusable Pagination Component ---
 const PaginationControls = <TData,>({ table }: { table: Table<TData> }) => (
@@ -431,6 +432,39 @@ const ThemKHHTModal = ({
         : "bg-gray-100 text-gray-600 hover:bg-gray-200"
     }`;
 
+  // Hàm kiểm tra học phần tiên quyết
+  const checkPrerequisites = useCallback(
+    (hocPhan: HocPhan): { isValid: boolean; missingPrerequisites: string[] } => {
+      if (!hocPhan.hocPhanTienQuyet || hocPhan.hocPhanTienQuyet.trim() === "") {
+        return { isValid: true, missingPrerequisites: [] };
+      }
+
+      // Tách các mã học phần tiên quyết (có thể phân tách bằng dấu phẩy hoặc dấu chấm phẩy)
+      const prerequisiteCodes = hocPhan.hocPhanTienQuyet
+        .split(/[,;]+/)
+        .map(code => code.trim())
+        .filter(code => code !== "");
+
+      // Tạo danh sách tất cả học phần hiện có (đã hoàn thành + đang trong kế hoạch + đã thêm vào pending)
+      const allAvailableCourses = [
+        ...hocPhanDaHoc, // Học phần đã hoàn thành
+        ...currentHocPhans.map(item => item.hocPhan.maHp), // Học phần trong kế hoạch hiện tại
+        ...pendingHocPhans.map(item => item.hocPhan.maHp), // Học phần đã thêm vào danh sách chờ
+      ];
+
+      // Kiểm tra học phần tiên quyết nào chưa có
+      const missingPrerequisites = prerequisiteCodes.filter(
+        prereqCode => !allAvailableCourses.includes(prereqCode)
+      );
+
+      return {
+        isValid: missingPrerequisites.length === 0,
+        missingPrerequisites
+      };
+    },
+    [hocPhanDaHoc, currentHocPhans, pendingHocPhans]
+  );
+
   const handleAddToPending = useCallback(
     (hocPhan: HocPhan) => {
       let defaultHocKy: HocKy | null = null;
@@ -453,14 +487,26 @@ const ThemKHHTModal = ({
         return;
       }
 
+      // Kiểm tra học phần tiên quyết
+      const { isValid, missingPrerequisites } = checkPrerequisites(hocPhan);
+      if (!isValid) {
+        setErrorMessage(
+          `Không thể thêm học phần "${hocPhan.tenHp}" (${hocPhan.maHp}) vì chưa có các học phần tiên quyết sau: ${missingPrerequisites.join(", ")}`
+        );
+        setShowErrorModal(true);
+        return;
+      }
+
+      // Kiểm tra xem học phần có thuộc nhóm cải thiện không
+      const isHocPhanCaiThien = hocPhanCaiThien.some(hp => hp.maHp === hocPhan.maHp);
+
       const newItem: KeHoachHocTapDetail = {
         id: `pending-${hocPhan.maHp}-${Date.now()}`,
         hocPhan,
         hocKy: defaultHocKy,
         namHoc: defaultNamHoc,
-        hocPhanCaiThien: hocPhan.loaiHp === "Cải thiện",
+        hocPhanCaiThien: isHocPhanCaiThien,
       };
-
       setPendingHocPhans((prev) => [...prev, newItem]);
     },
     [
@@ -470,6 +516,8 @@ const ThemKHHTModal = ({
       setPendingHocPhans,
       setErrorMessage,
       setShowErrorModal,
+      checkPrerequisites,
+      hocPhanCaiThien,
     ]
   );
 
@@ -511,6 +559,7 @@ const ThemKHHTModal = ({
           maNganh: selectedNganh,
           maHocKy: item.hocKy!.maHocKy,
           maHocPhan: item.hocPhan.maHp,
+          hocPhanCaiThien: item.hocPhanCaiThien,
         })
       );
       const response = await axiosPrivate.post(
@@ -524,12 +573,6 @@ const ThemKHHTModal = ({
         setSuccessMessage("Đã thêm học phần vào kế hoạch học tập thành công!");
         setShowSuccessModal(true);
         onSaveSuccess(); // Notify parent component
-      } else {
-        setErrorMessage(
-          "Có lỗi xảy ra khi thêm học phần: " +
-            (response.data.message || "Lỗi không xác định")
-        );
-        setShowErrorModal(true);
       }
     } catch (error: any) {
       setErrorMessage(
@@ -538,6 +581,7 @@ const ThemKHHTModal = ({
             error.message ||
             "Lỗi không xác định")
       );
+      console.log("Error saving pending subjects:", error);
       setShowErrorModal(true);
     }
   };

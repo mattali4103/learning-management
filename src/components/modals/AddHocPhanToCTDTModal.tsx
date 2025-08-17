@@ -90,6 +90,7 @@ interface AvailableSubjectsTableProps {
   onAddToPending: (hocPhan: HocPhan) => void;
   pendingHocPhans: HocPhan[];
   currentHocPhans: HocPhan[];
+  checkPrerequisites: (hocPhan: HocPhan) => { isValid: boolean; missingPrerequisites: string[] };
 }
 
 const AvailableSubjectsTable: React.FC<AvailableSubjectsTableProps> = ({
@@ -97,6 +98,7 @@ const AvailableSubjectsTable: React.FC<AvailableSubjectsTableProps> = ({
   onAddToPending,
   pendingHocPhans,
   currentHocPhans,
+  checkPrerequisites,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [sorting, setSorting] = useState<SortingState>([]);
@@ -444,17 +446,31 @@ const AvailableSubjectsTable: React.FC<AvailableSubjectsTableProps> = ({
           
           const isInPending = pendingHocPhans.some(item => item.maHp === hocPhan.maHp);
           
+          // Kiểm tra điều kiện tiên quyết
+          const prerequisiteCheck = checkPrerequisites(hocPhan);
+          const canAdd = prerequisiteCheck.isValid;
+          const missingPrerequisites = prerequisiteCheck.missingPrerequisites;
+
+          const buttonDisabled = isInPending || !canAdd;
+          let buttonTitle = "Thêm vào danh sách";
+          
+          if (isInPending) {
+            buttonTitle = "Học phần này đã được thêm vào danh sách chờ xác nhận";
+          } else if (!canAdd) {
+            buttonTitle = `Chưa có học phần tiên quyết: ${missingPrerequisites.join(', ')}`;
+          }
+          
           return (
             <div className="text-center">
               <button
-                onClick={() => !isInPending && onAddToPending(hocPhan)}
+                onClick={() => !buttonDisabled && onAddToPending(hocPhan)}
                 className={`p-2 text-white rounded-full transition-all duration-200 ${
-                  isInPending
+                  buttonDisabled
                     ? "bg-gray-400 opacity-60 cursor-not-allowed"
                     : "bg-emerald-600 hover:bg-emerald-700 hover:scale-105"
                 }`}
-                title={isInPending ? "Học phần này đã được thêm vào danh sách chờ xác nhận" : "Thêm vào danh sách"}
-                disabled={isInPending}
+                title={buttonTitle}
+                disabled={buttonDisabled}
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -463,7 +479,7 @@ const AvailableSubjectsTable: React.FC<AvailableSubjectsTableProps> = ({
         },
         size: 100,
       },
-  ], [pendingHocPhans, onAddToPending]);
+  ], [pendingHocPhans, onAddToPending, checkPrerequisites]);
 
   // Create table instance
   const table = useReactTable({
@@ -797,6 +813,38 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
     }
   }, [LOAI_HP_LIST, axiosPrivate, selectedNganh, selectedKhoaHoc]);
 
+  // Hàm kiểm tra học phần tiên quyết
+  const checkPrerequisites = useCallback(
+    (hocPhan: HocPhan): { isValid: boolean; missingPrerequisites: string[] } => {
+      if (!hocPhan.hocPhanTienQuyet || hocPhan.hocPhanTienQuyet.trim() === "") {
+        return { isValid: true, missingPrerequisites: [] };
+      }
+
+      // Tách các mã học phần tiên quyết (có thể phân tách bằng dấu phẩy hoặc dấu chấm phẩy)
+      const prerequisiteCodes = hocPhan.hocPhanTienQuyet
+        .split(/[,;]+/)
+        .map(code => code.trim())
+        .filter(code => code !== "");
+
+      // Tạo danh sách tất cả học phần hiện có (trong CTDT hiện tại + đã thêm vào pending)
+      const allAvailableCourses = [
+        ...currentHocPhans.map(item => item.maHp), // Học phần trong CTDT hiện tại
+        ...pendingHocPhans.map(item => item.maHp), // Học phần đã thêm vào danh sách chờ
+      ];
+
+      // Kiểm tra học phần tiên quyết nào chưa có
+      const missingPrerequisites = prerequisiteCodes.filter(
+        prereqCode => !allAvailableCourses.includes(prereqCode)
+      );
+
+      return {
+        isValid: missingPrerequisites.length === 0,
+        missingPrerequisites
+      };
+    },
+    [currentHocPhans, pendingHocPhans]
+  );
+
   useEffect(() => {
     if (isOpen) {
       fetchHocPhanByLoai();
@@ -825,13 +873,23 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
       if (isAlreadyInPending) {
         return; // Không thêm nếu đã tồn tại
       }
+
+      // Kiểm tra học phần tiên quyết
+      const { isValid, missingPrerequisites } = checkPrerequisites(hocPhan);
+      if (!isValid) {
+        setErrorMessage(
+          `Không thể thêm học phần "${hocPhan.tenHp}" (${hocPhan.maHp}) vì chưa có các học phần tiên quyết sau: ${missingPrerequisites.join(", ")}`
+        );
+        setShowErrorModal(true);
+        return;
+      }
       
       const newItem: HocPhan = {
         ...hocPhan,
       };
       setPendingHocPhans((prev) => [...prev, newItem]);
     },
-    [setPendingHocPhans, pendingHocPhans]
+    [setPendingHocPhans, pendingHocPhans, checkPrerequisites, setErrorMessage, setShowErrorModal]
   );
 
   const handleRemoveFromPending = useCallback(
@@ -1009,6 +1067,7 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
                     onAddToPending={handleAddToPending}
                     pendingHocPhans={pendingHocPhans}
                     currentHocPhans={currentHocPhans}
+                    checkPrerequisites={checkPrerequisites}
                   />
                 )}
               </>

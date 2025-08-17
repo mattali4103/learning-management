@@ -182,26 +182,34 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
   hocPhanDaHoc = [],
 }) => {
   // Hàm kiểm tra điều kiện tiên quyết
-  const checkPrerequisites = useCallback((hocPhan: HocPhan): { canAdd: boolean; missingPrerequisites: string[] } => {
+  const checkPrerequisites = useCallback((hocPhan: HocPhan): { canAdd: boolean; hocPhanTuyenQuyetList: string[] } => {
     if (!hocPhan.hocPhanTienQuyet || hocPhan.hocPhanTienQuyet.trim() === "") {
-      return { canAdd: true, missingPrerequisites: [] };
+      return { canAdd: true, hocPhanTuyenQuyetList: [] };
     }
 
-    // Phân tích các điều kiện tiên quyết (giả sử chúng được phân tách bằng dấu phẩy)
-    const prerequisites = hocPhan.hocPhanTienQuyet
-      .split(',')
+    // Tách các mã học phần tiên quyết (có thể phân tách bằng dấu phẩy hoặc dấu chấm phẩy)
+    const maHPTuyenQuyet = hocPhan.hocPhanTienQuyet
+      .split(/[,;]+/)
       .map(code => code.trim())
       .filter(code => code !== "");
 
-    const missingPrerequisites = prerequisites.filter(prereq => 
-      !hocPhanDaHoc.includes(prereq)
+    // Tạo danh sách tất cả học phần hiện có (đã hoàn thành + đang trong kế hoạch + đã thêm vào pending)
+    const allAvailableCourses = [
+      ...hocPhanDaHoc, // Học phần đã hoàn thành
+      ...currentHocPhans.map(item => extractMaHp(item)), // Học phần trong kế hoạch hiện tại
+      ...pendingHocPhans.map(item => extractMaHp(item)), // Học phần đã thêm vào danh sách chờ
+    ];
+
+    // Kiểm tra học phần tiên quyết nào chưa có
+    const hocPhanTuyenQuyetList = maHPTuyenQuyet.filter(
+      prereqCode => !allAvailableCourses.includes(prereqCode)
     );
 
     return {
-      canAdd: missingPrerequisites.length === 0,
-      missingPrerequisites
+      canAdd: hocPhanTuyenQuyetList.length === 0,
+      hocPhanTuyenQuyetList
     };
-  }, [hocPhanDaHoc]);
+  }, [hocPhanDaHoc, currentHocPhans, pendingHocPhans]);
 
   // Helper function để kiểm tra xem học phần có thuộc nhóm tự chọn đã hoàn thành không
   const isFromCompletedElectiveGroup = useCallback((hocPhan: HocPhan): boolean => {
@@ -805,7 +813,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
             // Kiểm tra điều kiện tiên quyết
             const prerequisiteCheck = checkPrerequisites(hocPhan);
             const canAdd = prerequisiteCheck.canAdd;
-            const missingPrerequisites = prerequisiteCheck.missingPrerequisites;
+            const hocPhanTuyenQuyetList = prerequisiteCheck.hocPhanTuyenQuyetList;
 
             const buttonDisabled = isAdded || !canAdd || isGroupCompleted || isFromCompletedElectiveGroupCheck;
             let buttonTitle = "Thêm vào danh sách";
@@ -817,7 +825,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
             } else if (isGroupCompleted) {
               buttonTitle = "Đã hoàn thành học phần khác trong cùng nhóm";
             } else if (!canAdd) {
-              buttonTitle = `Chưa hoàn thành học phần tiên quyết: ${missingPrerequisites.join(', ')}`;
+              buttonTitle = `Chưa hoàn thành học phần tiên quyết: ${hocPhanTuyenQuyetList.join(', ')}`;
             }
 
             return (
@@ -849,11 +857,11 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
           // Logic cho trường hợp không phải improvement courses
           const prerequisiteCheck = checkPrerequisites(hocPhan);
           const canAdd = prerequisiteCheck.canAdd;
-          const missingPrerequisites = prerequisiteCheck.missingPrerequisites;
+          const hocPhanTuyenQuyetList = prerequisiteCheck.hocPhanTuyenQuyetList;
           
           let buttonTitle = "Thêm vào danh sách";
           if (!canAdd) {
-            buttonTitle = `Chưa hoàn thành học phần tiên quyết: ${missingPrerequisites.join(', ')}`;
+            buttonTitle = `Chưa hoàn thành học phần tiên quyết: ${hocPhanTuyenQuyetList.join(', ')}`;
           }
 
           return (

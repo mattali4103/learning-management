@@ -443,7 +443,7 @@ const ThemKeHoachHocTapMau = () => {
         }
       } catch (error) {
         console.error("Error deleting hoc phan:", error);
-        setErrorMessage("Không thể xóa học phần. Vui lòng thử lại.");
+        setErrorMessage(error.response?.data?.message || "Không thể xóa học phần. Vui lòng thử lại.");
         setShowErrorModal(true);
       } finally {
         setIsDeleting(false);

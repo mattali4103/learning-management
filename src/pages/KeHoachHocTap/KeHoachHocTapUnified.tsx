@@ -166,7 +166,7 @@ const UnifiedContentDisplay = () => {
         }
       } catch (error) {
         console.error("Error deleting hoc phan:", error);
-        setError("Không thể xóa học phần. Vui lòng thử lại.");
+
       } finally {
         setIsDeleting(false);
       }

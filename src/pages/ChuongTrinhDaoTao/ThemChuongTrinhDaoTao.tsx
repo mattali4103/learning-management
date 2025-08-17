@@ -123,7 +123,7 @@ const ThemChuongTrinhDaoTao = () => {
       if (hp.loaiHp in stats) {
         stats[hp.loaiHp as keyof typeof stats] += hp.tinChi;
       } else {
-        // Các loại học phần khác sẽ được gộp vào "Khác"
+        // Các loại học phần không thuộc ba loại chính sẽ được tính vào "Khác"
         stats["Khác"] += hp.tinChi;
       }
     });
@@ -136,7 +136,7 @@ const ThemChuongTrinhDaoTao = () => {
         color: "#10b981",
       },
       { name: "Khác", soTinChi: stats["Khác"], color: "#f59e0b" },
-    ].filter(item => item.soTinChi > 0); // Chỉ hiển thị các loại có tín chỉ > 0
+    ];
   }, [chuongTrinhDaoTao]);
 
   // Fetch ngành, khóa học
@@ -568,7 +568,7 @@ const ThemChuongTrinhDaoTao = () => {
                   tick={{ fontSize: 12 }}
                 />
                 <Tooltip 
-                  formatter={(value: number) => [value, "số tín chỉ"]}
+                  formatter={(value: number) => [value, "Số tín chỉ"]}
                   labelFormatter={(label: string) => label}
                 />
                 <Bar dataKey="soTinChi" radius={[0, 4, 4, 0]}>

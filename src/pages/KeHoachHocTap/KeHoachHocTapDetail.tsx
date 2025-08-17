@@ -384,10 +384,11 @@ const KeHoachHocTapDetail = () => {
             );
             setShowSuccessModal(true);
           }
+
         }
-      } catch (error) {
+      } catch (error : any) {
         console.error("Error deleting hoc phan:", error);
-        setErrorMessage("Không thể xóa học phần. Vui lòng thử lại.");
+        setErrorMessage(error.response.data?.message || "Không thể xóa học phần. Vui lòng thử lại.");
         setShowErrorModal(true);
       } finally {
         //Re-Fetch all data to ensure UI is updated

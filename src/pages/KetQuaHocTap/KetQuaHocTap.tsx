@@ -336,7 +336,7 @@ export default function KetQuaHocTap() {
           subtitleIcon={TrendingUp}
         />
         <StatisticsCard
-          title="Tổng tín chỉ"
+          title="Tổng số tín chỉ"
           value={statistics.tongTinChi}
           icon={BookOpen}
           gradient="bg-gradient-to-br from-green-500 to-emerald-600"

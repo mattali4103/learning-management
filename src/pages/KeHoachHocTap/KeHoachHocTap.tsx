@@ -128,7 +128,7 @@ export const KeHoachHocTapPage = () => {
       {/* Statistics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatisticsCard
-          title="Tổng số tín chỉ"
+          title="Tổng số tín chỉ đã nhập"
           value={statistics.totalCredits}
           subtitle="tín chỉ"
           icon={BookOpen}
@@ -137,7 +137,7 @@ export const KeHoachHocTapPage = () => {
           style="modern"
         />
         <StatisticsCard
-          title="Tổng số học phần"
+          title="Tổng số học phần đã nhập"
           value={statistics.totalSubjects}
           subtitle="học phần"
           icon={GraduationCap}

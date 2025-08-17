@@ -287,10 +287,12 @@ const CollapsibleSelectableSubjectsTable = ({
   hocPhans,
   selectedHocPhans,
   onAdd,
+  checkPrerequisites,
 }: {
   hocPhans: HocPhan[];
   selectedHocPhans: HocPhan[];
   onAdd: (hocPhan: HocPhan) => void;
+  checkPrerequisites: (hocPhan: HocPhan) => { isValid: boolean; missingPrerequisites: string[] };
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
@@ -460,38 +462,45 @@ const CollapsibleSelectableSubjectsTable = ({
       {
         id: "actions",
         header: "",
-        cell: ({ row }) =>
-          !row.original.isGroupHeader && (
+        cell: ({ row }) => {
+          if (row.original.isGroupHeader) return null;
+          
+          const hocPhan = row.original;
+          const isSelected = selectedHocPhans.some((hp) => hp.maHp === hocPhan.maHp);
+          
+          // Kiểm tra điều kiện tiên quyết
+          const prerequisiteCheck = checkPrerequisites(hocPhan);
+          const canAdd = prerequisiteCheck.isValid;
+          const missingPrerequisites = prerequisiteCheck.missingPrerequisites;
+
+          const buttonDisabled = isSelected || !canAdd;
+          let buttonTitle = "Thêm học phần vào danh sách";
+          
+          if (isSelected) {
+            buttonTitle = "Đã thêm vào danh sách";
+          } else if (!canAdd) {
+            buttonTitle = `Chưa có học phần tiên quyết: ${missingPrerequisites.join(', ')}`;
+          }
+          
+          return (
             <button
-              onClick={() => onAdd(row.original)}
-              disabled={selectedHocPhans.some(
-                (hp) => hp.maHp === row.original.maHp
-              )}
+              onClick={() => onAdd(hocPhan)}
+              disabled={buttonDisabled}
               className={`p-2 rounded-full transition-all duration-200 shadow-sm ${
-                selectedHocPhans.some((hp) => hp.maHp === row.original.maHp)
+                buttonDisabled
                   ? "bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed"
                   : "bg-gradient-to-r from-emerald-500 to-green-500 text-white hover:from-emerald-600 hover:to-green-600 hover:scale-110 hover:shadow-md"
               }`}
-              title={
-                selectedHocPhans.some((hp) => hp.maHp === row.original.maHp)
-                  ? "Đã thêm vào danh sách"
-                  : "Thêm học phần vào danh sách"
-              }
-              style={{
-                pointerEvents: selectedHocPhans.some(
-                  (hp) => hp.maHp === row.original.maHp
-                )
-                  ? "none"
-                  : undefined,
-              }}
+              title={buttonTitle}
             >
               <Plus className="w-4 h-4" />
             </button>
-          ),
+          );
+        },
         size: 60,
       },
     ],
-    [selectedHocPhans, onAdd]
+    [selectedHocPhans, onAdd, checkPrerequisites]
   );
 
   const table = useReactTable({
@@ -860,6 +869,38 @@ const AddHocPhanTuChonModal = ({
       setLoading(false);
     }
   }, [axiosPrivate]);
+
+  // Hàm kiểm tra học phần tiên quyết
+  const checkPrerequisites = useCallback(
+    (hocPhan: HocPhan): { isValid: boolean; missingPrerequisites: string[] } => {
+      if (!hocPhan.hocPhanTienQuyet || hocPhan.hocPhanTienQuyet.trim() === "") {
+        return { isValid: true, missingPrerequisites: [] };
+      }
+
+      // Tách các mã học phần tiên quyết (có thể phân tách bằng dấu phẩy hoặc dấu chấm phẩy)
+      const prerequisiteCodes = hocPhan.hocPhanTienQuyet
+        .split(/[,;]+/)
+        .map(code => code.trim())
+        .filter(code => code !== "");
+
+      // Tạo danh sách tất cả học phần có sẵn (đã chọn trong nhóm hiện tại)
+      const allAvailableCourses = [
+        ...selectedHocPhans.map(item => item.maHp), // Học phần đã chọn trong nhóm
+      ];
+
+      // Kiểm tra học phần tiên quyết nào chưa có
+      const missingPrerequisites = prerequisiteCodes.filter(
+        prereqCode => !allAvailableCourses.includes(prereqCode)
+      );
+
+      return {
+        isValid: missingPrerequisites.length === 0,
+        missingPrerequisites
+      };
+    },
+    [selectedHocPhans]
+  );
+
   useEffect(() => {
     if (isOpen) {
       fetchAvailableHocPhans();
@@ -969,11 +1010,24 @@ const AddHocPhanTuChonModal = ({
   };
 
   const toggleSelectHocPhan = (hocPhan: HocPhan) => {
-    setSelectedHocPhans((prev) =>
-      prev.some((hp) => hp.maHp === hocPhan.maHp)
-        ? prev.filter((hp) => hp.maHp !== hocPhan.maHp)
-        : [...prev, hocPhan]
-    );
+    const isCurrentlySelected = selectedHocPhans.some((hp) => hp.maHp === hocPhan.maHp);
+    
+    if (isCurrentlySelected) {
+      // Nếu đang được chọn, cho phép bỏ chọn
+      setSelectedHocPhans((prev) => prev.filter((hp) => hp.maHp !== hocPhan.maHp));
+    } else {
+      // Nếu chưa được chọn, kiểm tra điều kiện tiên quyết trước khi thêm
+      const { isValid, missingPrerequisites } = checkPrerequisites(hocPhan);
+      if (!isValid) {
+        setErrorMessage(
+          `Không thể thêm học phần "${hocPhan.tenHp}" (${hocPhan.maHp}) vì chưa có các học phần tiên quyết sau: ${missingPrerequisites.join(", ")}`
+        );
+        setShowErrorModal(true);
+        return;
+      }
+      
+      setSelectedHocPhans((prev) => [...prev, hocPhan]);
+    }
   };
 
   // Navigation functions
@@ -1101,6 +1155,7 @@ const AddHocPhanTuChonModal = ({
                         hocPhans={availableHocPhans}
                         selectedHocPhans={selectedHocPhans}
                         onAdd={toggleSelectHocPhan}
+                        checkPrerequisites={checkPrerequisites}
                       />
                     )}
                   </div>

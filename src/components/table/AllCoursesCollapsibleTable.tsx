@@ -103,7 +103,7 @@
       // Define the desired order for required course types
       const requiredOrder = [
         "Anh văn",
-        "chính trị",
+        "Chính trị",
         "thể chất",
         "Đại cương",
         "Cơ sở ngành",
@@ -139,22 +139,38 @@
       } else if (activeTab.startsWith("semester-")) {
           const hocKyId = Number(activeTab.replace("semester-", ""));
           // Filter to only show courses from allData that belong to this semester
-          filteredRequiredCourses = allData.filter(course => 
+          // and ensure they are not duplicated in elective groups
+          const semesterCourses = allData.filter(course => 
             course.maHocKy === hocKyId && 
-            uniqueRequiredCourses.some(reqCourse => reqCourse.maHp === course.maHp) &&
-            !electiveCourseCodes.has(course.maHp)
+            uniqueRequiredCourses.some(reqCourse => reqCourse.maHp === course.maHp)
           );
+          
+          // Remove duplicates by maHp within semester courses and exclude elective courses
+          const seenCodes = new Set();
+          filteredRequiredCourses = semesterCourses.filter(course => {
+            if (!course.maHp || electiveCourseCodes.has(course.maHp) || seenCodes.has(course.maHp)) {
+              return false;
+            }
+            seenCodes.add(course.maHp);
+            return true;
+          });
       }
 
       console.log("Filtered Required Courses:", filteredRequiredCourses);
-      // Group required courses by loaiHp (course type)
+      // Group required courses by loaiHp (course type) and remove duplicates within each group
       const requiredCoursesByType = filteredRequiredCourses.reduce(
         (acc, course) => {
           const type = course.loaiHp || "Khác";
           if (!acc[type]) {
             acc[type] = [];
           }
-          acc[type].push(course);
+          
+          // Check if course with same maHp already exists in this type group
+          const existingCourse = acc[type].find(existingCourse => existingCourse.maHp === course.maHp);
+          if (!existingCourse) {
+            acc[type].push(course);
+          }
+          
           return acc;
         },
         {} as Record<string, HocPhan[]>
@@ -224,20 +240,48 @@
         const addedElectiveCourses = allElectiveCoursesInGroup.filter(hp => addedCourseCodes.has(hp.maHp));
 
         if (activeTab === "tatca" || activeTab === "all") {
-          coursesInGroup = addedElectiveCourses;
+          // Remove duplicates by maHp within the group for "all" tab
+          const seenCodesInGroup = new Set();
+          coursesInGroup = addedElectiveCourses.filter(course => {
+            if (!course.maHp || seenCodesInGroup.has(course.maHp)) {
+              return false;
+            }
+            seenCodesInGroup.add(course.maHp);
+            return true;
+          });
         } else if (activeTab.startsWith("semester-")) {
           // Extract hocKyId from tab name
           const hocKyId = Number(activeTab.replace("semester-", ""));
           // Find matching courses from allData that belong to this semester and this group
-          coursesInGroup = allData.filter(course => 
+          const semesterCoursesInGroup = allData.filter(course => 
             course.maHocKy === hocKyId && 
             allElectiveCoursesInGroup.some(hp => hp.maHp === course.maHp)
           );
+          
+          // Remove duplicates by maHp within the group
+          const seenCodesInGroup = new Set();
+          coursesInGroup = semesterCoursesInGroup.filter(course => {
+            if (!course.maHp || seenCodesInGroup.has(course.maHp)) {
+              return false;
+            }
+            seenCodesInGroup.add(course.maHp);
+            return true;
+          });
+          
           console.log(`Semester ${hocKyId} - Group ${group.tenNhom}:`, coursesInGroup);
         } else {
-          coursesInGroup = addedElectiveCourses.filter(
+          // Remove duplicates by maHp within the group for specific course type
+          const filteredCourses = addedElectiveCourses.filter(
             (hp) => hp.loaiHp === activeTab
           );
+          const seenCodesInGroup = new Set();
+          coursesInGroup = filteredCourses.filter(course => {
+            if (!course.maHp || seenCodesInGroup.has(course.maHp)) {
+              return false;
+            }
+            seenCodesInGroup.add(course.maHp);
+            return true;
+          });
         }
         console.log("Courses in Group:", coursesInGroup);
         console.log("Group validation - coursesInGroup.length:", coursesInGroup.length);
@@ -387,31 +431,20 @@
     const flattenedData = useMemo((): CourseWithGroup[] => {
       const result: CourseWithGroup[] = [];
       const hasSearchFilter = globalFilter && typeof globalFilter === "string" && globalFilter.trim() !== "";
+      const filterValue = hasSearchFilter ? globalFilter.toLowerCase() : "";
       
       // Add each group header followed immediately by its courses
       courseGroups.forEach((group) => {
-        // Add group header
-        result.push({
-          maHp: `group-header-${group.id}`,
-          tenHp: group.title,
-          tinChi: 0,
-          loaiHp: group.type,
-          hocPhanTienQuyet: "",
-          groupId: group.id,
-          groupType: group.type,
-          isGroupHeader: true,
-          groupTitle: group.title,
-          groupSubtitle: group.subtitle,
-          groupTotalCredits: group.totalCredits,
-          groupRequiredCredits: group.requiredCredits,
-          colorScheme: group.colorScheme,
-        } as CourseWithGroup);
-
-        // When searching, check if any course in this group matches the filter
+        let shouldShowGroup = false;
         let shouldShowCourses = expandedGroups.has(group.id);
         
-        if (hasSearchFilter && !shouldShowCourses) {
-          const filterValue = globalFilter.toLowerCase();
+        if (hasSearchFilter) {
+          // Check if group title/subtitle matches filter
+          const title = group.title?.toLowerCase() ?? "";
+          const subtitle = group.subtitle?.toLowerCase() ?? "";
+          const groupMatches = title.includes(filterValue) || subtitle.includes(filterValue);
+          
+          // Check if any course in this group matches the filter
           const hasMatchingCourse = group.courses.some((course) => {
             const maHp = typeof course.maHp === "string" ? course.maHp.toLowerCase() : "";
             const tenHp = typeof course.tenHp === "string" ? course.tenHp.toLowerCase() : "";
@@ -424,20 +457,60 @@
               hocPhanTienQuyet.includes(filterValue)
             );
           });
-          shouldShowCourses = hasMatchingCourse;
+          
+          // Show group if either group matches or has matching courses
+          shouldShowGroup = groupMatches || hasMatchingCourse;
+          shouldShowCourses = shouldShowGroup;
+        } else {
+          // No filter, show all groups
+          shouldShowGroup = true;
         }
 
-        // Add courses immediately after the header if group is expanded or if search matches
-        if (shouldShowCourses) {
-          group.courses.forEach((course) => {
-            result.push({
-              ...course,
-              groupId: group.id,
-              groupType: group.type,
-              isGroupHeader: false,
-              colorScheme: group.colorScheme,
-            } as CourseWithGroup);
-          });
+        if (shouldShowGroup) {
+          // Add group header
+          result.push({
+            maHp: `group-header-${group.id}`,
+            tenHp: group.title,
+            tinChi: 0,
+            loaiHp: group.type,
+            hocPhanTienQuyet: "",
+            groupId: group.id,
+            groupType: group.type,
+            isGroupHeader: true,
+            groupTitle: group.title,
+            groupSubtitle: group.subtitle,
+            groupTotalCredits: group.totalCredits,
+            groupRequiredCredits: group.requiredCredits,
+            colorScheme: group.colorScheme,
+          } as CourseWithGroup);
+
+          // Add courses immediately after the header if group is expanded or if search matches
+          if (shouldShowCourses) {
+            const coursesToShow = hasSearchFilter 
+              ? group.courses.filter((course) => {
+                  const maHp = typeof course.maHp === "string" ? course.maHp.toLowerCase() : "";
+                  const tenHp = typeof course.tenHp === "string" ? course.tenHp.toLowerCase() : "";
+                  const loaiHp = typeof course.loaiHp === "string" ? course.loaiHp.toLowerCase() : "";
+                  const hocPhanTienQuyet = typeof course.hocPhanTienQuyet === "string" ? course.hocPhanTienQuyet.toLowerCase() : "";
+                  return (
+                    maHp.includes(filterValue) ||
+                    tenHp.includes(filterValue) ||
+                    loaiHp.includes(filterValue) ||
+                    hocPhanTienQuyet.includes(filterValue)
+                  );
+                })
+              : group.courses;
+
+            coursesToShow.forEach((course) => {
+              result.push({
+                ...course,
+                groupId: group.id,
+                groupType: group.type,
+                isGroupHeader: false,
+                colorScheme: group.colorScheme,
+              } as CourseWithGroup);
+            });
+          }
         }
       });
 
@@ -446,55 +519,10 @@
 
     // Filter data based on global filter (apply to both headers and courses)
     const filteredData = useMemo(() => {
-      let filtered = flattenedData;
-      if (globalFilter && typeof globalFilter === "string" && globalFilter.trim() !== "") {
-        const filterValue = globalFilter.toLowerCase();
-        const result: CourseWithGroup[] = [];
-        const processedGroups = new Set<string>();
-
-        filtered.forEach((item) => {
-          if (item.isGroupHeader) {
-            // Check if group header itself matches the filter
-            const title = item.groupTitle?.toLowerCase() ?? "";
-            const subtitle = item.groupSubtitle?.toLowerCase() ?? "";
-            const groupMatches = title.includes(filterValue) || subtitle.includes(filterValue);
-            
-            if (groupMatches) {
-              result.push(item);
-              processedGroups.add(item.groupId);
-            }
-          } else {
-            // For courses, check if they match the filter
-            const maHp = typeof item.maHp === "string" ? item.maHp.toLowerCase() : "";
-            const tenHp = typeof item.tenHp === "string" ? item.tenHp.toLowerCase() : "";
-            const loaiHp = typeof item.loaiHp === "string" ? item.loaiHp.toLowerCase() : "";
-            const hocPhanTienQuyet = typeof item.hocPhanTienQuyet === "string" ? item.hocPhanTienQuyet.toLowerCase() : "";
-            
-            const courseMatches = (
-              maHp.includes(filterValue) ||
-              tenHp.includes(filterValue) ||
-              loaiHp.includes(filterValue) ||
-              hocPhanTienQuyet.includes(filterValue)
-            );
-
-            if (courseMatches) {
-              // Add group header if not already added
-              if (!processedGroups.has(item.groupId)) {
-                const groupHeader = filtered.find(f => f.isGroupHeader && f.groupId === item.groupId);
-                if (groupHeader) {
-                  result.push(groupHeader);
-                  processedGroups.add(item.groupId);
-                }
-              }
-              result.push(item);
-            }
-          }
-        });
-
-        filtered = result;
-      }
-      return filtered;
-    }, [flattenedData, globalFilter]);
+      // Flattened data already handles search filtering, so just return it directly
+      // to avoid duplicate group header issues
+      return flattenedData;
+    }, [flattenedData]);
 
     // Use filteredData directly for display with pagination
     const displayData = useMemo((): CourseWithGroup[] => {
