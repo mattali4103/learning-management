@@ -9,7 +9,9 @@ import {
   Award,
   AlertTriangle,
   CheckCircle,
-  Star 
+  Star,
+  Phone,
+  MapPin
 } from "lucide-react";
 import CreditProgressCard from "../progress/CreditProgressCard";
 import CombinedCreditGPAChart from "../chart/CombinedCreditGPAChart";
@@ -130,6 +132,15 @@ const StudentProfileLayout: React.FC<StudentProfileLayoutProps> = ({
   showWelcomeHeader = false,
   getGreeting,
 }) => {
+  // Debug log to check if family info is received
+  console.log("StudentProfileLayout userInfo:", userInfo);
+  console.log("Family info debug:", {
+    hoTenCha: userInfo?.hoTenCha,
+    hoTenMe: userInfo?.hoTenMe,
+    soDienThoaiNguoiThan: userInfo?.soDienThoaiNguoiThan,
+    queQuan: userInfo?.queQuan
+  });
+
   // Prepare combined chart data
   const combinedData = [];
   const maxLength = Math.max(tinChiTichLuy.length, diemTrungBinhHocKy.length);
@@ -272,48 +283,62 @@ const StudentProfileLayout: React.FC<StudentProfileLayoutProps> = ({
             Thông tin sinh viên
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[
-            {
-              label: "Mã số sinh viên",
-              value: userInfo?.maSo,
-              icon: BookOpen,
-            },
-            { label: "Họ và tên", value: userInfo?.hoTen, icon: User },
-            {
-              label: "Ngày sinh",
-              value: userInfo?.ngaySinh
-                ? new Date(userInfo.ngaySinh).toLocaleDateString("vi-VN")
-                : "",
-              icon: Calendar,
-            },
-            {
-              label: "Giới tính",
-              value: userInfo?.gioiTinh === true ? "Nam" : "Nữ",
-              icon: User,
-            },
-            { label: "Lớp", value: userInfo?.maLop, icon: GraduationCap },
-            { label: "Khóa học", value: userInfo?.khoaHoc, icon: Calendar },
-            { label: "Ngành học", value: userInfo?.tenNganh, icon: BookOpen },
-          ].map((item, index) => {
-            const IconComponent = item.icon;
-            return (
-              <div
-                key={index}
-                className="flex items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors duration-200"
-              >
-                <IconComponent className="w-5 h-5 text-blue-600 mr-3 flex-shrink-0" />
-                <div className="flex-1">
-                  <span className="text-sm text-gray-600 block">
-                    {item.label}
-                  </span>
-                  <span className="font-semibold text-gray-800">
-                    {item.value}
-                  </span>
-                </div>
-              </div>
-            );
-          })}
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Thông tin cơ bản sinh viên */}
+          <div>
+            <h3 className="text-base font-semibold text-gray-700 mb-3 pb-1 border-b border-gray-200">
+              Thông tin cơ bản
+            </h3>
+            <div className="space-y-2">
+              {[
+                { label: "MSSV", value: userInfo?.maSo, icon: BookOpen },
+                { label: "Họ tên", value: userInfo?.hoTen, icon: User },
+                { 
+                  label: "Ngày sinh", 
+                  value: userInfo?.ngaySinh ? new Date(userInfo.ngaySinh).toLocaleDateString("vi-VN") : "",
+                  icon: Calendar 
+                },
+                { label: "Giới tính", value: userInfo?.gioiTinh === true ? "Nam" : "Nữ", icon: User },
+                { label: "Lớp", value: userInfo?.maLop, icon: GraduationCap },
+                { label: "Khóa", value: userInfo?.khoaHoc, icon: Calendar },
+                { label: "Ngành", value: userInfo?.tenNganh, icon: BookOpen },
+              ].map((item, index) => {
+                const IconComponent = item.icon;
+                return (
+                  <div key={index} className="flex items-center py-2 px-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                    <IconComponent className="w-4 h-4 text-blue-500 mr-2 flex-shrink-0" />
+                    <span className="text-sm text-gray-600 w-20 flex-shrink-0">{item.label}:</span>
+                    <span className="text-sm font-medium text-gray-800">{item.value}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Thông tin liên lạc phụ huynh */}
+          <div>
+            <h3 className="text-base font-semibold text-gray-700 mb-3 pb-1 border-b border-gray-200">
+              Thông tin liên lạc
+            </h3>
+            <div className="space-y-2">
+              {[
+                { label: "Cha", value: userInfo?.hoTenCha || "Chưa cập nhật", icon: User },
+                { label: "Mẹ", value: userInfo?.hoTenMe || "Chưa cập nhật", icon: User },
+                { label: "SĐT", value: userInfo?.soDienThoaiNguoiThan || "Chưa cập nhật", icon: Phone },
+                { label: "Quê quán", value: userInfo?.queQuan || "Chưa cập nhật", icon: MapPin },
+              ].map((item, index) => {
+                const IconComponent = item.icon;
+                return (
+                  <div key={index} className="flex items-center py-2 px-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
+                    <IconComponent className="w-4 h-4 text-green-500 mr-2 flex-shrink-0" />
+                    <span className="text-sm text-gray-600 w-20 flex-shrink-0">{item.label}:</span>
+                    <span className="text-sm font-medium text-gray-800">{item.value}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
       {/* Additional Content */}

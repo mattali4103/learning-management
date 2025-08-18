@@ -14,6 +14,10 @@ export interface PreviewProfile {
     maNganh: string;
     ngaySinh: Date;
     gioiTinh: boolean;
+    hoTenCha: string;
+    hoTenMe: string;
+    soDienThoaiNguoiThan: string;
+    queQuan: string;
   }
   export interface CanhBaoHocVu{
     maSo: string;

@@ -441,7 +441,7 @@ const ThemKeHoachHocTapMau = () => {
             setShowSuccessModal(true);
           }
         }
-      } catch (error) {
+      } catch (error : any) {
         console.error("Error deleting hoc phan:", error);
         setErrorMessage(error.response?.data?.message || "Không thể xóa học phần. Vui lòng thử lại.");
         setShowErrorModal(true);

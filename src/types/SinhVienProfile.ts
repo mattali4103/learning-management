@@ -17,4 +17,7 @@ export interface SinhVienProfile {
   ngayCapCCCD?: Date | string;
   noiCapCCCD?: string;
   avatarUrl?: string;
+  hoTenCha?: string;
+  hoTenMe?: string;
+  soDienThoaiNguoiThan?: string;
 }

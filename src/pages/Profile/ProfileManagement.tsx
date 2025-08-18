@@ -43,6 +43,9 @@ interface SinhVienProfileRequest {
   ngayCapCCCD?: string;
   noiCapCCCD?: string;
   avatarUrl?: string;
+  hoTenCha?: string;
+  hoTenMe?: string;
+  soDienThoaiNguoiThan?: string;
 }
 
 const ProfileManagement: React.FC = () => {
@@ -62,7 +65,7 @@ const ProfileManagement: React.FC = () => {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"avatar" | "info">("info");
+  const [activeTab, setActiveTab] = useState<"avatar" | "info" | "family">("info");
   const [isEditingAvatar, setIsEditingAvatar] = useState(false);
   const [tempAvatar, setTempAvatar] = useState<string | null>(null);
   const [tempAvatarFile, setTempAvatarFile] = useState<File | null>(null);
@@ -189,10 +192,14 @@ const ProfileManagement: React.FC = () => {
     setAvatarPreview(null);
   };
 
-  const handleTabChange = (tab: "avatar" | "info") => {
+  const handleTabChange = (tab: "avatar" | "info" | "family") => {
     // Reset avatar editing state when switching tabs
     if (tab !== "avatar") {
       handleCancelAvatar();
+    }
+    // Reset general editing state when switching tabs
+    if (isEditing) {
+      handleCancel();
     }
     setActiveTab(tab);
   };
@@ -242,6 +249,9 @@ const ProfileManagement: React.FC = () => {
         ngayCapCCCD: convertDateToString(editProfile.ngayCapCCCD),
         noiCapCCCD: editProfile.noiCapCCCD,
         avatarUrl: editProfile.avatarUrl,
+        hoTenCha: editProfile.hoTenCha,
+        hoTenMe: editProfile.hoTenMe,
+        soDienThoaiNguoiThan: editProfile.soDienThoaiNguoiThan,
       };
       
       const response = await axiosPrivate.put(
@@ -388,10 +398,20 @@ const ProfileManagement: React.FC = () => {
               Thông tin cơ bản
             </button>
             <button
+              onClick={() => handleTabChange("family")}
+              className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                activeTab === "family"
+                  ? "border-green-500 text-green-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+            >
+              Thông tin gia đình
+            </button>
+            <button
               onClick={() => handleTabChange("avatar")}
               className={`py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === "avatar"
-                  ? "border-blue-500 text-blue-600"
+                  ? "border-purple-500 text-purple-600"
                   : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
@@ -631,23 +651,6 @@ const ProfileManagement: React.FC = () => {
                   />
                 </div>
 
-                {/* Quê quán */}
-                <div className="form-group">
-                  <label className="block text-sm font-semibold text-gray-800 mb-2">
-                    <MapPin className="inline h-4 w-4 mr-2 text-blue-600" />
-                    Quê quán
-                  </label>
-                  <input
-                    type="text"
-                    value={editProfile?.queQuan || ""}
-                    onChange={(e) =>
-                      handleInputChange("queQuan", e.target.value)
-                    }
-                    disabled={!isEditing}
-                    className="w-full px-3 py-2 border-2 border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-800 enabled:bg-white enabled:text-gray-900 enabled:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
-                  />
-                </div>
-
                 {/* Dân tộc */}
                 <div className="form-group">
                   <label className="block text-sm font-semibold text-gray-800 mb-2">
@@ -743,6 +746,137 @@ const ProfileManagement: React.FC = () => {
                     disabled={!isEditing}
                     className="w-full px-3 py-2 border-2 border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-800 enabled:bg-white enabled:text-gray-900 enabled:border-blue-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                   />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "family" && (
+            <div>
+              {/* Thông báo về thông tin gia đình */}
+              <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+                <div className="flex items-start space-x-3">
+                  <User className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h3 className="text-sm font-semibold text-green-800">
+                      Thông tin gia đình
+                    </h3>
+                    <p className="text-sm text-green-700 mt-1">
+                      Cập nhật thông tin liên lạc của gia đình và quê quán
+                    </p>
+                    <p className="text-sm text-green-700">
+                      <strong>Có thể chỉnh sửa:</strong> Quê quán, Thông tin cha mẹ, Số điện thoại liên lạc
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Edit Actions for Family Tab */}
+              <div className="mb-6 flex justify-end">
+                {!isEditing ? (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+                  >
+                    <Edit className="h-4 w-4" />
+                    <span>Chỉnh sửa</span>
+                  </button>
+                ) : (
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleCancel}
+                      disabled={saving}
+                      className="flex items-center space-x-2 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors disabled:opacity-50"
+                    >
+                      <X className="h-4 w-4" />
+                      <span>Hủy</span>
+                    </button>
+                    <button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+                    >
+                      {saving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Save className="h-4 w-4" />
+                      )}
+                      <span>{saving ? "Đang lưu..." : "Lưu"}</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Family Information Form */}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Quê quán */}
+                  <div className="form-group">
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                      <MapPin className="inline h-4 w-4 mr-2 text-green-600" />
+                      Quê quán
+                    </label>
+                    <input
+                      type="text"
+                      value={editProfile?.queQuan || ""}
+                      onChange={(e) =>
+                        handleInputChange("queQuan", e.target.value)
+                      }
+                      disabled={!isEditing}
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-800 enabled:bg-white enabled:text-gray-900 enabled:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                    />
+                  </div>
+
+                  {/* Họ tên cha */}
+                  <div className="form-group">
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                      <User className="inline h-4 w-4 mr-2 text-green-600" />
+                      Họ tên cha
+                    </label>
+                    <input
+                      type="text"
+                      value={editProfile?.hoTenCha || ""}
+                      onChange={(e) =>
+                        handleInputChange("hoTenCha", e.target.value)
+                      }
+                      disabled={!isEditing}
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-800 enabled:bg-white enabled:text-gray-900 enabled:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                    />
+                  </div>
+
+                  {/* Họ tên mẹ */}
+                  <div className="form-group">
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                      <User className="inline h-4 w-4 mr-2 text-green-600" />
+                      Họ tên mẹ
+                    </label>
+                    <input
+                      type="text"
+                      value={editProfile?.hoTenMe || ""}
+                      onChange={(e) =>
+                        handleInputChange("hoTenMe", e.target.value)
+                      }
+                      disabled={!isEditing}
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-800 enabled:bg-white enabled:text-gray-900 enabled:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                    />
+                  </div>
+
+                  {/* Số điện thoại người thân */}
+                  <div className="form-group">
+                    <label className="block text-sm font-semibold text-gray-800 mb-2">
+                      <Phone className="inline h-4 w-4 mr-2 text-green-600" />
+                      Số điện thoại người thân
+                    </label>
+                    <input
+                      type="tel"
+                      value={editProfile?.soDienThoaiNguoiThan || ""}
+                      onChange={(e) =>
+                        handleInputChange("soDienThoaiNguoiThan", e.target.value)
+                      }
+                      disabled={!isEditing}
+                      className="w-full px-3 py-2 border-2 border-gray-300 rounded-md disabled:bg-gray-100 disabled:text-gray-800 enabled:bg-white enabled:text-gray-900 enabled:border-green-400 focus:border-green-500 focus:ring-2 focus:ring-green-200"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

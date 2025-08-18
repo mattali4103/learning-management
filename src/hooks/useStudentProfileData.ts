@@ -109,16 +109,19 @@ const useStudentProfileData = ({
         setError(null);
 
         // Fetch all data in parallel
-        const [profileResponse, tinChiResponse, gpaResponse] = await Promise.all([
+        const [profileResponse, familyResponse, tinChiResponse, gpaResponse] = await Promise.all([
           axiosPrivate.get(
             PROFILE_SERVICE.GET_SINHVIEN_PREVIEW_PROFILE.replace(":maSo", maSo)
           ),
+          axiosPrivate.get(
+            PROFILE_SERVICE.GET_SINHVIEN_NGUOITHAN_PROFILE.replace(":maSo", maSo)
+          ).catch(() => null), // Optional - don't fail if this fails
           axiosPrivate.get(
             KQHT_SERVICE.GET_THONGKE_TINCHI.replace(":maSo", maSo)
           ).catch(() => null), // Optional - don't fail if this fails
           axiosPrivate.post(KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY, {
             maSo: maSo,
-          }).catch(() => null), // Optional - don't fail if this fails
+          }).catch(() => null),
         ]);
 
         // Process Profile
@@ -126,7 +129,23 @@ const useStudentProfileData = ({
           profileResponse.status === 200 &&
           profileResponse.data?.code === 200
         ) {
-          setUserInfo(profileResponse.data.data);
+          console.log("Profile data received:", profileResponse.data.data);
+          let profileData = profileResponse.data.data;
+          
+          // Merge family information if available
+          if (familyResponse && familyResponse.status === 200 && familyResponse.data?.code === 200) {
+            console.log("Family data received:", familyResponse.data.data);
+            const familyData = familyResponse.data.data;
+            profileData = {
+              ...profileData,
+              hoTenCha: familyData.hoTenCha || profileData.hoTenCha,
+              hoTenMe: familyData.hoTenMe || profileData.hoTenMe,
+              soDienThoaiNguoiThan: familyData.soDienThoaiNguoiThan || profileData.soDienThoaiNguoiThan,
+              queQuan: familyData.queQuan || profileData.queQuan,
+            };
+          }
+          
+          setUserInfo(profileData);
         } else {
           throw new Error(
             `API returned code: ${profileResponse.data?.code || profileResponse.status}`
