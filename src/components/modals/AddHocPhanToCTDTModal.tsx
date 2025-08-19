@@ -8,10 +8,8 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Search,
-  ArrowUp,
   ChevronDown,
   Plus,
-  ArrowUpDown,
 } from "lucide-react";
 import {
   useReactTable,
@@ -22,7 +20,6 @@ import {
   type Table,
   getSortedRowModel,
   getFilteredRowModel,
-  type SortingState,
 } from "@tanstack/react-table";
 
 import type { HocPhan } from "../../types/HocPhan";
@@ -101,11 +98,10 @@ const AvailableSubjectsTable: React.FC<AvailableSubjectsTableProps> = ({
   checkPrerequisites,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");
-  const [sorting, setSorting] = useState<SortingState>([]);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [pagination, setPagination] = useState({
     pageIndex: 0,
-    pageSize: 10,
+    pageSize: 7,
   });
 
   // Helper function to get color classes
@@ -487,11 +483,9 @@ const AvailableSubjectsTable: React.FC<AvailableSubjectsTableProps> = ({
     columns,
     state: {
       globalFilter,
-      sorting,
       pagination,
     },
     onGlobalFilterChange: setGlobalFilter,
-    onSortingChange: setSorting,
     onPaginationChange: setPagination,
     getSortedRowModel: getSortedRowModel(),
     getCoreRowModel: getCoreRowModel(),
@@ -530,36 +524,14 @@ const AvailableSubjectsTable: React.FC<AvailableSubjectsTableProps> = ({
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className={`px-2 py-2 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600 ${
-                      header.column.getCanSort() ? "cursor-pointer select-none" : ""
+                    className={`px-2 py-2 border-1 bg-gradient-to-b from-blue-400 to-blue-500 text-center text-lg font-medium text-white border-b transition-colors duration-200 hover:from-blue-500 hover:to-blue-600
                     }`}
-                    onClick={header.column.getToggleSortingHandler()}
-                    title={
-                      header.column.getCanSort()
-                        ? header.column.getNextSortingOrder() === 'asc'
-                          ? 'Sắp xếp tăng dần'
-                          : header.column.getNextSortingOrder() === 'desc'
-                            ? 'Sắp xếp giảm dần'
-                            : 'Xóa sắp xếp'
-                        : undefined
-                    }
                   >
                     {header.isPlaceholder ? null : (
                       <div className="flex items-center justify-center gap-1">
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
-                        )}
-                        {header.column.getCanSort() && (
-                          <div className="flex flex-col">
-                            {header.column.getIsSorted() === 'asc' ? (
-                              <ArrowUp className="w-3 h-3" />
-                            ) : header.column.getIsSorted() === 'desc' ? (
-                              <ChevronDown className="w-3 h-3" />
-                            ) : (
-                              <ArrowUpDown className="w-3 h-3 opacity-50" />
-                            )}
-                          </div>
                         )}
                       </div>
                     )}
@@ -707,7 +679,7 @@ const PendingSubjectsTable = ({ data, columns }: PendingSubjectsTableProps) => {
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    initialState: { pagination: { pageSize: 5 } },
+    initialState: { pagination: { pageSize: 10 } },
   });
 
   return (
@@ -777,6 +749,7 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  
   const LOAI_HP_LIST = useMemo(
     () => [
       "Quốc phòng",
@@ -937,6 +910,7 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
       setShowErrorModal(true);
     }
   };
+
   const pendingColumns = useMemo<ColumnDef<HocPhan>[]>(
     () => [
       {
@@ -1071,7 +1045,7 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
                   />
                 )}
               </>
-            ) : (
+            ) : activeTab === "add" ? (
               <>
                 {pendingHocPhans.length === 0 ? (
                   <div className="flex items-center justify-center h-full text-gray-500">
@@ -1097,7 +1071,33 @@ const AddHocPhanToCTDTModal: React.FC<AddHocPhanToCTDTModalProps> = ({
                   />
                 )}
               </>
-            )}
+            ) : activeTab === "add" ? (
+              <>
+                {pendingHocPhans.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-gray-500">
+                    <div className="text-center">
+                      <BookOpen className="w-16 h-16 mx-auto mb-4 opacity-30" />
+                      <p className="text-lg font-medium">Chưa có học phần nào</p>
+                      <p className="text-sm">
+                        Học phần được thêm từ bảng "Học phần có thể thêm" sẽ hiển
+                        thị ở đây
+                      </p>
+                      <button
+                        onClick={() => setActiveTab("available")}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Chọn học phần
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <PendingSubjectsTable
+                    data={pendingHocPhans}
+                    columns={pendingColumns}
+                  />
+                )}
+              </>
+            ) : null}
           </div>
         </div>
 

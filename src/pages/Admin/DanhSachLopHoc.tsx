@@ -6,13 +6,14 @@ import { PROFILE_SERVICE } from "../../api/apiEndPoints";
 import { fetchKhoaData } from "../../api/khoaService";
 import useAuth from "../../hooks/useAuth";
 import type { Khoa } from "../../types/Khoa";
+import type { GiangVien } from "../../types/GiangVien";
 
 interface Lop {
   maLop: string;
   tenLop: string;
   siSo: number | 0;
   siSoCon: number | 0;
-  chuNhiem: string;
+  chuNhiem: GiangVien;
   danhSachSinhVien: SinhVien[];
 }
 
@@ -368,7 +369,7 @@ const DanhSachLopHoc = () => {
                     </div>
                     <div className="flex items-center">
                       <GraduationCap className="w-4 h-4 mr-2" />
-                      <span>Chủ nhiệm: {lopItem.chuNhiem}</span>
+                      <span>Chủ nhiệm: {lopItem.chuNhiem?.hoTen || "Chưa phân công"}</span>
                     </div>
                   </div>
 

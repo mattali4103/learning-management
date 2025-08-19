@@ -115,10 +115,10 @@ const useStudentProfileData = ({
           ),
           axiosPrivate.get(
             PROFILE_SERVICE.GET_SINHVIEN_NGUOITHAN_PROFILE.replace(":maSo", maSo)
-          ).catch(() => null), // Optional - don't fail if this fails
+          ).catch(() => null),
           axiosPrivate.get(
             KQHT_SERVICE.GET_THONGKE_TINCHI.replace(":maSo", maSo)
-          ).catch(() => null), // Optional - don't fail if this fails
+          ).catch(() => null), 
           axiosPrivate.post(KQHT_SERVICE.GET_DIEM_TRUNG_BINH_BY_HOCKY, {
             maSo: maSo,
           }).catch(() => null),

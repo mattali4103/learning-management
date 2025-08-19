@@ -61,6 +61,7 @@ export const PROFILE_SERVICE = {
 };
 
 export const HOCPHAN_SERVICE = {
+  HOCPHAN_CREATE: HOCPHAN_SERVICE_URL + "/api/hocphan/create", // RequestBody
   THE_CHAT: HOCPHAN_SERVICE_URL + "/api/hocphan/tuchon/the_chat", // No Parameters, return HocPhan list 
   TU_CHON_UPDATE: HOCPHAN_SERVICE_URL + "/api/ctdt/update_hoc_phan_tu_chon", // RequestBody
   TU_CHON_ADD: HOCPHAN_SERVICE_URL + "/api/ctdt/add_hoc_phan_tu_chon", // RequestBody

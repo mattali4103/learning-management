@@ -1,12 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import CreatableSelect from "react-select/creatable";
-import {
-  BookOpen,
-  ArrowLeft,
-  Plus,
-  BarChart3,
-} from "lucide-react";
+import { BookOpen, ArrowLeft, Plus, BarChart3 } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -25,6 +20,8 @@ import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
 import AddHocPhanToCTDTModal from "../../components/modals/AddHocPhanToCTDTModal";
 import AddHocPhanTuChonModal from "../../components/modals/AddHocPhanTuChonModal";
+import CreateHocPhanModal from "../../components/modals/CreateHocPhanModal";
+import AddToCTDTConfirmModal from "../../components/modals/AddToCTDTConfirmModal";
 import Loading from "../../components/Loading";
 
 // Hooks
@@ -108,6 +105,11 @@ const ThemChuongTrinhDaoTao = () => {
   const [loading, setLoading] = useState(isEditMode);
   const [isCreatingNganh, setIsCreatingNganh] = useState(false);
   const [showAddNhomTuChonModal, setShowAddNhomTuChonModal] = useState(false);
+  const [showCreateHocPhanModal, setShowCreateHocPhanModal] = useState(false);
+  const [showAddToCTDTConfirmModal, setShowAddToCTDTConfirmModal] =
+    useState(false);
+  const [newlyCreatedHocPhan, setNewlyCreatedHocPhan] =
+    useState<HocPhan | null>(null);
   const tableRef = useRef<HTMLDivElement>(null);
   const maKhoa = auth.user?.maKhoa || "";
 
@@ -117,7 +119,7 @@ const ThemChuongTrinhDaoTao = () => {
       "Đại cương": 0,
       "Cơ sở ngành": 0,
       "Chuyên ngành": 0,
-      "Khác": 0,
+      Khác: 0,
     };
     (chuongTrinhDaoTao.hocPhanList ?? []).forEach((hp) => {
       if (hp.loaiHp in stats) {
@@ -180,10 +182,10 @@ const ThemChuongTrinhDaoTao = () => {
     setLoading(true);
     try {
       const response = await axiosPrivate.get(
-        HOCPHAN_SERVICE.CTDT_NGANH_KHOAHOC.replace(":maNganh", selectedNganh).replace(
-          ":khoaHoc",
-          selectedKhoaHoc
-        )
+        HOCPHAN_SERVICE.CTDT_NGANH_KHOAHOC.replace(
+          ":maNganh",
+          selectedNganh
+        ).replace(":khoaHoc", selectedKhoaHoc)
       );
       if (response.data.code === 200) {
         if (response.data.data === null) {
@@ -209,7 +211,6 @@ const ThemChuongTrinhDaoTao = () => {
 
   // Navigation
   const handleBack = () => navigate("/giangvien/ctdt");
-
 
   const handleAddCTDT = async (): Promise<void> => {
     try {
@@ -267,6 +268,68 @@ const ThemChuongTrinhDaoTao = () => {
 
   const handleSaveNhomSuccess = () => {
     fetchChuongTrinhDaoTaoForEdit();
+  };
+
+  // Tạo học phần mới
+  const handleCreateHocPhan = async (
+    hocPhanData: Omit<HocPhan, "maHp"> & { maHp: string }
+  ): Promise<HocPhan> => {
+    try {
+      const response = await axiosPrivate.post(
+        HOCPHAN_SERVICE.HOCPHAN_CREATE,
+        hocPhanData
+      );
+
+      if (response.data.code === 200) {
+        return response.data.data as HocPhan;
+      } else {
+        throw new Error(
+          response.data.message || "Có lỗi xảy ra khi tạo học phần"
+        );
+      }
+    } catch (error: any) {
+      console.error("Error creating hoc phan:", error);
+      throw new Error(
+        error.response?.data?.message || "Có lỗi xảy ra khi tạo học phần"
+      );
+    }
+  };
+
+  const handleCreateHocPhanSuccess = (newHocPhan: HocPhan) => {
+    setNewlyCreatedHocPhan(newHocPhan);
+    setShowAddToCTDTConfirmModal(true);
+    setSuccessMessage(`Học phần "${newHocPhan.tenHp}" đã được tạo thành công!`);
+  };
+
+  const handleAddToCTDTConfirm = () => {
+    if (newlyCreatedHocPhan) {
+      setChuongTrinhDaoTao((prev) => {
+        const updatedHocPhanList = [...prev.hocPhanList];
+        if (
+          !updatedHocPhanList.some(
+            (existing) => existing.maHp === newlyCreatedHocPhan.maHp
+          )
+        ) {
+          updatedHocPhanList.push(newlyCreatedHocPhan);
+        }
+        return {
+          ...prev,
+          hocPhanList: updatedHocPhanList,
+        };
+      });
+      setSuccessMessage(
+        `Học phần "${newlyCreatedHocPhan.tenHp}" đã được thêm vào chương trình đào tạo!`
+      );
+      setShowSuccessModal(true);
+    }
+    setShowAddToCTDTConfirmModal(false);
+    setNewlyCreatedHocPhan(null);
+  };
+
+  const handleAddToCTDTCancel = () => {
+    setShowAddToCTDTConfirmModal(false);
+    setNewlyCreatedHocPhan(null);
+    setShowSuccessModal(true);
   };
 
   const handleOpenDeleteModal = useCallback((maHp: string | null) => {
@@ -417,7 +480,9 @@ const ThemChuongTrinhDaoTao = () => {
                   ) || null
                 }
                 placeholder="Chọn ngành hoặc nhập để tạo mới..."
-                formatCreateLabel={(inputValue) => `Tạo ngành mới: "${inputValue}"`}
+                formatCreateLabel={(inputValue) =>
+                  `Tạo ngành mới: "${inputValue}"`
+                }
                 className="react-select-container"
                 classNamePrefix="react-select"
               />
@@ -567,7 +632,7 @@ const ThemChuongTrinhDaoTao = () => {
                   width={80}
                   tick={{ fontSize: 12 }}
                 />
-                <Tooltip 
+                <Tooltip
                   formatter={(value: number) => [value, "Số tín chỉ"]}
                   labelFormatter={(label: string) => label}
                 />
@@ -584,26 +649,37 @@ const ThemChuongTrinhDaoTao = () => {
 
       {/* Danh sách học phần */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden mt-6">
-        <div className="p-6" ref={tableRef}>
-          <div className="flex items-center justify-between mb-4">
+        <div className="p-3.5" ref={tableRef}>
+          <div className="flex items-center justify-between mb-2">
             <h4 className="text-lg font-semibold text-gray-800">
               Danh sách học phần
             </h4>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setShowAddHocPhanModal(true)}
-                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm học phần
-              </button>
-              <button
-                onClick={() => setShowAddNhomTuChonModal(true)}
-                className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Thêm nhóm tự chọn
-              </button>
+            <div className="flex flex-col items-end space-y-2">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setShowAddHocPhanModal(true)}
+                  className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Thêm học phần vào CTDT
+                </button>
+                <button
+                  onClick={() => setShowAddNhomTuChonModal(true)}
+                  className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 shadow"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Thêm nhóm HP tự chọn
+                </button>
+              </div>
+              <p className="text-xs text-gray-500">
+                Không tìm thấy học phần trong hệ thống?{" "}
+                <button
+                  onClick={() => setShowCreateHocPhanModal(true)}
+                  className="text-blue-600 hover:text-blue-800 underline font-medium"
+                >
+                  Tạo học phần mới
+                </button>
+              </p>
             </div>
           </div>
           <HocPhanTable
@@ -663,6 +739,25 @@ const ThemChuongTrinhDaoTao = () => {
         isOpen={showSuccessModal}
         onClose={() => setShowSuccessModal(false)}
         message={successMessage}
+      />
+
+      <CreateHocPhanModal
+        isOpen={showCreateHocPhanModal}
+        onClose={() => setShowCreateHocPhanModal(false)}
+        onSuccess={handleCreateHocPhanSuccess}
+        onSubmit={handleCreateHocPhan}
+      />
+
+      <AddToCTDTConfirmModal
+        isOpen={showAddToCTDTConfirmModal}
+        onClose={handleAddToCTDTCancel}
+        onConfirm={handleAddToCTDTConfirm}
+        hocPhan={newlyCreatedHocPhan}
+        khoaHoc={selectedKhoaHoc}
+        tenNganh={
+          danhSachNganh.find((n) => n.maNganh === selectedNganh)?.tenNganh ||
+          selectedNganh
+        }
       />
     </div>
   );

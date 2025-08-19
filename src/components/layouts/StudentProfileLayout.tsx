@@ -11,7 +11,8 @@ import {
   CheckCircle,
   Star,
   Phone,
-  MapPin
+  MapPin,
+  UserCheck
 } from "lucide-react";
 import CreditProgressCard from "../progress/CreditProgressCard";
 import CombinedCreditGPAChart from "../chart/CombinedCreditGPAChart";
@@ -337,6 +338,48 @@ const StudentProfileLayout: React.FC<StudentProfileLayoutProps> = ({
                   </div>
                 );
               })}
+              
+              {/* Thông tin cố vấn học tập */}
+              <div className="mt-4 pt-3 border-t border-gray-200">
+                <h4 className="text-sm font-semibold text-gray-600 mb-2 flex items-center">
+                  <UserCheck className="w-4 h-4 text-blue-600 mr-1" />
+                  Cố vấn học tập
+                </h4>
+                <div className="space-y-2">
+                  {[
+                    { 
+                      label: "Chủ nhiệm", 
+                      value: userInfo?.lop?.chuNhiem?.hoTen || "Chưa cập nhật", 
+                      icon: UserCheck,
+                      subValue: userInfo?.lop?.chuNhiem?.maSo ? `(${userInfo.lop.chuNhiem.maSo})` : ""
+                    },
+                    ...(userInfo?.lop?.chuNhiem?.soDienThoai ? [{
+                      label: "SĐT",
+                      value: userInfo.lop.chuNhiem.soDienThoai,
+                      icon: Phone
+                    }] : []),
+                    ...(userInfo?.lop?.chuNhiem?.email ? [{
+                      label: "Email",
+                      value: userInfo.lop.chuNhiem.email,
+                      icon: User
+                    }] : [])
+                  ].map((item, index) => {
+                    const IconComponent = item.icon;
+                    return (
+                      <div key={`advisor-${index}`} className="flex items-center py-2 px-3 border border-blue-200 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors duration-200">
+                        <IconComponent className="w-4 h-4 text-blue-600 mr-2 flex-shrink-0" />
+                        <span className="text-sm text-gray-600 w-20 flex-shrink-0">{item.label}:</span>
+                        <span className="text-sm font-medium text-gray-800">
+                          {item.value}
+                          {('subValue' in item) && item.subValue && (
+                            <span className="text-xs text-gray-500 ml-1">{item.subValue}</span>
+                          )}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </div>
         </div>

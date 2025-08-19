@@ -1,5 +1,8 @@
+import type { Lop } from "./Lop";
+
 export interface PreviewProfile {
     canhBaoHocVu: CanhBaoHocVu;
+    lop: Lop;
     avatarUrl: string;
     maSo: string;
     hoTen: string;
@@ -11,15 +14,15 @@ export interface PreviewProfile {
     soTinChiCaiThien: number;
     soTinChiDangKyHienTai: number;
     khoaHoc: string;
-    maNganh: string;
-    ngaySinh: Date;
+    maNganh: number;
+    ngaySinh: string;
     gioiTinh: boolean;
-    hoTenCha: string;
-    hoTenMe: string;
-    soDienThoaiNguoiThan: string;
-    queQuan: string;
+    hoTenCha?: string;
+    hoTenMe?: string;
+    soDienThoaiNguoiThan?: string;
+    queQuan?: string;
   }
   export interface CanhBaoHocVu{
-    maSo: string;
-    lyDo: string;
+    maSo: string | null;
+    lyDo: string | null;
   }

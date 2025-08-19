@@ -305,6 +305,8 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
   // Create flattened data structure - group headers with their courses directly below
   const flattenedData = useMemo((): CourseWithGroup[] => {
     const result: CourseWithGroup[] = [];
+    const hasSearchFilter = globalFilter && typeof globalFilter === "string" && globalFilter.trim() !== "";
+    
     // Add each group header followed immediately by its courses
     courseGroups.forEach((group) => {
       // Add group header
@@ -325,8 +327,32 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
         colorScheme: group.colorScheme,
       } as CourseWithGroup);
 
-      // Add courses immediately after the header if group is expanded
-      if (expandedGroups.has(group.id)) {
+      // If searching, check if any course in this group matches the filter
+      let shouldShowCourses = expandedGroups.has(group.id);
+      
+      if (hasSearchFilter) {
+        const filterValue = globalFilter.toLowerCase();
+        const hasMatchingCourse = group.courses.some((course) => {
+          const maHp = typeof course.maHp === "string" ? course.maHp.toLowerCase() : "";
+          const tenHp = typeof course.tenHp === "string" ? course.tenHp.toLowerCase() : "";
+          const loaiHp = typeof course.loaiHp === "string" ? course.loaiHp.toLowerCase() : "";
+          const hocPhanTienQuyet = typeof course.hocPhanTienQuyet === "string" ? course.hocPhanTienQuyet.toLowerCase() : "";
+          return (
+            maHp.includes(filterValue) ||
+            tenHp.includes(filterValue) ||
+            loaiHp.includes(filterValue) ||
+            hocPhanTienQuyet.includes(filterValue)
+          );
+        });
+        
+        // Auto-expand groups that have matching courses when searching
+        if (hasMatchingCourse) {
+          shouldShowCourses = true;
+        }
+      }
+
+      // Add courses immediately after the header if group is expanded or has matching search results
+      if (shouldShowCourses) {
         group.courses.forEach((course) => {
           result.push({
             ...course,
@@ -341,7 +367,7 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
     });
 
     return result;
-  }, [courseGroups, expandedGroups]);
+  }, [courseGroups, expandedGroups, globalFilter]);
 
   // Filter data based on global filter (apply to both headers and courses)
   const filteredData = useMemo(() => {
@@ -350,10 +376,31 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
       const filterValue = globalFilter.toLowerCase();
       filtered = flattenedData.filter((item) => {
         if (item.isGroupHeader) {
-          // For group headers, search in group title and subtitle
+          // For group headers, check if the group has any matching courses
+          // If so, keep the header to show the group structure
+          const groupCourses = flattenedData.filter(
+            course => !course.isGroupHeader && course.groupId === item.groupId
+          );
+          
+          const hasMatchingCourse = groupCourses.some((course) => {
+            const maHp = typeof course.maHp === "string" ? course.maHp.toLowerCase() : "";
+            const tenHp = typeof course.tenHp === "string" ? course.tenHp.toLowerCase() : "";
+            const loaiHp = typeof course.loaiHp === "string" ? course.loaiHp.toLowerCase() : "";
+            const hocPhanTienQuyet = typeof course.hocPhanTienQuyet === "string" ? course.hocPhanTienQuyet.toLowerCase() : "";
+            return (
+              maHp.includes(filterValue) ||
+              tenHp.includes(filterValue) ||
+              loaiHp.includes(filterValue) ||
+              hocPhanTienQuyet.includes(filterValue)
+            );
+          });
+          
+          // Also check if group title/subtitle matches
           const title = item.groupTitle?.toLowerCase() ?? "";
           const subtitle = item.groupSubtitle?.toLowerCase() ?? "";
-          return title.includes(filterValue) || subtitle.includes(filterValue);
+          const groupMatches = title.includes(filterValue) || subtitle.includes(filterValue);
+          
+          return hasMatchingCourse || groupMatches;
         } else {
           // For courses, search in course properties
           const maHp = typeof item.maHp === "string" ? item.maHp.toLowerCase() : "";
@@ -699,25 +746,20 @@ export const HocPhanTable: React.FC<HocPhanTableProps> = ({
 
   return (
     <div className="overflow-x-auto rounded-lg shadow-xl bg-gray-200 transition-all duration-200 hover:shadow-2xl">
-      {/* Filter Bar */}
-      <div className="p-2 bg-gray-50 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                value={globalFilter ?? ""}
-                onChange={(e) => setGlobalFilter(e.target.value)}
-                placeholder="Tìm kiếm học phần..."
-                className="border pl-9 pr-3 py-1.5 rounded-lg bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm placeholder-gray-500 transition-all duration-200 w-48"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
     
       <div className="text-center flex bg-gradient-to-r from-blue-400 to-blue-500 py-3 text-lg text-white relative">
+        <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              placeholder="Tìm kiếm học phần..."
+              className="border-none pl-9 pr-3 py-1.5 rounded-lg bg-white/90 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:bg-white text-sm placeholder-gray-500 transition-all duration-200 w-48"
+            />
+          </div>
+        </div>
         <div className="flex-1 flex justify-center items-center">
           <h3 className="font-bold uppercase tracking-wide">{name}</h3>
           {totalCourses > 0 && (
