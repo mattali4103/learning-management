@@ -35,7 +35,7 @@
     loading?: boolean;
     emptyStateTitle?: string;
     emptyStateDescription?: string;
-    onDelete?: (maHp: string) => void;
+    onDelete?: (id: number | string) => void;
   }
 
   interface CourseGroupResult {
@@ -48,14 +48,25 @@
     type: "required" | "elective";
     title: string;
     subtitle: string;
-    courses: HocPhan[];
+    courses: (HocPhan | KeHoachHocTap)[];
     totalCredits: number;
     requiredCredits?: number;
     colorScheme: string;
     groupType?: string;
   }
 
-  interface CourseWithGroup extends HocPhan {
+  interface CourseWithGroup {
+    id?: number | string;
+    maHp?: string;
+    tenHp?: string;
+    tinChi?: number;
+    hocPhanTienQuyet?: string;
+    loaiHp?: string;
+    maHocKy?: number;
+    tenHocKy?: string;
+    namHocId?: number;
+    namBdNamKt?: string;
+    hocPhanCaiThien?: boolean;
     groupId: string;
     groupType: "required" | "elective";
     isGroupHeader?: boolean;
@@ -95,10 +106,25 @@
     const [globalFilter, setGlobalFilter] = useState<string>("");
     const [isExpanded, setIsExpanded] = useState<boolean>(true);
     const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+    const [previousActiveTab, setPreviousActiveTab] = useState<string>(activeTab);
     const [pagination, setPagination] = useState({
       pageIndex: 0,
       pageSize: 7,
     });
+
+    // Reset expanded groups khi activeTab thay đổi đáng kể (ví dụ từ "all" sang "semester-X")
+    useEffect(() => {
+      const isTabChangeSignificant = 
+        (previousActiveTab === "all" && activeTab.startsWith("semester-")) ||
+        (previousActiveTab.startsWith("semester-") && activeTab === "all") ||
+        (previousActiveTab.startsWith("semester-") && activeTab.startsWith("semester-") && previousActiveTab !== activeTab);
+      
+      if (isTabChangeSignificant) {
+        setExpandedGroups(new Set());
+      }
+      
+      setPreviousActiveTab(activeTab);
+    }, [activeTab, previousActiveTab]);
 
     // Tạo nhóm học phần từ các khóa học bắt buộc và tự chọn
     const courseGroupsResult = useMemo((): CourseGroupResult => {
@@ -449,38 +475,39 @@
     useEffect(() => {
       if (globalFilter && typeof globalFilter === "string" && globalFilter.trim() !== "") {
         const filterValue = globalFilter.toLowerCase();
-        const groupsToExpand = new Set<string>();
         
-        courseGroups.forEach((group) => {
-          // Check if group title/subtitle matches
-          const title = group.title.toLowerCase();
-          const subtitle = group.subtitle.toLowerCase();
-          const groupMatches = title.includes(filterValue) || subtitle.includes(filterValue);
+        setExpandedGroups(prevExpanded => {
+          const groupsToExpand = new Set(prevExpanded); // Giữ lại các group đã expand trước đó
           
-          // Check if any course in the group matches
-          const hasMatchingCourse = group.courses.some((course) => {
-            const maHp = typeof course.maHp === "string" ? course.maHp.toLowerCase() : "";
-            const tenHp = typeof course.tenHp === "string" ? course.tenHp.toLowerCase() : "";
-            const loaiHp = typeof course.loaiHp === "string" ? course.loaiHp.toLowerCase() : "";
-            const hocPhanTienQuyet = typeof course.hocPhanTienQuyet === "string" ? course.hocPhanTienQuyet.toLowerCase() : "";
-            return (
-              maHp.includes(filterValue) ||
-              tenHp.includes(filterValue) ||
-              loaiHp.includes(filterValue) ||
-              hocPhanTienQuyet.includes(filterValue)
-            );
+          courseGroups.forEach((group) => {
+            // Check if group title/subtitle matches
+            const title = group.title.toLowerCase();
+            const subtitle = group.subtitle.toLowerCase();
+            const groupMatches = title.includes(filterValue) || subtitle.includes(filterValue);
+            
+            // Check if any course in the group matches
+            const hasMatchingCourse = group.courses.some((course) => {
+              const maHp = typeof course.maHp === "string" ? course.maHp.toLowerCase() : "";
+              const tenHp = typeof course.tenHp === "string" ? course.tenHp.toLowerCase() : "";
+              const loaiHp = typeof course.loaiHp === "string" ? course.loaiHp.toLowerCase() : "";
+              const hocPhanTienQuyet = typeof course.hocPhanTienQuyet === "string" ? course.hocPhanTienQuyet.toLowerCase() : "";
+              return (
+                maHp.includes(filterValue) ||
+                tenHp.includes(filterValue) ||
+                loaiHp.includes(filterValue) ||
+                hocPhanTienQuyet.includes(filterValue)
+              );
+            });
+            
+            if (groupMatches || hasMatchingCourse) {
+              groupsToExpand.add(group.id);
+            }
           });
           
-          if (groupMatches || hasMatchingCourse) {
-            groupsToExpand.add(group.id);
-          }
+          return groupsToExpand;
         });
-        
-        setExpandedGroups(groupsToExpand);
-      } else {
-        // Reset to empty when no search filter
-        setExpandedGroups(new Set());
       }
+      // Không reset expandedGroups khi không có search filter để giữ trạng thái expand của user
     }, [globalFilter, courseGroups]);
 
     // Toggle group expansion
@@ -735,7 +762,7 @@
               <div className="flex items-center justify-center">
                 <button
                   className="text-red-600 hover:text-red-800 p-2 rounded-lg transition-colors duration-200"
-                  onClick={() => onDelete(row.original.maHp)}
+                  onClick={() => row.original.id && onDelete(row.original.id)}
                   title="Xóa khỏi kế hoạch"
                 >
                   <Trash2 className="h-5 w-5" />

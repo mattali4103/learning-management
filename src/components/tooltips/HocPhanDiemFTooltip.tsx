@@ -5,12 +5,20 @@ import useAxiosPrivate from "../../hooks/useAxiosPrivate";
 import { KQHT_SERVICE } from "../../api/apiEndPoints";
 
 interface HocPhanDiemFData {
-  id: number;
-  maHp: string;
-  tenHp: string;
-  diemChu: string;
-  diemSo: number;
-  soTinChi: number;
+  id?: number;
+  maHp?: string;
+  maHocPhan?: string;
+  tenHp?: string;
+  tenHocPhan?: string;
+  diemChu?: string;
+  diemSo?: number;
+  soTinChi?: number;
+  hocPhan?: {
+    maHp?: string;
+    tenHp?: string;
+    soTinChi?: number;
+    loaiHp?: string;
+  };
   [key: string]: any;
 }
 
@@ -60,13 +68,38 @@ export default function HocPhanDiemFTooltip({
         setLoading(true);
         setError(null);
         
-        const response = await axiosPrivate.get(
-          KQHT_SERVICE.GET_HOC_PHAN_DIEM_F.replace(":maSo", maSo)
-        );
+        const endpoint = KQHT_SERVICE.GET_HOC_PHAN_DIEM_F.replace(":maSo", maSo);
+        const response = await axiosPrivate.get(endpoint);
 
         if (response.data.code === 200) {
           const responseData = response.data.data || [];
-          setData(Array.isArray(responseData) ? responseData : []);
+          
+          // Handle both flat and nested data structures
+          const processedData = Array.isArray(responseData) ? responseData.map((item: any) => {
+            if (item.hocPhan) {
+              // Nested structure like HocPhanCaiThien
+              return {
+                id: item.id,
+                maHp: item.hocPhan.maHp,
+                tenHp: item.hocPhan.tenHp,
+                diemChu: item.diemChu,
+                diemSo: item.diemSo,
+                soTinChi: item.hocPhan.soTinChi || item.soTinChi,
+              };
+            } else {
+              // Flat structure
+              return {
+                id: item.id,
+                maHp: item.maHp || item.maHocPhan,
+                tenHp: item.tenHp || item.tenHocPhan,
+                diemChu: item.diemChu,
+                diemSo: item.diemSo,
+                soTinChi: item.soTinChi,
+              };
+            }
+          }) : [];
+          
+          setData(processedData);
         } else {
           setError("Không thể tải dữ liệu học phần nợ");
         }
@@ -142,28 +175,47 @@ export default function HocPhanDiemFTooltip({
             <p>Không có học phần nợ</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {data.map((item, index) => (
-              <div
-                key={item.id || index}
-                className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-md transition-colors"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
-                    {item.maHp} - {item.tenHp}
-                  </p>
+          <div className="space-y-1">
+            {data.map((item, index) => {
+              // Extract data with fallbacks
+              const maHp = item.maHp || item.maHocPhan || 'N/A';
+              const tenHp = item.tenHp || item.tenHocPhan || 'Không có tên';
+              const diemChu = item.diemChu || 'F';
+              const soTinChi = item.soTinChi || 0;
+              
+              return (
+                <div
+                  key={item.id || index}
+                  className="px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center text-sm">
+                        <span className="font-medium text-red-600 min-w-0 flex-shrink-0">
+                          {maHp}
+                        </span>
+                        <span className="mx-2 text-gray-400">-</span>
+                        <span className="text-gray-800 flex-1 truncate">
+                          {tenHp}
+                        </span>
+                      </div>
+                      {soTinChi > 0 && (
+                        <p className="text-xs text-gray-500 mt-1">
+                          {soTinChi} tín chỉ
+                        </p>
+                      )}
+                    </div>
+                    <div className="ml-3 flex-shrink-0">
+                      <span
+                        className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getDiemColor(diemChu)}`}
+                      >
+                        {diemChu}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="ml-2 flex-shrink-0">
-                  <span
-                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border ${getDiemColor(
-                      item.diemChu
-                    )}`}
-                  >
-                    {item.diemChu}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -176,6 +228,9 @@ export default function HocPhanDiemFTooltip({
           </p>
         </div>
       )}
+
+      {/* Arrow pointer */}
+      <div className="absolute -top-2 left-6 w-4 h-4 bg-white border-t border-l border-gray-200 transform rotate-45"></div>
     </div>
   );
 }

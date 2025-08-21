@@ -193,11 +193,11 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
       .map(code => code.trim())
       .filter(code => code !== "");
 
-    // Tạo danh sách tất cả học phần hiện có (đã hoàn thành + đang trong kế hoạch + đã thêm vào pending)
+    // Tạo danh sách học phần khả dụng (chỉ bao gồm học phần đã hoàn thành + đang trong kế hoạch, không tính pending)
     const allAvailableCourses = [
       ...hocPhanDaHoc, // Học phần đã hoàn thành
       ...currentHocPhans.map(item => extractMaHp(item)), // Học phần trong kế hoạch hiện tại
-      ...pendingHocPhans.map(item => extractMaHp(item)), // Học phần đã thêm vào danh sách chờ
+      // Không tính pendingHocPhans - học phần trong hàng đợi không được coi là đã có
     ];
 
     // Kiểm tra học phần tiên quyết nào chưa có
@@ -209,7 +209,7 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
       canAdd: hocPhanTuyenQuyetList.length === 0,
       hocPhanTuyenQuyetList
     };
-  }, [hocPhanDaHoc, currentHocPhans, pendingHocPhans]);
+  }, [hocPhanDaHoc, currentHocPhans]);
 
   // Helper function để kiểm tra xem học phần có thuộc nhóm tự chọn đã hoàn thành không
   const isFromCompletedElectiveGroup = useCallback((hocPhan: HocPhan): boolean => {

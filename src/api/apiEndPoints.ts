@@ -1,18 +1,18 @@
 
-//For local
-export const USER_SERIVCE_URL = "http://localhost:8088";
-export const KHHT_SERVICE_URL = "http://localhost:8087";
-export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
-export const PROFILE_SERVICE_URL = "http://localhost:8085";
-export const KQHT_SERVICE_URL = "http://localhost:8089";
+// //For local
+// export const USER_SERIVCE_URL = "http://localhost:8088";
+// export const KHHT_SERVICE_URL = "http://localhost:8087";
+// export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
+// export const PROFILE_SERVICE_URL = "http://localhost:8085";
+// export const KQHT_SERVICE_URL = "http://localhost:8089";
 
 // FOR KONG
-// const KONG_URL = "http://localhost:8000"
-// export const USER_SERIVCE_URL = KONG_URL + "/user-service";
-// export const KHHT_SERVICE_URL = KONG_URL + "/khht-service";
-// export const HOCPHAN_SERVICE_URL = KONG_URL + "/course-service";
-// export const PROFILE_SERVICE_URL = KONG_URL + "/profile-service";
-// export const KQHT_SERVICE_URL = KONG_URL + "/kqht-service";
+const KONG_URL = "http://localhost:8000"
+export const USER_SERIVCE_URL = KONG_URL + "/user-service";
+export const KHHT_SERVICE_URL = KONG_URL + "/khht-service";
+export const HOCPHAN_SERVICE_URL = KONG_URL + "/course-service";
+export const PROFILE_SERVICE_URL = KONG_URL + "/profile-service";
+export const KQHT_SERVICE_URL = KONG_URL + "/kqht-service";
 
 
 // const BASE_URL = "http://localhost"; // Base URL for the API

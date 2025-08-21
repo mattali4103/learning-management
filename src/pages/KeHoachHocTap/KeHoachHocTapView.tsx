@@ -677,7 +677,6 @@ const KeHoachHocTapView = () => {
 
               {allData.length > 0 ? (
                 <AllCoursesCollapsibleTable
-                  key={activeTab}
                   activeTab={activeTab}
                   name="Tất cả học phần"
                   allData={allData}
@@ -720,7 +719,6 @@ const KeHoachHocTapView = () => {
 
               {selectedSemesterData.length > 0 ? (
                 <AllCoursesCollapsibleTable
-                  key={activeTab}
                   activeTab={activeTab}
                   name="Học phần theo học kỳ"
                   allData={selectedSemesterData}

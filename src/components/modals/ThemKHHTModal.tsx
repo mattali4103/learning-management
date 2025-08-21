@@ -445,11 +445,11 @@ const ThemKHHTModal = ({
         .map(code => code.trim())
         .filter(code => code !== "");
 
-      // Tạo danh sách tất cả học phần hiện có (đã hoàn thành + đang trong kế hoạch + đã thêm vào pending)
+      // Tạo danh sách học phần khả dụng (chỉ bao gồm học phần đã hoàn thành + đang trong kế hoạch, không tính pending)
       const allAvailableCourses = [
         ...hocPhanDaHoc, // Học phần đã hoàn thành
         ...currentHocPhans.map(item => item.hocPhan.maHp), // Học phần trong kế hoạch hiện tại
-        ...pendingHocPhans.map(item => item.hocPhan.maHp), // Học phần đã thêm vào danh sách chờ
+        // Không tính pendingHocPhans - học phần trong hàng đợi không được coi là đã có
       ];
 
       // Kiểm tra học phần tiên quyết nào chưa có
@@ -462,7 +462,7 @@ const ThemKHHTModal = ({
         missingPrerequisites
       };
     },
-    [hocPhanDaHoc, currentHocPhans, pendingHocPhans]
+    [hocPhanDaHoc, currentHocPhans]
   );
 
   const handleAddToPending = useCallback(

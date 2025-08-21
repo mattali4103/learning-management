@@ -195,7 +195,7 @@ const KeHoachHocTapDetail = () => {
     const statsMap = new Map<string, CreditStatData>();
     const endSemester = startingSemester + 11; // Hiển thị 12 học kỳ
     
-    // First, populate with semesters that have courses from allData
+    // First, populate with semesters that have courses from allData (including improvement courses)
     selectedHocPhans.forEach((item) => {
       if (item.maHocKy) {
         const key = `${item.maHocKy}`;
@@ -647,7 +647,7 @@ const KeHoachHocTapDetail = () => {
                     : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                 }`}
               >
-                Tất cả ({allData.length})
+                Tất cả ({allData.filter(item => item.hocPhanCaiThien !== true).length})
               </button>
 
               {availableNamHoc.map((namHoc) => (
@@ -666,7 +666,9 @@ const KeHoachHocTapDetail = () => {
                       (item) =>
                         item.namHocId === namHoc.id &&
                         item.maHocKy >= startingSemester &&
-                        item.maHocKy <= startingSemester + 11
+                        // Lọc các học kỳ trong năm học hiện tại
+                        item.maHocKy <= startingSemester + 11 &&
+                        item.hocPhanCaiThien !== true
                     ).length
                   }
                   )
@@ -722,7 +724,7 @@ const KeHoachHocTapDetail = () => {
                   </div>
                 </div>
               </div>
-              {selectedHocPhans.length > 0 ? (
+              {selectedHocPhans.filter(item => item.hocPhanCaiThien !== true).length > 0 ? (
                 <AllCoursesCollapsibleTable
                   key={activeTab}
                   activeTab={activeTab}
@@ -731,15 +733,15 @@ const KeHoachHocTapDetail = () => {
                       ? "Tất cả học phần"
                       : `${availableHocKy.find((s) => s.id === selectedHocKyChart)?.ten}`
                   }
-                  allData={selectedHocPhans}
+                  allData={selectedHocPhans.filter(item => item.hocPhanCaiThien !== true)}
                   nhomHocPhanTuChon={nhomHocPhanTuChon}
                   improvementCourses={selectedHocPhans.filter(item => item.hocPhanCaiThien === true)}
                   loading={loading}
                   emptyStateTitle="Chưa có học phần nào"
                   emptyStateDescription="Nhấn 'Thêm học phần' để bắt đầu"
-                  onDelete={(maHp: string) => {
+                  onDelete={(id: number | string) => {
                     const hocPhan = selectedHocPhans.find(
-                      (item) => item.maHp === maHp
+                      (item) => item.id === id
                     );
                     if (hocPhan) {
                       setHocPhanToDelete(hocPhan);
@@ -782,32 +784,20 @@ const KeHoachHocTapDetail = () => {
                   </button>
                 </div>
               </div>
-              {selectedSemesterData.length > 0 ? (
+              {selectedSemesterData.filter(item => item.hocPhanCaiThien !== true).length > 0 ? (
                 <AllCoursesCollapsibleTable
                   key={activeTab}
                   activeTab={activeTab}
                   name="Học phần theo học kỳ"
-                  allData={selectedSemesterData.map((item, idx) => ({
-                    id: idx + 1, // fake id for table
-                    maHp: item.maHp,
-                    tenHp: item.tenHp,
-                    tinChi: item.tinChi,
-                    hocPhanTienQuyet: item.hocPhanTienQuyet,
-                    loaiHp: item.loaiHp,
-                    maHocKy: item.maHocKy || 0,
-                    tenHocKy: item.tenHocKy || "",
-                    namHocId: item.namHocId || 0,
-                    namBdNamKt: item.namBdNamKt || "",
-                    hocPhanCaiThien: item.hocPhanCaiThien || false,
-                  }))}
+                  allData={selectedSemesterData.filter(item => item.hocPhanCaiThien !== true)}
                   nhomHocPhanTuChon={nhomHocPhanTuChon}
                   improvementCourses={selectedSemesterData.filter(course => course.hocPhanCaiThien === true)}
                   loading={loading}
                   emptyStateTitle="Chưa có học phần nào trong học kỳ này"
                   emptyStateDescription="Thêm học phần đầu tiên cho học kỳ này"
-                  onDelete={(maHp: string) => {
+                  onDelete={(id: number | string) => {
                     const hocPhan = selectedHocPhans.find(
-                      (item) => item.maHp === maHp
+                      (item) => item.id === id
                     );
                     if (hocPhan) {
                       setHocPhanToDelete(hocPhan);
