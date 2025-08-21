@@ -297,6 +297,7 @@ const KeHoachHocTapView = () => {
             tenHocKy: item.hocKy.tenHocKy,
             namHocId: item.namHoc.id,
             namBdNamKt: item.namHoc.namBatDau + "-" + item.namHoc.namKetThuc,
+            hocPhanCaiThien: item.hocPhanCaiThien || false,
           }));
           setAllData(processedData);
         }
@@ -679,8 +680,9 @@ const KeHoachHocTapView = () => {
                 <AllCoursesCollapsibleTable
                   activeTab={activeTab}
                   name="Tất cả học phần"
-                  allData={allData}
+                  allData={allData.filter(item => item.hocPhanCaiThien !== true)}
                   nhomHocPhanTuChon={nhomHocPhanTuChon}
+                  improvementCourses={allData.filter(item => item.hocPhanCaiThien === true)}
                   loading={false}
                   emptyStateTitle="Chưa có học phần nào"
                   emptyStateDescription="Hiện tại chưa có học phần nào trong kế hoạch"
@@ -721,8 +723,9 @@ const KeHoachHocTapView = () => {
                 <AllCoursesCollapsibleTable
                   activeTab={activeTab}
                   name="Học phần theo học kỳ"
-                  allData={selectedSemesterData}
+                  allData={selectedSemesterData.filter(item => item.hocPhanCaiThien !== true)}
                   nhomHocPhanTuChon={nhomHocPhanTuChon}
+                  improvementCourses={selectedSemesterData.filter(item => item.hocPhanCaiThien === true)}
                   loading={false}
                   emptyStateTitle="Chưa có học phần nào trong học kỳ này"
                   emptyStateDescription="Hiện tại chưa có học phần nào trong học kỳ này"

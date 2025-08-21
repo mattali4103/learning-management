@@ -154,8 +154,6 @@
 
       // Create a Set of added course `maHp` for efficient lookup
       const addedCourseCodes = new Set(allData.map(c => c.maHp));
-      console.log("Nhom Hoc Phan Tu Chon:", nhomHocPhanTuChon);
-      console.log("Elective Course Codes:", electiveCourseCodes);
       // Filter required courses based on activeTab and exclude those already in elective groups
       let filteredRequiredCourses = uniqueRequiredCourses.filter(
         (course) => course.maHp && !electiveCourseCodes.has(course.maHp)
@@ -200,20 +198,19 @@
         }
       }
 
-      console.log("Improvement Courses From Props:", improvementCourses);
-      console.log("Improvement Courses For Group:", improvementCoursesForGroup);
-
-      // Apply activeTab filter to required courses (including improvement courses)
+      // Apply activeTab filter to required courses (excluding improvement courses)
       if (activeTab !== "tatca" && activeTab !== "all" && !activeTab.startsWith("semester-")) {
           filteredRequiredCourses = filteredRequiredCourses.filter(course => 
-              course.loaiHp === activeTab
+              course.loaiHp === activeTab && course.hocPhanCaiThien !== true
           );
       } else if (activeTab.startsWith("semester-")) {
           const hocKyId = Number(activeTab.replace("semester-", ""));
           // Filter to only show courses from allData that belong to this semester
           // and ensure they are not duplicated in elective groups
+          // Exclude improvement courses as they will be handled separately
           const semesterCourses = allData.filter(course => 
             course.maHocKy === hocKyId && 
+            course.hocPhanCaiThien !== true &&
             uniqueRequiredCourses.some(reqCourse => reqCourse.maHp === course.maHp)
           );
           
@@ -226,9 +223,13 @@
             seenCodes.add(course.maHp);
             return true;
           });
+      } else {
+          // For "all" or "tatca" tabs, exclude improvement courses from required courses
+          filteredRequiredCourses = filteredRequiredCourses.filter(course => 
+              course.hocPhanCaiThien !== true
+          );
       }
 
-      console.log("Filtered Required Courses:", filteredRequiredCourses);
       // Group required courses by loaiHp (course type) and remove duplicates within each group
       const requiredCoursesByType = filteredRequiredCourses.reduce(
         (acc, course) => {
@@ -281,9 +282,6 @@
             totalCredits,
             colorScheme,
           });
-          console.log(
-            "Required Group Created:", requiredCoursesByType
-          )
         }
       });
 
@@ -304,7 +302,6 @@
       // Add elective course groups (keep as groups)
       const electiveGroupsFiltered: CourseGroup[] = [];
       nhomHocPhanTuChon.forEach((group, index) => {
-        console.log("Processing Elective Group:", group);
         let coursesInGroup: HocPhan[] = [];
         const allElectiveCoursesInGroup = group.hocPhanTuChonList || [];
 
@@ -389,8 +386,6 @@
 
       const improvementGroup: CourseGroup[] = [];
       
-      console.log("Improvement Courses For Group:", improvementCoursesForGroup);
-      
       if (improvementCoursesForGroup.length > 0) {
         const totalCredits = improvementCoursesForGroup.reduce(
           (sum, course) => sum + (course.tinChi || 0),
@@ -406,8 +401,6 @@
           totalCredits,
           colorScheme: 'red',
         });
-        
-        console.log("Improvement Group Created:", improvementGroup);
       }
 
       // Sort elective groups by the defined order

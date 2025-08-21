@@ -724,7 +724,7 @@ const KeHoachHocTapDetail = () => {
                   </div>
                 </div>
               </div>
-              {selectedHocPhans.filter(item => item.hocPhanCaiThien !== true).length > 0 ? (
+              {selectedHocPhans.length > 0 ? (
                 <AllCoursesCollapsibleTable
                   key={activeTab}
                   activeTab={activeTab}
@@ -784,7 +784,7 @@ const KeHoachHocTapDetail = () => {
                   </button>
                 </div>
               </div>
-              {selectedSemesterData.filter(item => item.hocPhanCaiThien !== true).length > 0 ? (
+              {selectedSemesterData.length > 0 ? (
                 <AllCoursesCollapsibleTable
                   key={activeTab}
                   activeTab={activeTab}
