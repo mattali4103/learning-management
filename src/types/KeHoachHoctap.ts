@@ -9,5 +9,6 @@ export interface KeHoachHocTap {
   tenHocKy: string;
   namHocId: number;
   namBdNamKt: string;
+  hocPhanCaiThien:  boolean;
 }
 

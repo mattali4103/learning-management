@@ -1,7 +1,7 @@
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 // @ts-expect-error: CSS this is not error
 import 'react-circular-progressbar/dist/styles.css';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Trophy } from 'lucide-react';
 
 interface CreditProgressCardProps {
   currentCredits: number;
@@ -10,6 +10,7 @@ interface CreditProgressCardProps {
 
 export default function CreditProgressCard({ currentCredits, totalCredits }: CreditProgressCardProps) {
   const progressPercent = totalCredits > 0 ? Math.min((currentCredits / totalCredits) * 100, 100) : 0;
+  const isCompleted = currentCredits >= totalCredits && totalCredits > 0;
 
   return (
     <div className="text-center">
@@ -18,8 +19,8 @@ export default function CreditProgressCard({ currentCredits, totalCredits }: Cre
           value={progressPercent}
           text={`${currentCredits}`}
           styles={buildStyles({
-            textColor: '#10b981',
-            pathColor: '#10b981',
+            textColor: isCompleted ? '#10b981' : '#10b981',
+            pathColor: isCompleted ? '#10b981' : '#10b981',
             trailColor: '#e5e7eb',
             textSize: '16px',
           })}
@@ -30,9 +31,24 @@ export default function CreditProgressCard({ currentCredits, totalCredits }: Cre
         <h3 className="font-semibold text-gray-800">Tín chỉ tích lũy</h3>
       </div>
       <p className="text-sm text-gray-600">{currentCredits}/{totalCredits} tín chỉ</p>
-      <p className="text-xs text-green-600 font-medium">
-        {progressPercent.toFixed(1)}% hoàn thành
-      </p>
+      
+      {isCompleted ? (
+        <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center justify-center mb-1">
+            <Trophy className="w-5 h-5 text-green-600 mr-2" />
+            <span className="text-sm font-semibold text-green-800">
+              Hoàn thành chương trình
+            </span>
+          </div>
+          <p className="text-xs text-green-700">
+            Chúc mừng! Bạn đã hoàn thành 100% chương trình học tập
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-green-600 font-medium">
+          {progressPercent.toFixed(1)}% hoàn thành
+        </p>
+      )}
     </div>
   );
 }

@@ -870,6 +870,7 @@ const ThemKeHoachHocTapMau = () => {
                     tenHocKy: item.hocKy?.tenHocKy || "",
                     namHocId: item.hocKy?.namHoc?.id || 0,
                     namBdNamKt: item.hocKy?.namHoc?.namBatDau && item.hocKy?.namHoc?.namKetThuc ? `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}` : "",
+                    hocPhanCaiThien: item.hocPhanCaiThien || false,
                   }))}
                   nhomHocPhanTuChon={hocPhanTuChon}
                   loading={loading}
@@ -935,6 +936,7 @@ const ThemKeHoachHocTapMau = () => {
                     tenHocKy: item.hocKy?.tenHocKy || "",
                     namHocId: item.hocKy?.namHoc?.id || 0,
                     namBdNamKt: item.hocKy?.namHoc?.namBatDau && item.hocKy?.namHoc?.namKetThuc ? `${item.hocKy.namHoc.namBatDau}-${item.hocKy.namHoc.namKetThuc}` : "",
+                    hocPhanCaiThien: item.hocPhanCaiThien || false,
                   }))}
                   nhomHocPhanTuChon={hocPhanTuChon}
                   loading={loading}

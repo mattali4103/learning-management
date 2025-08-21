@@ -346,6 +346,7 @@ const KeHoachHocTapDetail = () => {
             tenHocKy: item.hocKy.tenHocKy,
             namHocId: item.namHoc.id,
             namBdNamKt: item.namHoc.namBatDau + "-" + item.namHoc.namKetThuc,
+            hocPhanCaiThien: item.hocPhanCaiThien || false,
           }));
         }
         return [];
@@ -732,6 +733,7 @@ const KeHoachHocTapDetail = () => {
                   }
                   allData={selectedHocPhans}
                   nhomHocPhanTuChon={nhomHocPhanTuChon}
+                  improvementCourses={selectedHocPhans.filter(item => item.hocPhanCaiThien === true)}
                   loading={loading}
                   emptyStateTitle="Chưa có học phần nào"
                   emptyStateDescription="Nhấn 'Thêm học phần' để bắt đầu"
@@ -796,8 +798,10 @@ const KeHoachHocTapDetail = () => {
                     tenHocKy: item.tenHocKy || "",
                     namHocId: item.namHocId || 0,
                     namBdNamKt: item.namBdNamKt || "",
+                    hocPhanCaiThien: item.hocPhanCaiThien || false,
                   }))}
                   nhomHocPhanTuChon={nhomHocPhanTuChon}
+                  improvementCourses={selectedSemesterData.filter(course => course.hocPhanCaiThien === true)}
                   loading={loading}
                   emptyStateTitle="Chưa có học phần nào trong học kỳ này"
                   emptyStateDescription="Thêm học phần đầu tiên cho học kỳ này"

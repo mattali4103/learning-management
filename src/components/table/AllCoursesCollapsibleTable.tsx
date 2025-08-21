@@ -30,6 +30,7 @@
     name: string;
     allData: KeHoachHocTap[];
     nhomHocPhanTuChon?: HocPhanTuChon[];
+    improvementCourses?: KeHoachHocTap[]; // Học phần cải thiện riêng biệt
     activeTab: string;
     loading?: boolean;
     emptyStateTitle?: string;
@@ -72,6 +73,7 @@
     name,
     allData,
     nhomHocPhanTuChon = [],
+    improvementCourses = [], // Học phần cải thiện riêng biệt
     activeTab,
     loading = false,
     emptyStateTitle,
@@ -102,12 +104,14 @@
     const courseGroupsResult = useMemo((): CourseGroupResult => {
       // Define the desired order for required course types
       const requiredOrder = [
+        "Quốc phòng",
         "Anh văn",
         "Chính trị",
-        "thể chất",
+        "Thể chất",
         "Đại cương",
         "Cơ sở ngành",
         "Chuyên ngành",
+        "Học Phần Cải Thiện"
       ];
 
       // Define the desired order for elective group types by matching course types inside them
@@ -131,7 +135,49 @@
         (course) => course.maHp && !electiveCourseCodes.has(course.maHp)
       );
 
-      // Apply activeTab filter to required courses
+      // Create improvement courses group from external parameter
+      let improvementCoursesForGroup: KeHoachHocTap[] = [];
+      
+      // Use improvement courses from props if provided
+      if (improvementCourses && improvementCourses.length > 0) {
+        improvementCoursesForGroup = improvementCourses;
+        
+        // Apply filtering logic for improvement group based on activeTab
+        if (activeTab !== "tatca" && activeTab !== "all" && !activeTab.startsWith("semester-")) {
+            improvementCoursesForGroup = improvementCourses.filter(course => 
+                course.loaiHp === activeTab
+            );
+        } else if (activeTab.startsWith("semester-")) {
+            const hocKyId = Number(activeTab.replace("semester-", ""));
+            improvementCoursesForGroup = improvementCourses.filter(course => 
+              course.maHocKy === hocKyId
+            );
+        }
+        // For "all" or "tatca" tabs, use all improvement courses without filtering
+      } else {
+        // Fallback: get improvement courses from allData if not provided as props
+        const allImprovementCourses = uniqueRequiredCourses.filter(course => course.hocPhanCaiThien === true);
+        
+        if (allImprovementCourses.length > 0) {
+          improvementCoursesForGroup = allImprovementCourses;
+          
+          if (activeTab !== "tatca" && activeTab !== "all" && !activeTab.startsWith("semester-")) {
+              improvementCoursesForGroup = allImprovementCourses.filter(course => 
+                  course.loaiHp === activeTab
+              );
+          } else if (activeTab.startsWith("semester-")) {
+              const hocKyId = Number(activeTab.replace("semester-", ""));
+              improvementCoursesForGroup = allImprovementCourses.filter(course => 
+                course.maHocKy === hocKyId
+              );
+          }
+        }
+      }
+
+      console.log("Improvement Courses From Props:", improvementCourses);
+      console.log("Improvement Courses For Group:", improvementCoursesForGroup);
+
+      // Apply activeTab filter to required courses (including improvement courses)
       if (activeTab !== "tatca" && activeTab !== "all" && !activeTab.startsWith("semester-")) {
           filteredRequiredCourses = filteredRequiredCourses.filter(course => 
               course.loaiHp === activeTab
@@ -315,6 +361,29 @@
       });
       console.log("Elective Groups Filtered:", electiveGroupsFiltered);
 
+      const improvementGroup: CourseGroup[] = [];
+      
+      console.log("Improvement Courses For Group:", improvementCoursesForGroup);
+      
+      if (improvementCoursesForGroup.length > 0) {
+        const totalCredits = improvementCoursesForGroup.reduce(
+          (sum, course) => sum + (course.tinChi || 0),
+          0
+        );
+
+        improvementGroup.push({
+          id: 'improvement-courses',
+          type: 'required',
+          title: 'Học Phần Cải Thiện',
+          subtitle: `${improvementCoursesForGroup.length} học phần • ${totalCredits} tín chỉ`,
+          courses: improvementCoursesForGroup,
+          totalCredits,
+          colorScheme: 'red',
+        });
+        
+        console.log("Improvement Group Created:", improvementGroup);
+      }
+
       // Sort elective groups by the defined order
       electiveGroupsFiltered.sort((a, b) => {
         const aIndex = electiveOrder.findIndex((order) =>
@@ -333,7 +402,8 @@
       // Anh văn, chính trị, thể chất, đại cương,
       // nhóm học phần tự chọn đại cương,
       // cơ sở ngành, nhóm học phần tự chọn cơ sở ngành,
-      // chuyên ngành, nhóm học phần tự chọn chuyên ngành
+      // chuyên ngành, nhóm học phần tự chọn chuyên ngành,
+      // học phần cải thiện
 
       const combinedGroups: CourseGroup[] = [];
 
@@ -352,6 +422,11 @@
         });
       });
 
+      // Add improvement courses group at the end
+      improvementGroup.forEach((group) => {
+        combinedGroups.push(group);
+      });
+
       // Add any remaining groups not in order arrays
       requiredGroups.forEach((group) => {
         if (!combinedGroups.includes(group)) {
@@ -366,7 +441,7 @@
       console.log("Combined Course Groups:", combinedGroups);
 
       return { groups: combinedGroups, uniqueRequiredCourses: [] }; // No longer showing individual required courses
-    }, [uniqueRequiredCourses, nhomHocPhanTuChon, activeTab, allData]);
+    }, [uniqueRequiredCourses, nhomHocPhanTuChon, activeTab, allData, improvementCourses]);
 
     const courseGroups = courseGroupsResult.groups;
 

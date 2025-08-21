@@ -575,6 +575,7 @@ const ThemKHHTModal = ({
         onSaveSuccess(); // Notify parent component
       }
     } catch (error: any) {
+
       setErrorMessage(
         "Có lỗi xảy ra khi thêm học phần: " +
           (error.response?.data?.message ||

@@ -294,7 +294,8 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
     const filterCourses = (courseList: HocPhan[]) => 
       courseList.filter(hp => 
         !currentMaHps.has(hp.maHp || '') && 
-        !isFromCompletedElectiveGroup(hp)
+        !isFromCompletedElectiveGroup(hp) &&
+        hp.maHp !== 'TC100' // Ẩn học phần TC100
       );
 
     const newGroups: SubjectGroup[] = [];
@@ -408,7 +409,11 @@ const CollapsibleSubjectsTable: React.FC<CollapsibleSubjectsTableProps> = ({
     // Regular courses grouped by loaiHp
     const availableSubjects = enableImprovementCourses 
       ? filterCourses(hocPhans)
-      : hocPhans.filter(hp => !currentMaHps.has(hp.maHp || '') && !pendingMaHps.has(hp.maHp || ''));
+      : hocPhans.filter(hp => 
+          !currentMaHps.has(hp.maHp || '') && 
+          !pendingMaHps.has(hp.maHp || '') &&
+          hp.maHp !== 'TC100' // Ẩn học phần TC100
+        );
 
     const groupedByLoaiHp = availableSubjects.reduce(
       (acc, course) => {
