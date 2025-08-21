@@ -71,12 +71,7 @@ const KeHoachHocTapView = () => {
   const [selectedHocKyChart, setSelectedHocKyChart] = useState<number | null>(
     null
   );
-  const [selectedFilterNamHoc, setSelectedFilterNamHoc] = useState<
-    number | null
-  >(null);
-  const [selectedFilterHocKy, setSelectedFilterHocKy] = useState<number | null>(
-    null
-  );
+
 
   const MAX_CREDITS_PER_SEMESTER = 20;
 
@@ -229,8 +224,7 @@ const KeHoachHocTapView = () => {
     if (data && data.activePayload && data.activePayload[0]) {
       const clickedData = data.activePayload[0].payload as CreditStatData;
       setSelectedHocKyChart(clickedData.hocKyId);
-      setSelectedFilterNamHoc(clickedData.namHocId);
-      setSelectedFilterHocKy(clickedData.hocKyId);
+
       setSelectedTabNamHoc(clickedData.namHocId);
       setActiveTab(`semester-${clickedData.hocKyId}`);
       tableRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -243,7 +237,7 @@ const KeHoachHocTapView = () => {
       setActiveTab("all");
     } else {
       setSelectedTabNamHoc(namHocId);
-      setSelectedFilterNamHoc(namHocId);
+
       setActiveTab("all");
     }
     setSelectedHocKyChart(null);
@@ -251,7 +245,7 @@ const KeHoachHocTapView = () => {
 
   const handleHocKyTabClick = (hocKyId: number) => {
     setSelectedHocKyChart(hocKyId);
-    setSelectedFilterHocKy(hocKyId);
+
     setActiveTab(`semester-${hocKyId}`);
     const selectedHocKy = danhSachHocKy.find((hk) => hk.maHocKy === hocKyId);
     if (selectedHocKy) {
@@ -432,12 +426,12 @@ const KeHoachHocTapView = () => {
     if (namHocId) {
       const namHocIdNum = parseInt(namHocId, 10);
       setSelectedTabNamHoc(namHocIdNum);
-      setSelectedFilterNamHoc(namHocIdNum);
+
       if (hocKyId) {
         const hocKyIdNum = parseInt(hocKyId, 10);
         setActiveTab(`semester-${hocKyIdNum}`);
         setSelectedHocKyChart(hocKyIdNum);
-        setSelectedFilterHocKy(hocKyIdNum);
+
       } else {
         setActiveTab("all");
       }
@@ -480,8 +474,7 @@ const KeHoachHocTapView = () => {
         setSelectedTabNamHoc(targetSemester.namHoc.id);
         setActiveTab(`semester-${targetSemester.maHocKy}`);
         setSelectedHocKyChart(targetSemester.maHocKy);
-        setSelectedFilterNamHoc(targetSemester.namHoc.id);
-        setSelectedFilterHocKy(targetSemester.maHocKy);
+
       }
     }
   }, [loading, allData, hocKyHienTai, danhSachHocKy, startingSemester]);

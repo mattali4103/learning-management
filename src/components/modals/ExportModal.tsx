@@ -6,6 +6,8 @@ interface ExportModalProps {
   availableClassifications: string[];
   selectedClassifications: string[];
   onClassificationChange: (classifications: string[]) => void;
+  sortBy: "maSo" | "name";
+  onSortChange: (sortBy: "maSo" | "name") => void;
   onExport: () => void;
 }
 
@@ -15,6 +17,8 @@ const ExportModal = ({
   availableClassifications,
   selectedClassifications,
   onClassificationChange,
+  sortBy,
+  onSortChange,
   onExport
 }: ExportModalProps) => {
   if (!isOpen) {
@@ -85,6 +89,27 @@ const ExportModal = ({
                   <p>Không có dữ liệu xếp loại học lực</p>
                 </div>
               )}
+            </div>
+
+            {/* Sort Option */}
+            <div>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                Sắp xếp danh sách
+              </h3>
+
+              <select
+                value={sortBy}
+                onChange={(e) => onSortChange(e.target.value as "maSo" | "name")}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
+              >
+                <option value="maSo">Theo mã số sinh viên (B2110945, B2110946, ...)</option>
+                <option value="name">Theo tên sinh viên (A-Z)</option>
+              </select>
+
+              <div className="mt-2 text-xs text-gray-500">
+                <p>• <strong>Theo mã số:</strong> Sắp xếp theo thứ tự mã số sinh viên từ nhỏ đến lớn</p>
+                <p>• <strong>Theo tên:</strong> Sắp xếp theo thứ tự bảng chữ cái của họ tên</p>
+              </div>
             </div>
           </div>
         </div>

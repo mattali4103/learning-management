@@ -68,6 +68,7 @@ const ThongTinLopHoc = () => {
   const [selectedClassifications, setSelectedClassifications] = useState<
     string[]
   >([]);
+  const [exportSortBy, setExportSortBy] = useState<"maSo" | "name">("maSo");
 
   // Modal states for student preview
   const [selectedStudentForPreview, setSelectedStudentForPreview] =
@@ -393,6 +394,17 @@ const ThongTinLopHoc = () => {
       return;
     }
 
+    // Sort the data according to the selected sort option
+    const sortedData = [...dataToExport].sort((a, b) => {
+      if (exportSortBy === "maSo") {
+        // Sort by student ID (maSo)
+        return a.maSo.localeCompare(b.maSo);
+      } else {
+        // Sort by name (hoTen)
+        return a.hoTen.localeCompare(b.hoTen);
+      }
+    });
+
     const columns = [
       { header: "MSSV", dataKey: "maSo", width: 30 },
       { header: "Họ và tên", dataKey: "hoTen", width: 50 },
@@ -421,10 +433,11 @@ const ThongTinLopHoc = () => {
       },
     ];
 
-    const title = `Danh sách sinh viên lớp ${maLop} (${titleSuffix})`;
-    const filename = `danh-sach-sinh-vien-lop-${maLop}-${filenameSuffix}.pdf`;
+    const sortByText = exportSortBy === "maSo" ? "theo mã số" : "theo tên";
+    const title = `Danh sách sinh viên lớp ${maLop} (${titleSuffix}) - Sắp xếp ${sortByText}`;
+    const filename = `danh-sach-sinh-vien-lop-${maLop}-${filenameSuffix}-${exportSortBy}.pdf`;
 
-    exportCustomTable(dataToExport, columns, title, filename);
+    exportCustomTable(sortedData, columns, title, filename);
     setShowExportModal(false);
     setSelectedClassifications([]); // Reset selection
   };
@@ -1098,6 +1111,8 @@ const ThongTinLopHoc = () => {
         availableClassifications={getAvailableClassifications()}
         selectedClassifications={selectedClassifications}
         onClassificationChange={setSelectedClassifications}
+        sortBy={exportSortBy}
+        onSortChange={setExportSortBy}
         onExport={handleExportStudentList}
       />
     </div>

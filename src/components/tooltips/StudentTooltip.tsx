@@ -1,28 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { User, Calendar, GraduationCap, BookOpen, Trophy, CreditCard, TrendingUp, UserCheck, ExternalLink } from "lucide-react";
-
-interface CanhBaoHocVu{
-  maSo: string;
-  lyDo: string;
-}
-
-interface PreviewProfile {
-  canhBaoHocVu: CanhBaoHocVu;
-  avatarUrl: string;
-  maSo: string;
-  hoTen: string;
-  maLop: string;
-  tenNganh: string;
-  xepLoaiHocLuc: string;
-  diemTrungBinhTichLuy: number;
-  soTinChiTichLuy: number;
-  soTinChiCaiThien: number;
-  soTinChiDangKyHienTai: number;
-  khoaHoc: string;
-  maNganh: string;
-  ngaySinh: Date;
-  gioiTinh: boolean;
-}
+import { type PreviewProfile } from "../../types/PreviewProfile";
 
 interface StudentTooltipProps {
   student: PreviewProfile | null;

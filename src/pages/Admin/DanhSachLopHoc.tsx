@@ -139,8 +139,21 @@ const DanhSachLopHoc = () => {
       setLoading(false);
     }
   }, [axiosPrivate, khoa, auth]);
-
-
+  // Fetch thông tin chi tiết một lớp bằng GET_LOP_INFO
+  const fetchLopInfo = useCallback(async (maLop: string) => {
+    try {
+      const response = await axiosPrivate.get(
+        PROFILE_SERVICE.GET_LOP_INFO.replace(":maLop", maLop)
+      );
+      if (response.data.code === 200 && response.data.data) {
+        return response.data.data;
+      }
+      return null;
+    } catch (error) {
+      console.error(`Error fetching info for class ${maLop}:`, error);
+      return null;
+    }
+  }, [axiosPrivate]);
 
   // Fetch danh sách lớp theo vai trò
   const fetchDanhSachLop = useCallback(async () => {
@@ -154,7 +167,22 @@ const DanhSachLopHoc = () => {
           PROFILE_SERVICE.GET_DS_LOP_CHUNHIEM.replace(":maSo", maSoGiangVien)
         );
         if (response.data.code === 200 && Array.isArray(response.data.data)) {
-          setLop(response.data.data);
+          // Lấy thông tin chi tiết cho từng lớp
+          const lopWithDetails = await Promise.all(
+            response.data.data.map(async (lopItem: any) => {
+              const lopInfo = await fetchLopInfo(lopItem.maLop);
+              if (lopInfo) {
+                return {
+                  ...lopItem,
+                  chuNhiem: lopInfo.chuNhiem,
+                  siSo: lopInfo.siSo,
+                  siSoCon: lopInfo.siSoCon
+                };
+              }
+              return lopItem;
+            })
+          );
+          setLop(lopWithDetails);
         } else {
           setLop([]);
           setError(response.data.message || "Không tìm thấy lớp chủ nhiệm.");
@@ -164,7 +192,24 @@ const DanhSachLopHoc = () => {
         response = await axiosPrivate.get(
           PROFILE_SERVICE.GET_DS_LOP_BY_KHOA.replace(":maKhoa", maKhoa)
         );
-        setLop(response.data || []);
+        const lopData = response.data || [];
+        
+        // Lấy thông tin chi tiết cho từng lớp
+        const lopWithDetails = await Promise.all(
+          lopData.map(async (lopItem: any) => {
+            const lopInfo = await fetchLopInfo(lopItem.maLop);
+            if (lopInfo) {
+              return {
+                ...lopItem,
+                chuNhiem: lopInfo.chuNhiem,
+                siSo: lopInfo.siSo,
+                siSoCon: lopInfo.siSoCon
+              };
+            }
+            return lopItem;
+          })
+        );
+        setLop(lopWithDetails);
       }
       console.log("Danh sách lớp:", response.data);
       setError(null);
@@ -175,7 +220,7 @@ const DanhSachLopHoc = () => {
     } finally {
       setLoading(false);
     }
-  }, [axiosPrivate, maKhoa, auth]);
+  }, [axiosPrivate, maKhoa, auth, fetchLopInfo]);
 
   // Filter danh sách lớp
   const filteredLop = lop.filter(
@@ -369,7 +414,11 @@ const DanhSachLopHoc = () => {
                     </div>
                     <div className="flex items-center">
                       <GraduationCap className="w-4 h-4 mr-2" />
-                      <span>Chủ nhiệm: {lopItem.chuNhiem?.hoTen || "Chưa phân công"}</span>
+                      <span>
+                        Chủ nhiệm: {lopItem.chuNhiem?.hoTen 
+                          ? `${lopItem.chuNhiem.hoTen} (${lopItem.chuNhiem.maSo})` 
+                          : lopItem.chuNhiem?.maSo || "Chưa phân công"}
+                      </span>
                     </div>
                   </div>
 

@@ -1,12 +1,11 @@
 
-// const BASE_URL = "http://172.30.121.32"; // Base URL for the API
-// const KONG_URL = "http://172.30.121.19"
-// export const USER_SERIVCE_URL = "http://localhost:8088";
-// export const KHHT_SERVICE_URL = "http://localhost:8087";
-// export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
-// export const PROFILE_SERVICE_URL = "http://localhost:8083";
-// export const KQHT_SERVICE_URL = "http://localhost:8089";
-// export const USER_SERIVCE_URL = "http://172.30.121.19" + ":8088";
+//For local
+export const USER_SERIVCE_URL = "http://localhost:8088";
+export const KHHT_SERVICE_URL = "http://localhost:8087";
+export const HOCPHAN_SERVICE_URL = "http://localhost:8086";
+export const PROFILE_SERVICE_URL = "http://localhost:8085";
+export const KQHT_SERVICE_URL = "http://localhost:8089";
+
 // FOR KONG
 // const KONG_URL = "http://localhost:8000"
 // export const USER_SERIVCE_URL = KONG_URL + "/user-service";
@@ -16,12 +15,12 @@
 // export const KQHT_SERVICE_URL = KONG_URL + "/kqht-service";
 
 
-const BASE_URL = "http://localhost"; // Base URL for the API
-export const USER_SERIVCE_URL = BASE_URL + ":8088";
-export const KHHT_SERVICE_URL = BASE_URL + ":8087";
-export const HOCPHAN_SERVICE_URL = BASE_URL + ":8086";
-export const PROFILE_SERVICE_URL = BASE_URL + ":8085";
-export const KQHT_SERVICE_URL = BASE_URL + ":8089";
+// const BASE_URL = "http://localhost"; // Base URL for the API
+// export const USER_SERIVCE_URL = BASE_URL + ":8088";
+// export const KHHT_SERVICE_URL = BASE_URL + ":8087";
+// export const HOCPHAN_SERVICE_URL = BASE_URL + ":8086";
+// export const PROFILE_SERVICE_URL = BASE_URL + ":8085";
+// export const KQHT_SERVICE_URL = BASE_URL + ":8089";
 export const USER_SERVICE = {
   LOGIN: USER_SERIVCE_URL + "/api/auth/login",
   REGISTER: USER_SERIVCE_URL + "/api/auth/register",
@@ -32,6 +31,7 @@ export const USER_SERVICE = {
   LOGOUT: USER_SERIVCE_URL + "/api/auth/logout",
 };
 export const PROFILE_SERVICE = {
+  GET_LOP_INFO: PROFILE_SERVICE_URL + "/api/profile/lop/id/:maLop", // GET Lop info
   NGANH_CREATE: PROFILE_SERVICE_URL + "/api/profile/nganh/create", // RequestBody
   GET_DS_LOP_CHUNHIEM: PROFILE_SERVICE_URL + "/api/profile/lop/get_by_chu_nhiem/:maSo", // Return List không có cấu trúc API
   GET_KHOA_BY_MA_KHOA: PROFILE_SERVICE_URL + "/api/profile/khoa/id/:maKhoa", // Return Object

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -139,6 +139,30 @@ export const GroupedKetQuaHocTapTable: React.FC<
     [expandedGroups]
   );
 
+  // Auto-expand groups when there's a text filter to ensure search results are visible
+  useEffect(() => {
+    const textFilter = globalFilter.toLowerCase().trim();
+    if (textFilter) {
+      // Expand all groups that have matching courses when searching
+      const groupsToExpand = new Set<string>();
+      courseTypeGroups.forEach(group => {
+        const hasMatchingCourse = group.courses.some(course => {
+          const maHp = course.maHp?.toLowerCase() ?? "";
+          const tenHp = course.tenHp?.toLowerCase() ?? "";
+          const diemChu = course.diemChu?.toLowerCase() ?? "";
+          const nhomHp = course.nhomHp?.toLowerCase() ?? "";
+          return maHp.includes(textFilter) || tenHp.includes(textFilter) || diemChu.includes(textFilter) || nhomHp.includes(textFilter);
+        });
+        const groupTitleMatches = group.title.toLowerCase().includes(textFilter);
+        
+        if (hasMatchingCourse || groupTitleMatches) {
+          groupsToExpand.add(group.id);
+        }
+      });
+      setExpandedGroups(groupsToExpand);
+    }
+  }, [globalFilter, courseTypeGroups]);
+
   // Filter data based on all active filters, ensuring search works on collapsed groups
   const filteredData = useMemo(() => {
     const result: CourseWithGroup[] = [];
@@ -198,6 +222,7 @@ export const GroupedKetQuaHocTapTable: React.FC<
                 groupId: group.id, isGroupHeader: true, groupTitle: group.title, groupSubtitle: subtitle, groupTotalCredits: group.totalCredits, colorScheme: group.colorScheme,
             } as CourseWithGroup);
 
+            // Show courses based on expanded state (useEffect will auto-expand when filtering)
             if (expandedGroups.has(group.id)) {
                 coursesToShow.forEach(course => result.push({ ...course, groupId: group.id, isGroupHeader: false, colorScheme: group.colorScheme } as CourseWithGroup));
             }
