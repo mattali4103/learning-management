@@ -1,3 +1,6 @@
+/**
+ * Bảng kế hoạch học tập có thể tương tác được
+ */
 import React, { useState, useMemo, useCallback } from "react";
 import {
   flexRender,

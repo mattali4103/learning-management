@@ -354,10 +354,10 @@ export const KeHoachHocTapMauTable: React.FC<KeHoachHocTapMauTableProps> = ({
     // Không reset expandedGroups khi không có search filter để giữ trạng thái expand của user
   }, [globalFilter, courseGroups]);
 
-  // Toggle group expansion
+  // Tuỳ chỉnh mở rộng
   const toggleGroup = useCallback(
     (groupId: string) => {
-      console.log('Toggling group:', groupId); // Debug log
+      console.log('Toggling group:', groupId); 
       const newExpanded = new Set(expandedGroups);
       if (newExpanded.has(groupId)) {
         newExpanded.delete(groupId);
@@ -370,29 +370,29 @@ export const KeHoachHocTapMauTable: React.FC<KeHoachHocTapMauTableProps> = ({
     [expandedGroups]
   );
 
-  // Get all courses for filtering and table setup, including all groups
+  // Lấy tất cả các môn học
   const allCourses = useMemo(() => {
     return courseGroups.flatMap((group) => group.courses);
   }, [courseGroups]);
 
-  // Create flattened data structure - group headers with their courses directly below
+  // Tạo cấu trúc dữ liệu phẳng - tiêu đề nhóm với các khóa học của chúng ngay bên dưới
   const flattenedData = useMemo((): CourseWithGroup[] => {
     const result: CourseWithGroup[] = [];
     const hasSearchFilter = globalFilter && typeof globalFilter === "string" && globalFilter.trim() !== "";
     const filterValue = hasSearchFilter ? globalFilter.toLowerCase() : "";
     
-    // Add each group header followed immediately by its courses
+    // Thêm group header
     courseGroups.forEach((group) => {
       let shouldShowGroup = false;
       let shouldShowCourses = expandedGroups.has(group.id);
       
       if (hasSearchFilter) {
-        // Check if group title/subtitle matches filter
+        // Kiểm tra tiêu đề và phụ đề của nhóm
         const title = group.title?.toLowerCase() ?? "";
         const subtitle = group.subtitle?.toLowerCase() ?? "";
         const groupMatches = title.includes(filterValue) || subtitle.includes(filterValue);
-        
-        // Check if any course in this group matches the filter
+
+        // Kiểm tra xem có khóa học nào trong nhóm này khớp với bộ lọc không
         const hasMatchingCourse = group.courses.some((course) => {
           const maHp = typeof course.maHp === "string" ? course.maHp.toLowerCase() : "";
           const tenHp = typeof course.tenHp === "string" ? course.tenHp.toLowerCase() : "";
@@ -405,12 +405,12 @@ export const KeHoachHocTapMauTable: React.FC<KeHoachHocTapMauTableProps> = ({
             hocPhanTienQuyet.includes(filterValue)
           );
         });
-        
-        // Show group if either group matches or has matching courses
+
+        // Hiển thị nhóm nếu tiêu đề khớp hoặc có khóa học khớp
         shouldShowGroup = groupMatches || hasMatchingCourse;
         shouldShowCourses = shouldShowGroup;
       } else {
-        // No filter, show all groups
+        // Không có bộ lọc, hiển thị tất cả các nhóm
         shouldShowGroup = true;
       }
 

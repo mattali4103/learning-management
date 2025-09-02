@@ -23,7 +23,7 @@ import {
 
 // Components
 import PageHeader from "../../components/PageHeader";
-import { TemplateCoursesTable } from "../../components/table/TemplateCoursesTable";
+import { KeHoachHocTapMauTable } from "../../components/table/TemplateCoursesTable";
 import DeleteModal from "../../components/modals/DeleteModal";
 import ErrorMessageModal from "../../components/modals/ErrorMessageModal";
 import SuccessMessageModal from "../../components/modals/SuccessMessageModal";
@@ -856,7 +856,7 @@ const ThemKeHoachHocTapMau = () => {
                 </div>
               </div>
               {selectedHocPhans.length > 0 ? (
-                <TemplateCoursesTable
+                <KeHoachHocTapMauTable
                   activeTab={activeTab}
                   name={activeTab === "all" ? "Tất cả học phần" : `${availableHocKy.find(s => s.id === selectedHocKyChart)?.ten}`}
                   allData={selectedHocPhans.map((item, idx) => ({
@@ -922,7 +922,7 @@ const ThemKeHoachHocTapMau = () => {
                 </div>
               </div>
               {selectedSemesterData.length > 0 ? (
-                <TemplateCoursesTable
+                <KeHoachHocTapMauTable
                   activeTab={activeTab}
                   name="Học phần theo học kỳ"
                   allData={selectedSemesterData.map((item, idx) => ({

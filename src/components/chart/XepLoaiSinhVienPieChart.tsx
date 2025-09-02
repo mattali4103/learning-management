@@ -21,16 +21,15 @@ interface XepLoaiSinhVienPieChartProps {
   students: PreviewProfile[];
   onClassificationClick?: (classification: string) => void;
 }
-
-// Define specific colors for each classification
+//xếp loại học lực
 const CLASSIFICATION_COLORS: { [key: string]: string } = {
-  "Xuất sắc": "#8B5CF6", // Purple - Excellent
-  "Giỏi": "#10B981", // Green - Good
-  "Khá": "#3B82F6", // Blue - Fair
-  "Trung bình": "#EAB308", // Yellow - Average
-  "Yếu": "#F97316", // Orange - Weak
-  "Kém": "#EF4444", // Red - Poor
-  "Chưa xác định": "#9CA3AF", // Gray - Undetermined
+  "Xuất sắc": "#8B5CF6", 
+  "Giỏi": "#10B981",
+  "Khá": "#3B82F6", 
+  "Trung bình": "#EAB308", 
+  "Yếu": "#F97316",
+  "Kém": "#EF4444",
+  "Chưa xác định": "#9CA3AF", 
 };
 
 export default function XepLoaiSinhVienPieChart({

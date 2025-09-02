@@ -26,7 +26,7 @@ import type { HocPhan } from "../../types/HocPhan";
 import type { HocPhanTuChon } from "../../types/HocPhanTuChon";
 import type { KeHoachHocTap } from "../../types/KeHoachHoctap";
 
-interface TemplateCoursesTableProps {
+interface KeHoachHocTapMauProps {
   name: string;
   allData: KeHoachHocTap[];
   nhomHocPhanTuChon?: HocPhanTuChon[];
@@ -67,7 +67,7 @@ interface CourseWithGroup extends HocPhan {
   type?: "direct-required" | "elective";
 }
 
-export const TemplateCoursesTable: React.FC<TemplateCoursesTableProps> = ({
+export const KeHoachHocTapMauTable: React.FC<KeHoachHocTapMauProps> = ({
   name,
   allData,
   nhomHocPhanTuChon = [],
@@ -78,7 +78,7 @@ export const TemplateCoursesTable: React.FC<TemplateCoursesTableProps> = ({
   emptyStateDescription,
   onDelete,
 }) => {
-  // Remove duplicate courses by maHp (course code) in requiredCourses
+  // Lọc các học phần bắt buộc duy nhất từ allData
   const uniqueRequiredCourses = useMemo(() => {
     const seen = new Set();
     return allData.filter((course) => {

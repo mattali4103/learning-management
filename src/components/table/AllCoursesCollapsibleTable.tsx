@@ -1,3 +1,8 @@
+  /**
+   * Bảng hiển thị kế hoạch học tập
+   * 
+   */
+  
   import React, { useState, useMemo, useCallback, useEffect } from "react";
   import {
     flexRender,
@@ -91,7 +96,7 @@
     emptyStateDescription,
     onDelete,
   }) => {
-    // Remove duplicate courses by maHp (course code) in requiredCourses
+    // Loại bỏ các học phần trùng lặp theo maHp (mã học phần) trong requiredCourses
     const uniqueRequiredCourses = useMemo(() => {
       const seen = new Set();
       return allData.filter((course) => {
@@ -128,7 +133,7 @@
 
     // Tạo nhóm học phần từ các khóa học bắt buộc và tự chọn
     const courseGroupsResult = useMemo((): CourseGroupResult => {
-      // Define the desired order for required course types
+      // Định nghĩa thứ tự mong muốn cho các loại học phần bắt buộc
       const requiredOrder = [
         "Quốc phòng",
         "Anh văn",
@@ -140,10 +145,10 @@
         "Học Phần Cải Thiện"
       ];
 
-      // Define the desired order for elective group types by matching course types inside them
+      // Định nghĩa thứ tự mong muốn cho các nhóm tự chọn theo loại học phần bên trong chúng
       const electiveOrder = ["Đại cương", "Cơ sở ngành", "Chuyên ngành"];
 
-      // Get all course codes that exist in elective groups to avoid duplication
+      // Lấy tất cả mã học phần có trong nhóm tự chọn để tránh trùng lặp
       const electiveCourseCodes = new Set(
         nhomHocPhanTuChon
           .flatMap((group) =>
@@ -152,21 +157,21 @@
           .filter(Boolean)
       );
 
-      // Create a Set of added course `maHp` for efficient lookup
+      // Tạo một Set chứa mã học phần `maHp` đã thêm để tra cứu hiệu quả
       const addedCourseCodes = new Set(allData.map(c => c.maHp));
-      // Filter required courses based on activeTab and exclude those already in elective groups
+      // Lọc học phần bắt buộc dựa trên activeTab và loại trừ những học phần đã có trong nhóm tự chọn
       let filteredRequiredCourses = uniqueRequiredCourses.filter(
         (course) => course.maHp && !electiveCourseCodes.has(course.maHp)
       );
 
-      // Create improvement courses group from external parameter
+      // Tạo nhóm học phần cải thiện từ tham số bên ngoài
       let improvementCoursesForGroup: KeHoachHocTap[] = [];
       
-      // Use improvement courses from props if provided
+      // Sử dụng học phần cải thiện từ props nếu được cung cấp
       if (improvementCourses && improvementCourses.length > 0) {
         improvementCoursesForGroup = improvementCourses;
         
-        // Apply filtering logic for improvement group based on activeTab
+        // Áp dụng logic lọc cho nhóm cải thiện dựa trên activeTab
         if (activeTab !== "tatca" && activeTab !== "all" && !activeTab.startsWith("semester-")) {
             improvementCoursesForGroup = improvementCourses.filter(course => 
                 course.loaiHp === activeTab
@@ -177,9 +182,9 @@
               course.maHocKy === hocKyId
             );
         }
-        // For "all" or "tatca" tabs, use all improvement courses without filtering
+        // Đối với tab "all" hoặc "tatca", sử dụng tất cả học phần cải thiện mà không lọc
       } else {
-        // Fallback: get improvement courses from allData if not provided as props
+        // Dự phòng: lấy học phần cải thiện từ allData nếu không được cung cấp qua props
         const allImprovementCourses = uniqueRequiredCourses.filter(course => course.hocPhanCaiThien === true);
         
         if (allImprovementCourses.length > 0) {
@@ -198,23 +203,23 @@
         }
       }
 
-      // Apply activeTab filter to required courses (excluding improvement courses)
+      // Áp dụng bộ lọc activeTab cho học phần bắt buộc (loại trừ học phần cải thiện)
       if (activeTab !== "tatca" && activeTab !== "all" && !activeTab.startsWith("semester-")) {
           filteredRequiredCourses = filteredRequiredCourses.filter(course => 
               course.loaiHp === activeTab && course.hocPhanCaiThien !== true
           );
       } else if (activeTab.startsWith("semester-")) {
           const hocKyId = Number(activeTab.replace("semester-", ""));
-          // Filter to only show courses from allData that belong to this semester
-          // and ensure they are not duplicated in elective groups
-          // Exclude improvement courses as they will be handled separately
+          // Lọc để chỉ hiển thị học phần từ allData thuộc học kỳ này
+          // và đảm bảo chúng không bị trùng lặp trong nhóm tự chọn
+          // Loại trừ học phần cải thiện vì chúng sẽ được xử lý riêng biệt
           const semesterCourses = allData.filter(course => 
             course.maHocKy === hocKyId && 
             course.hocPhanCaiThien !== true &&
             uniqueRequiredCourses.some(reqCourse => reqCourse.maHp === course.maHp)
           );
           
-          // Remove duplicates by maHp within semester courses and exclude elective courses
+          // Loại bỏ trùng lặp theo maHp trong học phần học kỳ và loại trừ học phần tự chọn
           const seenCodes = new Set();
           filteredRequiredCourses = semesterCourses.filter(course => {
             if (!course.maHp || electiveCourseCodes.has(course.maHp) || seenCodes.has(course.maHp)) {
@@ -224,13 +229,13 @@
             return true;
           });
       } else {
-          // For "all" or "tatca" tabs, exclude improvement courses from required courses
+          // Đối với tab "all" hoặc "tatca", loại trừ học phần cải thiện khỏi học phần bắt buộc
           filteredRequiredCourses = filteredRequiredCourses.filter(course => 
               course.hocPhanCaiThien !== true
           );
       }
 
-      // Group required courses by loaiHp (course type) and remove duplicates within each group
+      // Nhóm học phần bắt buộc theo loaiHp (loại học phần) và loại bỏ trùng lặp trong mỗi nhóm
       const requiredCoursesByType = filteredRequiredCourses.reduce(
         (acc, course) => {
           const type = course.loaiHp || "Khác";
@@ -238,7 +243,7 @@
             acc[type] = [];
           }
           
-          // Check if course with same maHp already exists in this type group
+          // Kiểm tra xem học phần có cùng maHp đã tồn tại trong nhóm loại này chưa
           const existingCourse = acc[type].find(existingCourse => existingCourse.maHp === course.maHp);
           if (!existingCourse) {
             acc[type].push(course);
@@ -249,7 +254,7 @@
         {} as Record<string, HocPhan[]>
       );
 
-      // Create groups for each course type
+      // Tạo nhóm cho mỗi loại học phần
       const requiredGroups: CourseGroup[] = [];
       Object.entries(requiredCoursesByType).forEach(([courseType, courses]) => {
         if (courses.length > 0) {
@@ -258,7 +263,7 @@
             0
           );
 
-          // Determine color scheme based on course type
+          // Xác định bảng màu dựa trên loại học phần
           let colorScheme = "blue";
           if (
             courseType.includes("Đại cương") ||
@@ -285,7 +290,7 @@
         }
       });
 
-      // Sort required groups by the defined order
+      // Sắp xếp nhóm bắt buộc theo thứ tự đã định nghĩa
       requiredGroups.sort((a, b) => {
         const aIndex = requiredOrder.findIndex((order) =>
           a.title.includes(order)
@@ -299,17 +304,17 @@
         return aIndex - bIndex;
       });
 
-      // Add elective course groups (keep as groups)
+      // Thêm nhóm học phần tự chọn (giữ dưới dạng nhóm)
       const electiveGroupsFiltered: CourseGroup[] = [];
       nhomHocPhanTuChon.forEach((group, index) => {
         let coursesInGroup: HocPhan[] = [];
         const allElectiveCoursesInGroup = group.hocPhanTuChonList || [];
 
-        // Filter to only include courses that have been added (exist in allData)
+        // Lọc để chỉ bao gồm học phần đã được thêm (tồn tại trong allData)
         const addedElectiveCourses = allElectiveCoursesInGroup.filter(hp => addedCourseCodes.has(hp.maHp));
 
         if (activeTab === "tatca" || activeTab === "all") {
-          // Remove duplicates by maHp within the group for "all" tab
+          // Loại bỏ trùng lặp theo maHp trong nhóm cho tab "all"
           const seenCodesInGroup = new Set();
           coursesInGroup = addedElectiveCourses.filter(course => {
             if (!course.maHp || seenCodesInGroup.has(course.maHp)) {
@@ -319,15 +324,15 @@
             return true;
           });
         } else if (activeTab.startsWith("semester-")) {
-          // Extract hocKyId from tab name
+          // Trích xuất hocKyId từ tên tab
           const hocKyId = Number(activeTab.replace("semester-", ""));
-          // Find matching courses from allData that belong to this semester and this group
+          // Tìm học phần phù hợp từ allData thuộc học kỳ này và nhóm này
           const semesterCoursesInGroup = allData.filter(course => 
             course.maHocKy === hocKyId && 
             allElectiveCoursesInGroup.some(hp => hp.maHp === course.maHp)
           );
           
-          // Remove duplicates by maHp within the group
+          // Loại bỏ trùng lặp theo maHp trong nhóm
           const seenCodesInGroup = new Set();
           coursesInGroup = semesterCoursesInGroup.filter(course => {
             if (!course.maHp || seenCodesInGroup.has(course.maHp)) {
@@ -339,7 +344,7 @@
           
           console.log(`Semester ${hocKyId} - Group ${group.tenNhom}:`, coursesInGroup);
         } else {
-          // Remove duplicates by maHp within the group for specific course type
+          // Loại bỏ trùng lặp theo maHp trong nhóm cho loại học phần cụ thể
           const filteredCourses = addedElectiveCourses.filter(
             (hp) => hp.loaiHp === activeTab
           );
@@ -360,7 +365,7 @@
             0
           );
 
-          // Determine the type of elective group by checking course types inside
+          // Xác định loại nhóm tự chọn bằng cách kiểm tra loại học phần bên trong
           let groupType = "Khác";
           for (const orderType of electiveOrder) {
             if (coursesInGroup.some((c) => c.loaiHp === orderType)) {
@@ -403,7 +408,7 @@
         });
       }
 
-      // Sort elective groups by the defined order
+      // Sắp xếp nhóm học phần tự chọn
       electiveGroupsFiltered.sort((a, b) => {
         const aIndex = electiveOrder.findIndex((order) =>
           a.groupType?.includes(order)
@@ -417,7 +422,6 @@
         return aIndex - bIndex;
       });
 
-      // Combine groups in the requested order:
       // Anh văn, chính trị, thể chất, đại cương,
       // nhóm học phần tự chọn đại cương,
       // cơ sở ngành, nhóm học phần tự chọn cơ sở ngành,

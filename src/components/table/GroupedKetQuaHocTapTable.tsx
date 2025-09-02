@@ -11,7 +11,7 @@ import {
   ArrowUp,
   ChevronDown,
   ChevronRight,
-  BookOpen, // Using BookOpen for course type groups
+  BookOpen, 
   ChevronLeft,
   ChevronsLeft,
   ChevronsRight,
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import Loading from "../Loading";
 import { EmptyTableState } from "./EmptyTableState";
-import type { KetQuaHocTapTableType } from "./KetQuaHocTapTable"; // Import the correct type
+import type { KetQuaHocTapTableType } from "./KetQuaHocTapTable";
 import BangDiemExportButton from "../export/BangDiemExportButton";
 
 interface GroupedKetQuaHocTapTableProps {
