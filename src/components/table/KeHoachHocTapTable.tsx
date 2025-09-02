@@ -47,19 +47,16 @@ export const KeHoachHocTapTable: React.FC<KeHoachHocTapTableProps> = ({
   columns,
   initialExpanded = true,
   loading = false,
-  // Server-side pagination props
   enableServerPagination = false,
   currentPage = 1,
   totalPages = 1,
   pageSize = 10,
   totalElements = 0,
   onPageChange,
-  // Empty state props
   emptyStateTitle,
   emptyStateDescription,
   emptyStateIcon,
   showEmptyStateWarningBadge,
-  // Row click handler
   onRowClick,
 }) => {
   const [globalFilter, setGlobalFilter] = useState<string>("");

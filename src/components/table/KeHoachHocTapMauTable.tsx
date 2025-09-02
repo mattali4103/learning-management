@@ -405,19 +405,17 @@ export const KeHoachHocTapMauTable: React.FC<KeHoachHocTapMauTableProps> = ({
             hocPhanTienQuyet.includes(filterValue)
           );
         });
-
-        // Hiển thị nhóm nếu tiêu đề khớp hoặc có khóa học khớp
         shouldShowGroup = groupMatches || hasMatchingCourse;
         shouldShowCourses = shouldShowGroup;
       } else {
-        // Không có bộ lọc, hiển thị tất cả các nhóm
+
         shouldShowGroup = true;
       }
 
       if (shouldShowGroup) {
         // Add group header
         result.push({
-          id: `group-header-${group.id}`, // Add proper ID for React key
+          id: `group-header-${group.id}`,
           maHp: `group-header-${group.id}`,
           tenHp: group.title,
           tinChi: 0,
@@ -433,7 +431,6 @@ export const KeHoachHocTapMauTable: React.FC<KeHoachHocTapMauTableProps> = ({
           colorScheme: group.colorScheme,
         } as CourseWithGroup);
 
-        // Add courses immediately after the header if group is expanded or if search matches
         if (shouldShowCourses) {
           const coursesToShow = hasSearchFilter 
             ? group.courses.filter((course) => {
